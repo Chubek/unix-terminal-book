@@ -10,7 +10,7 @@ You need to send next Saturday's volunteer rota to a neighbor. The file you rece
 \input{figures/chapter-7/operations.tikz}
 \section{Make a low-stakes original}
 \label{sec:7-original}
-The following commands use relative paths, so their effect depends on your working directory, as in Chapter~\ref{ch:6}. Choose a place where you are allowed to make a new directory, such as your home directory. Check the location with \cmd|pwd|. Type each line separately. If the first line fails, stop; do not enter a directory of the same name that was already there. Pick a new unique name and use it consistently. All the names starting with \cmd|./| below refer to this chapter's practice directory once you have entered it.
+The following commands use relative paths, so their effect depends on your working directory, as in Chapter~\ref{ch:6}. Use a spare local \cmd|/bin/sh| shell and choose a place where you are allowed to make a new directory, such as your home directory. Check the location with \cmd|pwd|. Type each line separately. If the first line fails, stop; do not enter a directory of the same name that was already there. Pick a new unique name and use it consistently. Before writing any fixture, make sure \cmd|cd| succeeded and \cmd|pwd| ends in the new directory's name. All the names starting with \cmd|./| below refer to this practice directory once you have entered it.
 
 \begin{terminal}
 mkdir ./utp-07-rota
@@ -143,7 +143,14 @@ cp -i ./different.txt './outbox/rota ready.txt'
 cmp './rota original.txt' './outbox/rota ready.txt'
 \end{terminal}
 
-A confirmation is the last chance to catch this decision, not a complete preview of the operation. Choose a new filename first whenever the goal is to preserve both versions. If the tool asks a question you didn't expect, stop and verify the path rather than train yourself to answer yes. On a real assignment, you could compare the proposed source to the existing destination without changing either. If someone else can write in the same directory, a prior listing is not a guarantee that the directory will stay unchanged while you decide.
+A confirmation is the last chance to catch this decision, not a complete preview of the operation. Choose a new filename first whenever the goal is to preserve both versions. If the tool asks a question you didn't expect, stop and verify the path rather than train yourself to answer yes. Implementations differ in the status they report after a declined overwrite; verify what remained rather than inferring it from the status alone. On a real assignment, you could compare the proposed source to the existing destination without changing either. If someone else can write in the same directory, a prior listing is not a guarantee that the directory will stay unchanged while you decide.
+
+\section{When a copy has a job to do}
+For the handoff, there are really three items to account for: what you received, what you are free to edit, and what you mean to send. Names that describe those roles are more useful than names like ``new'' and ``newer,'' which stop telling you anything the moment a third version arrives. Keeping the received rota where it is also makes an unexpected mismatch easier to investigate. Instead of guessing whether you edited the wrong file, you have one reference path whose role hasn't changed.
+
+Before correcting the hours, a comparison of the working copy to the received file should succeed. \emph{After} correcting them, a mismatch can be the right result. Compare against the right expectation at each stage: use equality to check that a handoff copy matches your approved working version, and use a reader or text comparison to check the substance of the approved edits. Even a perfect byte comparison won't tell you whether you entered the right hours. It's evidence for a specific claim, not a substitute for reading.
+
+There is also a silent class of mistake that neither \cmd|-i| nor \cmd|cmp| can catch on its own: you make a correct copy in the wrong folder. Perhaps two directories called \cmd|outbox| exist. If you compare two paths from the same mistaken working directory, the bytes can match without answering where a recipient will look. Write down the destination independently, consult it after copying, and check from the recipient's side if practical. The method will carry from a local folder to a later network transfer: decide what the destination must be, then verify the result instead of assuming that an absence of errors is enough.
 
 \begin{dialoguebox}{Same name, same file?}
 \Brian{If I copy the original to the same name in the outbox, shouldn't the shell refuse because that name already exists here?}
@@ -157,7 +164,7 @@ A confirmation is the last chance to catch this decision, not a complete preview
 \end{dialoguebox}
 
 \section{Practice and clean up}
-Do these exercises in the practice directory. To clean up afterward, check \cmd|pwd| first. Remove only the named exercise and demonstration files you really created, using \cmd|rm -i| one file at a time; it asks before permanently removing the name. If any file is unexpected, answer no or interrupt. After \cmd|ls -a| shows no other entries in the relevant directories, remove the empty \cmd|outbox| with \cmd|rmdir ./outbox|, leave with \cmd|cd ..|, and remove the now-empty practice directory with \cmd|rmdir ./utp-07-rota| (substitute your chosen name). Chapter~\ref{ch:12} treats removal in full. You can also keep the directory rather than deleting anything.
+Do these exercises in the practice directory. To clean up afterward, check \cmd|pwd| first. Remove only the files you really created, using \cmd|rm -i| one file at a time; it asks before permanently removing the name. The demonstrations leave \cmd|'./rota original.txt'| and \cmd|./different.txt| here, and \cmd|'rota original.txt'|, \cmd|'week 1.txt'|, and \cmd|'rota ready.txt'| in \cmd|./outbox|. Include the directory prefix inside the quotes when referring to the outbox files. If any name is unexpected, answer no or interrupt. After \cmd|ls -a| shows no other entries in the relevant directories, remove the empty \cmd|outbox| with \cmd|rmdir ./outbox|, leave with \cmd|cd ..|, and remove the now-empty practice directory with \cmd|rmdir ./utp-07-rota| (substitute your chosen name). Chapter~\ref{ch:12} treats removal in full. You can also keep the directory rather than deleting anything.
 
 \begin{exercise}{A recipient-friendly title}
 \label{ex:7-recipient}
@@ -206,7 +213,8 @@ After the first move, expect \texttt{proof.txt} here and no ready file in the ou
 \end{takeaways}
 
 \begin{furtherreading}
-\ReadingItem{POSIX cp and mv}{The Open Group specifies destination handling and interactive replacement}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/cp.html}
+\ReadingItem{POSIX cp}{Destination handling and interactive replacement for copying}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/cp.html}
+\ReadingItem{POSIX mv}{Destination handling and behavior across filesystems for moving}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/mv.html}
 \ReadingItem{POSIX cmp}{The Open Group specifies output and the three classes of exit status}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/cmp.html}
 \ReadingItem{file(1)}{The upstream implementation manual explains the tests used for classification}{https://github.com/file/file/blob/master/doc/file.man}
 \end{furtherreading}

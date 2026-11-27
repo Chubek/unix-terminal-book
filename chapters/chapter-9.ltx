@@ -10,7 +10,7 @@ A housing cooperative has sent you three folders of meeting records. You want th
 \input{figures/chapter-9/search.tikz}
 \section{Draw a boundary before you search}
 \IndexCommand{find}
-Choose a writable parent directory and check \cmd|pwd|. Make the new practice root first and stop if it fails; don't continue in a directory that already existed. Replace only the practice root name if necessary. Unlike the cooperative's real folders, this tree contains only short names and empty regular files.
+Use a spare local \cmd|/bin/sh| shell. Choose a writable parent directory and check \cmd|pwd|. Make the new practice root first and stop if it fails; don't continue in a directory that already existed. Replace only the practice root name if necessary. Type the lines separately and proceed with the fixture only if \cmd|cd| succeeded and \cmd|pwd| ends in the fresh name. Unlike the cooperative's real folders, this tree contains only short names and empty regular files.
 
 \begin{terminal}
 mkdir ./utp-09-records
@@ -74,7 +74,7 @@ find ./records -type d -name '*.txt' -print
 find ./records -type d -name '.*' -print
 \end{terminal}
 
-The first result is \cmd|./records/may/agenda-old.txt|; the second is \cmd|./records/.drafts|. Add quotation marks around names that contain spaces as well as patterns containing an asterisk. For the title-case name in May:
+The first result is the old-agenda directory under May. The second is \cmd|./records/.drafts|. Add quotation marks around names that contain spaces as well as patterns containing an asterisk. For the title-case name in May:
 
 \begin{terminal}
 find ./records -type f -name 'Final Agenda.txt' -print
@@ -136,6 +136,29 @@ A strange or broken-looking printed name & Do not paste it as an unquoted comman
 \end{quicktable}
 
 Real names can contain spaces, tabs, and even line breaks. A display with one path apparently on each line is not a dependable machine-readable list for arbitrary input. In this chapter you make a decision interactively from short controlled names; don't pass the displayed output directly to a tool that changes or removes files. Even in a small project, quote a name as one operand and recheck it at the time of action. If a file seems to have vanished since the result was printed, the directory may have changed while you were looking.
+
+\section{Narrow the question a little at a time}
+A search for the latest agenda starts with a word in conversation, ``latest,'' which a filename can't always answer. Maybe the coordinator uses a dated filename, or maybe each event folder has a file simply called \cmd|agenda.txt|. You could start with the broad text-ending pattern to learn the naming scheme. In the practice tree that would reveal the two capitalization styles without requiring any guess about the first letter. If you are fairly sure it is in May, narrow the starting path to that branch. The two changes answer different questions: one asks what counts as a candidate, while the other decides which part of the collection to consider at all.
+
+Names themselves can mislead. A file called ``Final'' may have been superseded; a more recently modified draft may have nothing to do with the meeting; an archive might keep last month's file under an undated filename. Report your conclusion in terms of the evidence you actually have. ``I found the two likely May candidates'' is useful if someone still needs to check the date inside. A file search doesn't need to answer all questions at once. Once you have two readable paths, inspecting them or asking the organizer is cheaper than guessing a more elaborate search expression. Chapter~\ref{ch:19} takes up searching by \emph{content} as a separate operation.
+
+Try a pattern that has text on both sides of the asterisk. In the example below, it calls for a name starting with \cmd|agenda| and ending with \cmd|.txt|. The asterisk can match no characters, so \cmd|agenda.txt| qualifies. We leave the type test out on purpose to examine the name rule by itself:
+
+\begin{terminal}
+find ./records/may -name 'agenda*.txt' -print
+\end{terminal}
+
+Expect both \cmd|agenda.txt| (the file) and \cmd|agenda-old.txt| (the directory). The file with a space and capital letters doesn't start with that sequence. This is a good stress test for your explanation: if you thought the star must match at least one letter, you would unexpectedly omit the ordinary agenda. If you thought matching a suffix only selected files, you would be surprised by the directory. Put the type test back when the next step needs a regular file rather than a folder.
+
+A dot at the beginning of a name is another place where you should ask who is matching. At the shell prompt, an unquoted wildcard often omits names beginning with a dot unless the pattern begins with a dot or a setting changes the rule. The \cmd|-name| test is not the shell's directory expansion; it considers names that the \cmd|find| walk has already reached. In the earlier example, the hidden parent doesn't appear because a wildcard matched the whole path. It appears because the walk enters that directory and the last component \cmd|agenda.txt| matches exactly.
+
+When you share a search, record the starting path along with the expression. A colleague who repeats \cmd|find .| from a different working directory hasn't repeated your search, even though the command looks identical. If a screenshot or chat paste exposes a private directory name, share the expression and a short description instead. For example, give the number of plausible matches and the general branch you checked, not a list of every unrelated path the utility reported.
+
+One more distinction helps when a heading looks familiar but your exact query misses it. The filesystem can be configured to treat some differences in spelling as interchangeable when you open a path. The \cmd|-name| test still matches the spelling it obtains from the walk. You do not need to rename the record just to find it. First use the broader suffix pattern and read the name that is actually reported. Then decide whether an exact spelling or a less specific test is the useful search. If two people work on different volumes, neither should assume the other volume looks up names by the same rules.
+
+\begin{platformnote}{Linux, macOS, and the BSD systems}
+Use the explicit starting path, \texttt{-name}, \texttt{-type}, and \texttt{-print} forms shown here rather than extrapolating from somebody's system-specific options. GNU and BSD implementations provide more tests and options, but not always the same ones. Across Linux, macOS, FreeBSD, OpenBSD, and NetBSD, consult the local page before borrowing a command that follows links, alters traversal, or does more than print.
+\end{platformnote}
 
 \begin{dialoguebox}{Does nothing mean nothing?}
 \Brian{My search printed nothing. Can I tell everyone there was no agenda?}

@@ -13,7 +13,7 @@
 \newcommand{\UTPEightHard}{%
 \begin{tikzpicture}
 \node[utp node] (a) at (-2.4,0) {\texttt{forms/intake.txt}};
-\node[utp node] (b) at (2.4,0) {\texttt{june/intake-same.txt}};
+\node[utp node] (b) at (2.4,0) {\texttt{events/june/}\\\texttt{intake-same.txt}};
 \node[utp node] (c) at (0,-1.45) {one file};
 \draw[utp arrow] (a)--(c);
 \draw[utp arrow] (b)--(c);
