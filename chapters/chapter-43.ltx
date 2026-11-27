@@ -18,8 +18,10 @@ your normal shell does not read POSIX shell syntax. The practice
 commands below use that syntax except where explicitly marked Bash or
 Zsh. Check that Bash is available, then start it without its usual
 login or interactive startup files. If the first command cannot
-locate Bash, stop before the second; the POSIX practice later in the
-chapter does not require Bash.
+locate Bash, skip the second command and start a spare child
+\cmd|sh| instead. The plain prompt, alias and environment examples
+use POSIX syntax. Skip the nested Bash trial unless you can use the
+Zsh alternative discussed there.
 
 \begin{terminal}
 command -v bash
@@ -44,12 +46,14 @@ value was created in this child, so this chapter's cleanup is done
 before typing \cmd|exit|.
 
 \begin{terminal}
-lab=$(mktemp -d "${TMPDIR:-/tmp}/utp43.XXXXXX") && cd "$lab"
+lab=$(mktemp -d "${TMPDIR:-/tmp}/utp43.XXXXXX") &&
+    cd "$lab" && lab=$PWD
 pwd
 PS1='practice> '
 printf '%s\n' 'This command runs inside the practice shell.'
 \end{terminal}
 
+The final assignment keeps the absolute working directory for cleanup.
 \cmd|pwd| prints the working directory. Assigning to \cmd|PS1| in Bash
 or a POSIX-style interactive shell sets the main prompt. The quotes
 hold the trailing space; the space is useful when visually separating
@@ -69,6 +73,17 @@ a child shell, while only one shell has the new setting. If a program
 you start needs it, export an environment value. If tomorrow's shell
 needs it, arrange for the correct startup file to define it then.
 These are separate choices, not three spellings of the same thing.
+
+A login shell can read personal files before you see any prompt.
+Distinguish slow startup from a slow prompt: compare the wait
+at first launch with the wait after pressing Enter on an empty
+input line at the main prompt. Compare again in the clean child.
+The timing is a clue, not proof of which particular command is
+slow. If a single addition was made recently, undo that addition
+first rather than rebuilding the shell environment from a
+template. A change that seems small can depend on a network
+service or on a folder on a removable volume; neither is
+guaranteed to be ready when the prompt appears.
 
 \begin{quicktable}{lY}
 \toprule
@@ -126,6 +141,14 @@ not read your alias. Pick names that announce intent and leave
 standard names intact. This also reduces the work of explaining a
 shared recipe; write the underlying command, not your alias, in team
 instructions.
+
+A good alias is easy to explain from its name. A private habit
+can still be useful, but it shouldn't be essential to finishing
+a task on another person's computer. If lookup shows a collision,
+pick another name. Avoid layers of aliases whose definitions
+depend on each other. When a routine outgrows an alias, the
+interesting requirement is usually not brevity but giving the
+routine a place to check inputs and handle failure.
 
 An alias is useful when the pieces that vary can simply follow the
 replacement. Consider a shortcut that always verifies a file before
@@ -186,6 +209,43 @@ shell. It can also reveal details of the directory or host on a shared
 screen. A prompt is a cue, not proof of context: before acting on
 relative paths, verify with \cmd|pwd|. A remote terminal that looks
 just like a local one still runs commands where the shell lives.
+
+\subsection{A useful prompt can be plain}
+
+Choose the prompt for the most costly mistake you actually make.
+If you keep confusing a test shell with the ordinary shell, use
+a word such as \texttt{practice}, not the same prompt in two
+different colors. If the problem is several indistinguishable
+remote tabs, tag the window and verify the machine before work;
+do not spend time encoding machine identity in a decorative
+glyph. Avoid putting a whole deeply nested path in the prompt
+if it leaves only a few characters where the command is edited.
+A short prompt and a deliberate \cmd|pwd| on arrival is a
+reasonable combination. An application tab title is a separate
+cue; its settings are not inherited by a child shell through
+\cmd|PS1|.
+
+To see how the separator changes the experience, try two prompts
+in sequence, each on its own line. One has an explicit word and
+colon so that it reads well in plain text. You can return to the
+first practice prompt immediately. This doesn't alter the
+terminal's font, contrast, or cursor behavior.
+
+\begin{terminal}
+PS1='REVIEW: '
+pwd
+PS1='practice> '
+\end{terminal}
+
+Color sequences and dynamic elements are shell-specific. Bash,
+for example, documents backslash sequences in its prompt and a
+way to bracket nonprinting parts, while Zsh uses different prompt
+escapes. If a prompt displays but long commands wrap in the wrong
+place, test again with a simple text prompt. The line editor
+may have counted terminal controls as visible columns. If plain
+text fixes the symptom, don't change the working directory or
+terminal width to hide it. There is no need to repair a prompt
+with escapes to make this chapter's workflow useful.
 
 \section{Test a proposed startup setting}
 
@@ -250,6 +310,17 @@ an interactive conversation. Terminal applications can choose
 how to launch the shell. The existence of a particular filename in
 your home directory does not prove that your terminal uses it.
 
+There may also be a site-wide file, read before yours, that you
+should not edit. And one startup file can explicitly read
+another. That is why reading a manual is only the first step:
+compare the ordering it documents with the files that actually
+exist and the commands in those files. A terminal set to start a
+login shell can work perfectly even when a differently launched
+shell misses an alias. The two launches are simply following
+different instructions. Noninteractive scripts should put
+necessary settings in the script or document their inputs; avoid
+depending on a subtle accident of interactive setup.
+
 \begin{quicktable}{lY}
 \toprule
 Shell & Where to check for user-level interactive settings \\
@@ -296,6 +367,17 @@ rather than feeding Fish configuration through Bash. If something else
 manages the file for you, such as a system administrator or setup tool,
 ask where personal configuration belongs instead of bypassing the
 manager.
+
+If an editor saves a recovery file or an old-version copy
+beside the startup file, know which one the shell actually
+reads. Never paste a startup file into a public help forum
+without checking for personal paths, service details, or
+credentials. Usually the single changed line, the shell version
+and the launch mode are enough to start diagnosing it. Leave
+a short comment beside a lasting change explaining the problem
+it solves. When that problem disappears, remove the change
+deliberately and test a new session again; don't leave a
+collection of mysterious lines for future you to guess at.
 
 \begin{terminal}
 diff -u ./candidate.sh ./candidate.sh

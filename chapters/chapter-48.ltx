@@ -27,6 +27,19 @@ Do not store sensitive files just because someone has a spare
 account on a machine. Know who can administer the storage and
 whether its backups or snapshots retain a copy after removal.
 
+Take a minute to write the boundary of the drill in ordinary
+language: ``Both documents can be recovered after the laptop
+is lost, as long as the authorized storage and its access
+arrangements are still available.'' That is a narrower claim
+than ``the group can keep working through any outage.''
+If the original and the copy depend on the same building,
+provider account, or recovery contact, a single problem may
+affect both. If no one knows the access procedure except the
+person who made the copy, a file can be intact and still
+unavailable. Discuss those dependencies when choosing a real
+backup location. This chapter tests reading and retrieval; it
+does not certify a storage service.
+
 \input{figures/chapter-48/roundtrip.tikz}
 
 Figure~\ref{fig:48-roundtrip} puts an explicit return path in
@@ -46,7 +59,8 @@ already holds your current documents. The writes below name
 new files, but \cmd|>| would truncate them if repeated.
 
 \begin{terminal}
-lab=$(mktemp -d "${TMPDIR:-/tmp}/utp48.XXXXXX") && cd "$lab"
+lab=$(mktemp -d "${TMPDIR:-/tmp}/utp48.XXXXXX") &&
+    cd "$lab" && lab=$PWD
 pwd
 mkdir ./source ./handoff ./returned ./restored
 mkdir ./source/notes
@@ -55,6 +69,10 @@ printf '%s\n' 'Practice meeting: start at noon' \
 printf '%s\n' 'Practice contact: use the club noticeboard' \
     > ./source/contact.txt
 \end{terminal}
+
+The exact texts are also supplied as
+\FilePath{listings/chapter-48/meeting.txt} and
+\FilePath{listings/chapter-48/contact.txt}.
 
 In real use, close editors or obtain a stable source snapshot
 approved for the project. A bundle can collect inconsistent
@@ -76,6 +94,19 @@ not prove that there are no other kinds of entries; before
 using a real archive input also inspect the complete tree and
 the intended inclusion rules. The practice tree was built with
 known plain files, by you, in a newly created directory.
+
+Before making a new archive, choose a name that won't collide
+with a previous one. Real names often include a date and an
+attempt number. That is only a naming convention; the
+name does not guarantee when the archive was actually made
+or that anyone tested it. Keep a short record linking these
+facts. Do not reuse a known-good name to test a correction.
+An unsuccessful retry can replace the good bundle with a
+partial archive. An additional version takes more space,
+but lets you compare attempts and retain the last one you
+could restore. Decide what to retire under the retention
+policy after verification, not as a side effect of creating
+the next copy.
 
 \section{Make one candidate and inventory it}
 
@@ -151,6 +182,18 @@ remote side were out of reach when you needed it, this local
 archive might matter; one remote copy is not a replacement for
 an agreed backup plan.
 
+There are two different failure exercises worth imagining.
+If the local laptop has failed, you may need to retrieve the
+archive without access to its original path or its copy.
+The practice comparison is easier because it can see both
+files. In production keep verification information, such as
+a strong digest from a separately trusted record, accessible
+when the main disk is lost. If the remote storage is
+unavailable instead, the local archive only helps if you
+can still reach it and it is from the needed version. Decide
+which failure you are preparing for; a single file in a
+single place cannot answer both on its own.
+
 \begin{dialoguebox}{The return trip}
 \Brian{It says the upload finished. Why go get the same file back?}
 \Stephen{To check that you can find and retrieve what you sent.}
@@ -175,23 +218,18 @@ Do not bypass changed-host checks, guess credentials, or use
 any system whose authorization is unclear. If the remote
 setting is not available, finish the offline route instead.
 
-\begin{terminal}
-sftp backupuser@backup.example.invalid
-\end{terminal}
-
 Start the client from the local practice root, and verify its
 local and remote locations after connection. The example
 treats \texttt{/approved/new-round-01} as an empty remote
 directory already created for this purpose; replace it with
-the actual authorized path. If you previously ran the local
-practice, choose a separate new local output directory for
-this attempt. Use \texttt{remote-return} under the local fixture
-root by making it before starting \cmd|sftp|. Stop if it
-already exists or the creation fails. Only send the practice
-archive if the host owner has approved it.
+the actual authorized path. Use a separate new local output
+directory named \texttt{remote-return} under the fixture
+root. Stop if it already exists or creation fails. Only send
+the practice archive if the host owner has approved it.
 
 \begin{terminal}
 mkdir ./remote-return
+sftp backupuser@backup.example.invalid
 \end{terminal}
 
 Inside the verified \texttt{sftp>} prompt, the following
@@ -231,6 +269,21 @@ Use the archive that actually came back in the restore
 step; nothing on the remote host should extract into your
 active documents.
 \IndexCommand{sftp}
+
+\begin{terminal}
+cmp ./round-01.tar ./remote-return/round-01.tar
+printf 'remote retrieval comparison status: %s\n' "$?"
+\end{terminal}
+
+Only zero is a pass. This result says the returned bytes
+were identical at the time of the test. It does not prove
+the permissions or retention policy will stay the same.
+With a remote server managed by someone else, make sure
+you and they agree on who can retrieve the bundle and who
+can remove it. If you cannot list a remote directory or
+read back what you just wrote, that may be an intentional
+service design. Ask the operator what a restore procedure
+looks like instead of trying to work around it.
 
 \input{figures/chapter-48/boundary.tikz}
 
@@ -297,6 +350,18 @@ match. Verify that the recovered documents open in the
 application where they will be used. Work on the recovered
 copies and do not replace the current files without making
 and verifying a separate recovery plan.
+
+For a real restore, a freshly extracted tree and a live
+folder are two different sources of information. Perhaps the
+backup contains the original contact instructions while the
+current notes contain changes made since the backup. The
+decision is then which parts of the older material to
+recover, not whether to replace every file. Review older
+and newer text as in Chapter~\ref{ch:46}, on copies, and
+let the person responsible for the documents decide which
+version should be kept. This division of work is useful even
+if one person does both jobs: first verify what the restored
+tree contains, then decide what to use.
 
 \input{figures/chapter-48/verification.tikz}
 

@@ -38,6 +38,20 @@ by counting lines or by reading the file in a different tool.
 Larger fonts may mean more wrap; that is a reason for shorter
 labels, not a reason to give up the font you can read.
 
+Think about a wrapped email address as a concrete example.
+The extra screen row may be a display decision, or the original
+text may have a real newline in the middle. Those are different
+problems: width changes help with the first, but a valid address
+still needs reconstruction in the second. A spoken reader might
+announce both events as a pause. A test with known line breaks
+makes that distinction easier to learn than trying to guess from
+the pacing of an unfamiliar report. Long lines aren't inherently
+unusable, but the person reading them should have a way to
+reach the relevant portion and understand whether it belongs to
+the previous line. When designing your own report, one short
+record per line gives somebody a choice of reader without
+making them reconstruct the layout.
+
 \begin{quicktable}{p{.32\linewidth}Y}
 \toprule
 What makes work hard & First adjustment to test \\
@@ -78,6 +92,20 @@ text file offers another route on every one of these systems: use
 an editor or reader you already know. None of the commands below
 requires altering the global keyboard configuration.
 
+Test typed input separately from program output. A reader that
+echoes typed characters can help with accuracy but make long
+input hard to review if it repeats everything simultaneously.
+A synthesizer that pronounces a command name as a single word
+may not speak a dash you need to copy. Read by character or
+switch to a punctuation level that works for the test; you
+needn't permanently announce every symbol in every app.
+For braille, ask which part of a long line is visible after
+panning and where the device indicates focus. When writing
+instructions for others, provide a copyable literal command
+and describe its components in words. ``Use the short dash
+before the letter n'' is information a keyboard diagram may
+not convey.
+
 \section{Build a report you can read out of order}\label{sec:44-report}
 
 The practice uses POSIX shell syntax; type \cmd|sh| first in a spare
@@ -88,11 +116,15 @@ unique name. \cmd|>| will write or replace its destination. Here
 the names are reserved for toy data, not an existing report.
 
 \begin{terminal}
-lab=$(mktemp -d "${TMPDIR:-/tmp}/utp44.XXXXXX") && cd "$lab"
+lab=$(mktemp -d "${TMPDIR:-/tmp}/utp44.XXXXXX") &&
+    cd "$lab" && lab=$PWD
 pwd
 printf '%s\n' 'open: call the library' 'done: return the book' \
     'open: choose next title' > ./tasks.txt
 \end{terminal}
+
+The same starting report is in
+\FilePath{listings/chapter-44/tasks.txt}.
 
 Use each status as part of the line, not as a separate legend.
 Read only the beginning first. \cmd|head -n 2| asks for two
@@ -157,6 +189,28 @@ setting \texttt{NO\_COLOR} only affects software that honors that
 convention. Removing color does not suppress animation, progress
 output, or cursor motion on every utility.
 
+You can review a saved report without moving the terminal
+cursor through screen rows. Ask for its final matching line
+and give it a spoken introductory sentence. \cmd|tail -n 1|
+asks for the last line; it doesn't need a pager to do this.
+The first command describes what you intend to read, and the
+second prints the actual evidence. If the file is missing,
+the label alone does not mean there was any evidence.
+
+\begin{terminal}
+printf '%s\n' 'Last open item in the saved report:'
+tail -n 1 ./open.txt
+\end{terminal}
+
+Expect the line numbered three, not a line numbered two.
+The number came from the source file and is intentionally
+preserved. If the person reviewing the list requests only
+one item at a time, labels and stable numbers let you do
+that without asking them to rely on a particular cursor
+position or reading speed. In contrast, a stream of partial
+updates may show an unfinished result as though it were the
+current answer and then overwrite it on the next redraw.
+
 \section{Hear the result of a command, not only its lines}
 
 Try making an affirmative status line for a no-match search.
@@ -171,11 +225,11 @@ with the status \texttt{waiting:}.
 
 \begin{terminal}
 grep -q '^waiting:' ./tasks.txt
-status=$?
-case "$status" in
+report_status=$?
+case "$report_status" in
     0) printf '%s\n' 'Waiting items found.' ;;
     1) printf '%s\n' 'No waiting items.' ;;
-    *) printf 'Search error, status %s.\n' "$status" ;;
+    *) printf 'Search error, status %s.\n' "$report_status" ;;
 esac
 \end{terminal}
 
@@ -190,6 +244,29 @@ the order predictable. A friendly sentence in an interactive
 report can be a nuisance when mixed with machine-readable rows;
 write status information to standard error in that setting
 (Chapter~\ref{ch:15}).
+
+A screen reader can read error messages too, but its timing
+and the terminal's redraw can make one easy to miss. Preserve
+a known diagnostic for review. The file \texttt{absent.txt}
+was never created; the command is supposed to fail. \cmd|2>|
+writes standard error into the named file, not into the report.
+Record the status immediately and review the diagnostic as
+text afterwards.
+
+\begin{terminal}
+head -n 1 ./absent.txt 2> ./diagnostic.txt
+printf 'read status: %s\n' "$?"
+cat ./diagnostic.txt
+\end{terminal}
+
+Expect a nonzero status and a diagnostic about the missing
+path. Wording and punctuation vary. In a real workflow, make
+sure your accessibility route preserves failures as well as
+results; saving only standard output can lose the error that
+explains a missing record. Keep the diagnostic separate from
+data, and avoid sharing the file verbatim if it contains a
+private path or an identifier. Saving it locally for review
+doesn't mean consenting to publish it.
 
 \begin{dialoguebox}{What counts as plain?}
 \Brian{I turned off the colors and the report is still hard to use.}
@@ -254,6 +331,38 @@ An audio report that says ``the reader says blank after the last
 line'' can be more useful than a screenshot. Record application,
 shell, and reader versions, not personal file contents.
 
+\subsection{Keep an alternative when a single route is fragile}
+
+Suppose you send a daily report to two people. One wants to
+scroll through the list using the terminal's review mode; one
+wants to search predictable text in an editor after the report
+finishes. They can be reading the same facts. Do not ask the
+second person to convert a screenshot into text or retrace
+an animation to find what was actually decided. If a dashboard
+is valuable, keep it, and also make the stable records
+accessible. Decide what one record means: an item with a
+status, a count for one category, or an error with an
+identifiable source. Write the records so a later reader
+doesn't need a legend visible in another pane.
+
+Review an output file in a window unlike the one in which it
+was made. Try different line lengths and a plain font. Can
+you identify the open items from the text alone? Can you tell
+whether a status line describes one item or the whole report?
+If a table depends on columns lining up, put a few records
+into a labeled one-per-line format and compare them aloud.
+Neither layout is intrinsically better for every use. The
+test is whether the information survives changing the tool
+that reads it.
+
+When a live program can't produce a usable result and you
+cannot safely capture it, use a different tool to do the
+same job. Accessibility is not a promise that every terminal
+application works with every reader. Prefer a route you can
+verify with your own setup over a clever configuration that
+fails whenever a package changes. Write down the route and the
+smallest example you can use to check it after an update.
+
 \begin{takeaways}
 \item Change the layer that owns the problem: display, shell, or application.
 \item Save stable text and give important status a word, not only a color.
@@ -310,7 +419,7 @@ working shell is not required unless you opened a child for this
 practice.
 
 \begin{terminal}
-rm ./tasks.txt ./open.txt ./done.txt
+rm ./tasks.txt ./open.txt ./diagnostic.txt ./done.txt
 cd / && rmdir "$lab"
 \end{terminal}
 

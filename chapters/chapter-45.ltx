@@ -27,6 +27,19 @@ normally see. If you do not have access to the display or
 scrollback, use a known review route from Chapter~\ref{ch:44}
 rather than entering commands at a guessed input position.
 
+Take note of what changed immediately before the problem.
+``It worked in a different tab five minutes ago'' is much
+more useful than ``it usually works.'' Are the two tabs running
+the same shell, under the same account, with the same working
+directory? These are comparisons you can make without changing
+either place. Preserve one successful run as a reference. A
+fix that replaces the working configuration everywhere at once
+also destroys your best comparison. If an app has its own
+history or log, copy the small relevant portion before you
+retry; repeated attempts can push the original diagnostic out
+of view. Do not include typed secrets or unrelated entries in
+anything you share.
+
 \begin{quicktable}{p{.32\linewidth}Y}
 \toprule
 Observation & Question to answer next \\
@@ -56,6 +69,18 @@ file can remain partly copied. If you do not know what is running,
 do not use repeated interrupts or close the entire window as a
 first guess. Moving the investigation to a spare local window
 can preserve an important process in the first.
+
+An ordinary failed command returns to the shell's main prompt,
+but a program can return control and leave the display in an
+unexpected state. Sometimes nothing is broken at all: a command
+that reads from standard input is waiting because you did not
+give it an input path, or a command intentionally produces no
+output on success. Think back to what you typed. If the command
+is supposed to wait for more input, use its documented way to
+finish. End of input and an interrupt are different requests;
+one completes the input, while the other can stop work.
+Avoid guessing either key while a tool you do not recognize
+is in the foreground.
 
 \input{figures/chapter-45/triage.tikz}
 
@@ -111,6 +136,29 @@ or a separate working window. Do not practice intentionally
 breaking a terminal needed for work.
 \IndexCommand{stty}\IndexTerm{terminal!flow control}
 
+\subsection{Ask for a bounded answer}
+
+When you have a confirmed prompt, a short read-only command
+is a better response test than rerunning the expensive job.
+It should produce an expected line or a small, interpretable
+diagnostic. An empty input line may be helpful while testing
+prompt redraw, but it cannot show whether standard output
+itself is visible.
+
+\begin{terminal}
+printf '%s\n' 'short response test'
+printf 'last status: %s\n' "$?"
+\end{terminal}
+
+The number is the status of the first \cmd|printf|. Expect
+zero if that write succeeded. If the line is missing but you
+can recover it from local scrollback, the problem may involve
+which portion of the display you can read rather than what
+the shell ran. If the second line never appears, do not
+assume the first succeeded. Switch to a verified window and
+investigate from there. Let the small example produce
+evidence without adding another uncertain operation.
+
 \section{Two failures that can look alike}\label{sec:45-path}
 
 Use POSIX shell syntax below; start a child \cmd|sh| if needed.
@@ -121,7 +169,8 @@ know should be runnable. Its name, \texttt{utp45-report}, is
 chosen to reduce the chance of colliding with anything installed.
 
 \begin{terminal}
-lab=$(mktemp -d "${TMPDIR:-/tmp}/utp45.XXXXXX") && cd "$lab"
+lab=$(mktemp -d "${TMPDIR:-/tmp}/utp45.XXXXXX") &&
+    cd "$lab" && lab=$PWD
 pwd
 mkdir ./work ./other
 printf '%s\n' 'Inventory: four notebooks' > ./work/report.txt
@@ -194,6 +243,53 @@ tool, check its documented installation and your platform's
 package mechanism (Chapter~\ref{ch:35}); reinstalling is not
 the starting move when the name was simply mistyped.
 
+\subsection{Keep path errors distinct from access errors}
+
+If the path is right but the command denies access, first ask
+which operation failed. Reading an existing file, traversing
+its parent directories, executing a file, and creating a new
+file beside it require different permissions
+(Chapter~\ref{ch:33}). An empty report after a failure can
+mean the shell opened the output and the read then failed;
+it can also mean the shell couldn't open the output and
+never started the tool. Read the path in the diagnostic; if
+you still cannot tell, try a read-only command using just
+the input path, with no output redirection. You are narrowing
+the failure by removing an operation.
+
+\begin{terminal}
+ls -ld ./work ./work/report.txt
+if test -r ./work/report.txt; then
+    printf '%s\n' 'Report passes the read-access check.'
+else
+    printf '%s\n' 'Report does not pass the read-access check.'
+fi
+\end{terminal}
+
+\cmd|-l| asks \cmd|ls| for details, and \cmd|-d| lists the
+directory entry rather than opening its contents. Look at
+the directory's permissions as well as the file's. \cmd|test -r|
+checks read access to the named path for this shell's context.
+It should succeed in the fixture you created. It is not a
+promise about later access: the path or its permissions may
+change, and a later program might run under another identity.
+Access lists or mount settings may also matter on a real
+system. A successful lookup gives a tool a path; a successful
+read-access check gives stronger evidence about the input
+but does not tell you whether a different output directory is
+writable.
+
+Resist the reflex to make every file broadly writable or to
+run the same command with elevated privileges. That can expose
+data, create files that the original account cannot later
+edit, and make the diagnosis harder. On a managed system,
+show the owner the exact read-only check that failed and ask
+which account or route was intended. A denial may be that
+system working as designed. If an account is meant to read
+but not change a shared folder, a copy in an authorized
+workspace may be the correct solution rather than making the
+original writable.
+
 \begin{dialoguebox}{The wrong repair}
 \Brian{Both times it said something wasn't found. Why separate them?}
 \Stephen{In one case the shell couldn't locate the command.}
@@ -250,6 +346,32 @@ Working directory & Identical path text can refer to distinct filesystems. \\
 Node name & A name reported by a shell is not an authenticated host key. \\
 \bottomrule
 \end{quicktable}
+
+\subsection{Know when a test has answered enough}
+
+If you can read the fixture from \texttt{work} but not from
+\texttt{other}, and the two calls use the same spelling,
+you have a small explanation that doesn't require knowing
+every shell setting. Save it: one test failed with the wrong
+working directory; another succeeded with the right path.
+The investigation can stop there. If the small test fails
+too, compare it in the ordinary and clean shell from
+Chapter~\ref{ch:43}. The difference still doesn't prove that
+every startup file is faulty. It says to inspect the
+particular name, environment value, or setting that the
+small test used.
+
+Suppose the failure only happens on a borrowed machine.
+Get its tool name, operating system, and exact diagnostic
+before deciding to ask for help. A command example written
+for GNU tools may not accept the same options on a BSD
+system. If the other machine reports an unknown option,
+read that tool's local manual rather than replacing its
+tools to resemble your own environment. If you need a
+common recipe, test the simpler documented form with the
+same practice input on each system. Often the difference is
+an option spelling or an output heading, not the absence of
+the underlying function.
 
 \begin{takeaways}
 \item Check which layer is receiving input before attempting a repair.
@@ -323,6 +445,7 @@ cd / && rmdir "$lab"
 
 \begin{furtherreading}
 \ReadingItem{POSIX stty}{Terminal status and recovery modes.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/stty.html}
-\ReadingItem{POSIX command}{What lookup reports without executing a command.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/command.html}
+\item \WebLink{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/command.html}{\textbf{POSIX command}}.
+What lookup reports without executing a command.
 \ReadingItem{OpenSSH client manual}{Remote connection, authentication, and escape behavior.}{https://man.openbsd.org/ssh}
 \end{furtherreading}

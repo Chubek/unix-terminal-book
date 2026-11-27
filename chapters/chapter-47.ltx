@@ -38,7 +38,8 @@ bytes let you detect an accidental swap. Quote the path with the
 space. These redirections write or truncate controlled fixture files.
 
 \begin{terminal}
-lab=$(mktemp -d "${TMPDIR:-/tmp}/utp47.XXXXXX") && cd "$lab"
+lab=$(mktemp -d "${TMPDIR:-/tmp}/utp47.XXXXXX") &&
+    cd "$lab" && lab=$PWD
 pwd
 mkdir ./intake ./stage
 printf '%s\n' 'fixture A: blue canal' > ./intake/canal.jpg
@@ -57,6 +58,26 @@ directory, take a stable copy for staging or arrange a period
 when nobody is editing. A list of names taken at breakfast need
 not describe the directory at lunch.
 
+Think through the two ways a camera folder can be misleading.
+A short name like \texttt{canal.jpg} might refer to different
+pictures on two devices. And a single source file might be
+needed in two collections, under different titles. The policy
+for this exercise is one source row per intake basename, no
+renames in intake, and one staged destination for that row.
+That decision gives the checker something it can enforce. If
+you need one picture in two places, design that rule explicitly
+and check both destinations; don't keep a duplicate row merely
+because the converter would be easy to change to accept it.
+
+Name new albums after something people will recognize outside
+your own machine. A folder name and a display title serve
+different readers. The album identifies a place; the title gives
+meaning to a picture. Changing a title should not force you
+to rename a file, and changing an album should not silently
+break a reference somebody else uses. That is a reason to
+keep the catalog as data and to tell other people when a
+layout changes.
+
 \begin{terminal}
 file ./intake/canal.jpg './intake/front door.jpg'
 ls -ld ./intake ./stage
@@ -72,6 +93,19 @@ privacy: staging a byte-for-byte copy preserves any location
 information embedded in the file. This workflow does not remove
 metadata or re-encode photos. Chapter~\ref{ch:42} discusses
 inspection and non-destructive conversion.
+
+For real work, look at file types and metadata before making
+decisions about publication. A modified date may say when the
+file was copied, not when a photograph was taken. A device's
+clock or timezone may have been wrong even if the photograph
+does contain a capture date. A person can supply a useful
+description when the machine can't infer one. If the destination
+will be public, agree with the contributors on what can be
+shared. Preserve the originals privately according to that
+agreement. A published copy that deliberately removes location
+metadata will no longer be identical in bytes. Keep that
+separate from the staging proof here; verification then needs
+to check the intended conversion as well as the visible result.
 \IndexTerm{photos!staging}\IndexCommand{file}
 
 \section{Read punctuation as part of the title}
@@ -116,6 +150,20 @@ to delete rejected originals. For a real batch, handle case
 collisions, leading dots, Unicode normalization and re-used
 names before copying across filesystems. Two distinct names on
 one filesystem might refer to one name on the destination.
+
+This file format also has an audience. The CSV is a sensible
+place to edit small rows with a compatible editor or spreadsheet;
+the JSON is an export for systems that expect an array of
+records. Choose one authoritative source for changes. If
+one person corrects the title in CSV while another corrects
+the generated JSON, the next export can quietly discard one of
+those fixes. Write down which source to edit, and include
+the rules for producing the export with the catalog. If a
+program says a catalog failed validation after you saved it
+from a spreadsheet, inspect the header and one rejected row
+in a plain-text reader before changing the converter. A report
+about an unknown album is more useful than silently inventing
+a new path from the data.
 
 \begin{quicktable}{p{.29\linewidth}Y}
 \toprule
@@ -162,6 +210,29 @@ can have syntactically valid JSON and still send photos to the
 wrong albums. Compare both entries with the CSV and the directory
 names before proceeding.
 
+The output names use slash separators because the plan
+describes this Unix fixture. The checker validates each name as
+a separate field, then constructs a path under the known
+prefix. It does not inspect the files, check access, or acquire
+permission to write. That is deliberate: generating a plan
+should be safe when a destination does not exist yet. It also
+means even a valid plan cannot tell you whether a path already
+points somewhere unexpected. Make the staging directory fresh,
+private, and under your control. On a shared system, do not
+run a copying routine on paths that another person can swap
+while you are reviewing them.
+
+A record contains both the original and the destination,
+rather than only the new name. That makes two reviews
+possible. You can read the CSV and confirm the new location
+for each original; someone else can start at the finished
+location and look up which original it should match. Review
+one record from each direction before you copy. In a project
+of hundreds of photos, comparing the total number of plan
+rows and copies is a useful coarse check. It is not sufficient:
+one extra copy and one omitted copy can cancel in the count.
+Account for each intended pair.
+
 After a successful preview, generate the saved catalog. The
 \cmd|&&| runs the second command only if the first succeeds.
 If validation reports an error, the redirection can still leave
@@ -202,6 +273,18 @@ verifying an actual collection, the important question would
 not be ``did any comparison succeed?'' but ``was there a
 comparison for every planned copy?'' Figure~\ref{fig:47-verify}
 shows one such pair.
+
+If one pair differs, don't immediately copy again. Ask which
+source version the plan meant, whether the destination came
+from this attempt or a previous one, and whether there was
+an intentional conversion. Look at the actual operands of
+the failing comparison. Comparing a green door with a blue
+canal is a mistake you can reproduce safely in the exercise;
+matching both filenames at a glance is no substitute for
+checking the two paths. In a real failure, preserve both
+copies while you decide what went wrong. If corrections
+are needed, use a new versioned staging directory so you can
+compare the two attempts without destroying the evidence.
 
 \begin{terminal}
 cmp ./intake/canal.jpg ./stage/water/canal.jpg
@@ -258,6 +341,40 @@ files are authenticated. \\
 \Brian{Then keeping the originals gives me somewhere to start again.}
 \DialogueConclusion{Verify the copy and the plan separately.}
 \end{dialoguebox}
+
+\section{Leave enough information to redo the staging}
+
+If another volunteer will take over next week, your handoff
+should let them audit the arrangement without needing your
+terminal history. Name the particular intake collection and
+the catalog version, list the accepted album names, and say
+whether the staging operation copied or converted the files.
+Record any exclusions and what should happen to a row that
+failed to validate. ``The unrecognized album is waiting for
+a decision'' is better than letting that picture vanish
+from the conversation. Don't put private source paths,
+credentials, or sensitive metadata into a shared handoff.
+
+Try to answer a concrete question from the saved artifacts:
+``Which intake file should the canal copy in the water album
+match?'' The JSON gives the two path fragments, the directory
+listing locates the copy, and the comparison establishes that
+the bytes matched when you tested them. If an editor changes
+the title after this check, update the authoritative CSV
+and export again, but do not infer that a new file must be
+copied. If the editor changes the chosen album, the staged
+path is now part of what needs checking. Separating these
+questions avoids a full recopy after a spelling correction.
+
+Finally, decide how to handle the handoff itself. The stage
+directory is convenient for review but isn't a verified
+backup just because it contains copies. Losing its disk can
+lose intake and stage together. Keep the project backup on
+storage appropriate to the group, and test that you can recover
+the authoritative catalog along with the photos. Label a
+temporary stage so a teammate doesn't think it is the last
+remaining original. The next chapter makes the retrieval and
+restore side of that check explicit.
 
 \begin{takeaways}
 \item Make a reviewed staging plan before copying or renaming.

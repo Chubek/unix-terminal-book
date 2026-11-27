@@ -20,6 +20,17 @@ will act on the result. Make the first run small enough to check by
 reading every line. If its answers are wrong on two notes, a faster
 search across a hundred notes does not make it more useful.
 
+Start with what you do now. Write down which editor or folder
+you open, what words you look for, where the two versions
+come from, and what you do if something is missing. A routine
+is not a set of keystrokes you have to remember in order. It
+is a handful of questions with reliable starting points:
+``Which notes did we agree to search? Which version was
+shared? Is an empty result expected?'' Those can go on paper
+beside the terminal. The answer ``I found nothing'' is useful
+only if it can be attached to a particular question and set
+of inputs.
+
 Use a spare terminal and POSIX shell syntax. If your usual shell
 requires different syntax, start a child with \cmd|sh| first. The
 following setup makes a fresh directory; stop if the assignment
@@ -29,7 +40,8 @@ fixture names, not an existing project. The redirections replace
 their destination files if the commands are run again.
 
 \begin{terminal}
-lab=$(mktemp -d "${TMPDIR:-/tmp}/utp46.XXXXXX") && cd "$lab"
+lab=$(mktemp -d "${TMPDIR:-/tmp}/utp46.XXXXXX") &&
+    cd "$lab" && lab=$PWD
 pwd
 mkdir ./notes
 printf '%s\n' 'Library: ask for the key' 'Hall: confirm chairs' \
@@ -52,6 +64,17 @@ is not a good substitute for knowing which file the team reviewed.
 Copying a file may affect dates; two files can also have identical
 times but different contents. The routine compares text, not
 timestamps or changes still unsaved in your editor.
+
+The two sample versions are plain text because the comparison
+looks at the text line by line. A word-processing file or a
+spreadsheet has structure that doesn't become meaningful text
+by changing its filename. If the group usually works in such
+a format, make an explicit plain-text export for this kind of
+inspection and record what it omits. The report may preserve
+wording while leaving out formatting, comment history, links,
+or tracked changes. If those details matter to the decision,
+compare in the original application instead of overstating
+what the export can tell you.
 
 \input{figures/chapter-46/routine.tikz}
 
@@ -95,6 +118,19 @@ names unless the note contains the literal word you chose. Case
 folding depends on the locale, especially away from the simple
 English letters used here. Verify a multilingual search on known
 examples before calling it complete (Chapter~\ref{ch:20}).
+
+Think of that literal search as a way to find candidates,
+not as a perfect subject index. It finds ``library'' in
+``interlibrary'', and it does not find ``book drop'' unless
+one of your patterns calls for it. Do not respond by adding
+a regular expression if your actual problem is a difference
+in vocabulary. You can add another documented literal search
+and inspect both sets. If you are looking for a policy
+decision rather than a word, read the lines near a relevant
+match before you draw a conclusion. A note that says ``asked
+and refused'' may match exactly the phrase you are looking
+for. Keep enough context in your own review to preserve that
+qualification.
 
 When a search appears to miss a result, first read a known
 source line and check the phrase and files you selected. Try
@@ -179,6 +215,39 @@ shows unchanged lines next to what changed. Redact or paraphrase
 the harmless portion of a real report before sharing. Don't
 paste a full diff into a public channel just because it is short.
 
+If you are reviewing the two versions together, read the
+change in both directions. First, what does the newer file
+say that the older didn't? Second, does the older file have
+anything that the newer dropped unintentionally? A unified
+diff collects these into regions and is useful precisely
+because neighboring text is present. It does not draw a
+judgment about meaning: some programs reformat every
+paragraph when you save a document, so a single changed
+sentence can appear in a block with many marked lines. For
+a messy comparison, agree on the source format and take a
+new plain-text export if it helps. Avoid editing an input
+just to make the diff shorter while still presenting it
+as the original version.
+
+Test a known equality as well. Comparing a file with itself
+makes a useful sanity check of the zero case; it doesn't
+prove that two team files are identical. Leave the output
+visible and read the status immediately. In the actual
+comparison, your job is to select distinct inputs whose
+order you can explain.
+
+\begin{terminal}
+diff -u ./after.txt ./after.txt
+printf 'same file, status: %s\n' "$?"
+\end{terminal}
+
+Expect only the status line. If you send this as a regular
+review report, state exactly which paths you selected, or
+give a redacted version of their names. ``No differences''
+without that context might mean two equal files, or an
+accidental comparison of one file with itself. The status
+does not distinguish those stories.
+
 \input{figures/chapter-46/changes.tikz}
 
 \begin{dialoguebox}{A successful difference}
@@ -226,6 +295,45 @@ own lines so a spoken listener can tell which operation came
 next. A batch job that needs to parse the match data should
 instead separate report headings from data rows.
 
+\subsection{Read the script as a checklist}
+
+The script has only two steps. It announces the search,
+runs it, then handles three outcomes before announcing the
+comparison. Reading the second section at all tells you
+the script didn't stop on a search error. Within the
+\cmd|case| statements, \cmd|$?| is the result of the
+immediately preceding command. A number before the closing
+parenthesis selects the corresponding branch. An empty
+branch such as \cmd|0) ;;| does nothing else because the
+matching lines already said what you needed. A catch-all
+branch writes its diagnostic with \cmd|>&2|, which sends
+standard output of that \cmd|printf| to standard error.
+\cmd|exit 2| then deliberately reports that the whole
+routine did not finish normally. The utility's own diagnostic
+is still visible; the script labels the operation that failed
+rather than guessing whether a file was missing, unreadable,
+or altered.
+
+If you adapt the routine, document what it treats as normal.
+On a volunteer handoff, differences are ordinary data. In a
+restore check, someone might rely on a non-identical result
+to stop the workflow. Keeping these as different scripts or
+different explicit tasks is clearer than a general-purpose
+``success'' flag that means one thing in the morning and
+another in a recovery drill. Here the result headings are
+for a person. The routine does not promise a line format that
+another script can split without inspecting the data.
+
+Test the inputs out of order on purpose at least once.
+You don't have to make a new file: use the reversed comparison
+exercise below. Run the missing-input exercise too. A useful
+routine fails clearly where you can still fix the problem,
+not much later when the recipient asks what happened to
+Thursday. Keep the small test files with the routine or
+write down how to make them. When a teammate changes the
+file layout, the tests show what needs updating rather than
+leaving a sticky note saying ``works on my machine.''
+
 \begin{quicktable}{p{.26\linewidth}Y}
 \toprule
 When & Condition for proceeding \\
@@ -240,6 +348,28 @@ Next time & If a pathname changes, update the routine deliberately
 and repeat the small tests before trusting a larger search. \\
 \bottomrule
 \end{quicktable}
+
+\subsection{Leave a checkpoint, not an unattended task}
+
+Run the routine manually until the source paths and outcomes
+are stable. Repetition by itself isn't a reason to schedule it.
+A background task may launch at the wrong time, with a different
+working directory or a shorter environment. You could end up
+with an empty report every morning and no one reading the
+diagnostic. An orderly manual routine already buys the most
+important things here: the same two questions, known inputs,
+and a message when a question could not be answered.
+
+After a run, put a short note somewhere the group already
+uses. ``Thursday note names the Riverside library; new handoff
+starts at noon; morning review done'' is a decision record
+people can understand without knowing your aliases. If one
+input was unavailable, mark the review incomplete; do not
+forward a partial set of matches as the daily result. Keep
+the earlier reviewed version until the people who rely on it
+have confirmed what comes next. Terminal work should make
+the handoff easier to verify, not silently create a new source
+of truth.
 
 \begin{takeaways}
 \item Write down the specific questions a daily routine answers.
