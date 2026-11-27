@@ -5,7 +5,9 @@ import argparse
 import json
 import os
 import re
+import shutil
 import subprocess
+import sys
 import tempfile
 from collections import Counter
 from pathlib import Path
@@ -145,14 +147,31 @@ def examples():
         raise SystemExit("No curated example checks registered")
     build = ROOT / "build"
     build.mkdir(exist_ok=True)
+    count = 0
     for entry in registry:
         path = (ROOT / entry["path"]).resolve()
         if not any(path.is_relative_to(ROOT / folder) for folder in ("editorial", "listings")) or not path.is_file():
             raise SystemExit(f"Invalid example harness: {entry['path']}")
         with tempfile.TemporaryDirectory(prefix="example-", dir=build) as temp:
-            env = {"PATH": os.defpath, "HOME": temp, "TMPDIR": temp, "LC_ALL": "C"}
-            subprocess.run([entry["interpreter"], str(path)], check=True, env=env, cwd=temp, timeout=60)
-        print(f"PASS: {entry['path']}")
+            # Inherit tool discovery (TeX may be installed outside /usr/bin)
+            # but never inherit credentials, shell startup settings or HOME.
+            env = {"PATH": os.environ.get("PATH", os.defpath), "HOME": temp, "TMPDIR": temp,
+                   "LC_ALL": "C", "TERM": "xterm"}
+            interpreter = entry["interpreter"]
+            if interpreter == "python":
+                interpreter = sys.executable
+            missing = [tool for tool in (interpreter, *entry.get("requires", []))
+                       if not shutil.which(tool, path=env["PATH"])]
+            if missing:
+                print(f"SKIP: {entry['path']} (unavailable: {', '.join(missing)})", flush=True)
+                continue
+            command = [interpreter, str(path)]
+            if entry.get("fixture_arg"):
+                command.append(temp)
+            subprocess.run(command, check=True, env=env, cwd=temp, timeout=90)
+        count += 1
+        print(f"PASS: {entry['path']}", flush=True)
+    print(f"{count} passed; {len(registry) - count} skipped")
 
 
 if __name__ == "__main__":
