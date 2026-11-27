@@ -14,9 +14,9 @@ it as part of your data.
 
 \section{Read a file, then read the keyboard}
 \label{sec:15-read}
-\IndexCommand{cat}
-\IndexCommand{wc}
-\IndexTerm{standard input}
+\index{cat@\texttt{cat}}%
+\index{wc@\texttt{wc}}%
+\index{standard input}%
 Start a practice \cmd|sh| if necessary; leave it with \cmd|exit|
 after the exercises. Make a new directory. \cmd|mktemp -d| creates
 it; \cmd|$(...)| captures the name for \cmd|lab| and \cmd|&&| makes
@@ -93,7 +93,7 @@ Channel & During a typical terminal session \\
 
 \section{Know when you have finished typing}
 \label{sec:15-eof}
-\IndexTerm{end-of-file}
+\index{end-of-file}%
 With normal terminal settings, \KeyChord{Ctrl}{D} on an empty
 line lets a program reading from the terminal see that there is
 no more input at that read. This is an \emph{end-of-file}
@@ -130,9 +130,9 @@ request to stop it.
 
 \section{A screen is not a channel label}
 \label{sec:15-diagnostics}
-\IndexTerm{standard output}
-\IndexTerm{standard error}
-\IndexTerm{file descriptor}
+\index{standard output}%
+\index{standard error}%
+\index{file descriptor}%
 A running program can have several open connections to files,
 devices, or other endpoints at the same time. A \emph{file
 descriptor} is the number it uses to refer to one of those open

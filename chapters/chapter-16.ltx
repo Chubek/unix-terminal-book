@@ -42,12 +42,12 @@ two data arguments, not \cmd|>| or \cmd|booking.txt|. You can
 use the same output syntax for completely different utilities
 with no special cooperation from them. Where those utilities
 send particular messages is still their decision.
-\IndexTerm{redirection}
+\index{redirection}%
 
 \section{Choose a new destination}
 \label{sec:16-truncate}
-\IndexTerm{truncation}
-\IndexTerm{append}
+\index{truncation}%
+\index{append}%
 With \cmd|>| the shell normally opens an existing ordinary
 destination file and sets its length to zero as part of the
 redirection. That's \emph{truncation}. It happens before the
@@ -129,7 +129,7 @@ shell-specific shortcut as if it worked everywhere.
 
 \section{Keep data and diagnostics apart}
 \label{sec:16-split}
-\IndexTerm{standard error!redirecting}
+\index{standard error!redirecting}%
 An incoming booking is usable even when a second attachment
 is missing, as long as the missing attachment doesn't disappear
 from your record. \cmd|cat| emits the available file on standard
@@ -169,7 +169,7 @@ supply data.
 
 \section{A duplicate follows the current connection}
 \label{sec:16-order}
-\IndexTerm{file descriptor!duplication}
+\index{file descriptor!duplication}%
 Sometimes you want one combined report for a human reader.
 \cmd|2>&1| tells the shell to make descriptor 2 refer to the
 connection descriptor 1 refers to \emph{at that moment}. The
@@ -238,7 +238,7 @@ Order of redirections & Where the diagnostic goes \\
 
 \section{Make the unwanted overwrite fail before it starts}
 \label{sec:16-noclobber}
-\IndexTerm{noclobber}
+\index{noclobber}%
 When trying an unfamiliar redirection, you can ask a
 practice shell to reject an ordinary \cmd|>| aimed at an
 existing regular file. \cmd|set -C| turns on this protection

@@ -61,9 +61,9 @@ ends. Expect three without a filename because \cmd|wc -l| receives
 its data through standard input and has no file operand. It
 counts newline characters; here each box occupies one completed
 line.
-\IndexTerm{pipeline}
-\IndexTerm{pipe}
-\IndexCommand{tail}
+\index{pipeline}%
+\index{pipe}%
+\index{tail@\texttt{tail}}%
 
 \begin{figure}[htbp]
 \centering\input{figures/chapter-17/donations.tikz}
@@ -100,7 +100,7 @@ its exact output and a downstream count, insert \cmd|tee|.
 It copies standard input to standard output and to each file
 operand. With no append option it replaces a previous file of
 that name, so use the new practice name shown here.
-\IndexCommand{tee}
+\index{tee@\texttt{tee}}%
 
 \begin{terminal}
 tail -n +3 donations.txt | tee box-rows.txt | wc -l
@@ -156,7 +156,7 @@ will rely on.
 
 \section{A successful count can follow a failed read}
 \label{sec:17-status}
-\IndexTerm{pipeline status}
+\index{pipeline status}%
 The normal pipe connects standard output, not standard error.
 In this example the input path doesn't exist. \cmd|tail| has no
 rows to send, and its diagnostic normally remains visible on the

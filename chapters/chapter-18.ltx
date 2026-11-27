@@ -38,8 +38,8 @@ lines belong to the catalog body.
 
 \section{Open the front or the back}
 \label{sec:18-ends}
-\IndexCommand{head}
-\IndexCommand{tail}
+\index{head@\texttt{head}}%
+\index{tail@\texttt{tail}}%
 \begin{terminal}
 head -n 2 catalog.txt
 tail -n 2 catalog.txt
@@ -92,8 +92,8 @@ less file & What can I see by paging through the named text without altering it?
 
 \section{Read at your own speed}
 \label{sec:18-pager}
-\IndexTerm{pager}
-\IndexCommand{less}
+\index{pager}%
+\index{less@\texttt{less}}%
 If \cmd|less| is installed, it is a \emph{pager}: it displays
 some text at a time and waits for navigation keys. It isn't a
 text editor. Check availability without installing anything:
@@ -144,9 +144,9 @@ screen rows isn't a reliable way to count records.
 
 \section{Choose the unit before counting}
 \label{sec:18-counts}
-\IndexTerm{newline}
-\IndexTerm{byte}
-\IndexCommand{wc}
+\index{newline}%
+\index{byte}%
+\index{wc@\texttt{wc}}%
 \begin{terminal}
 wc -l -w -c catalog.txt
 wc -l < catalog.txt
@@ -192,9 +192,9 @@ Option & Unit and common mistake \\
 
 \section{When bytes and characters diverge}
 \label{sec:18-unicode}
-\IndexTerm{Unicode}
-\IndexTerm{UTF-8}
-\IndexTerm{locale}
+\index{Unicode}%
+\index{UTF-8}%
+\index{locale}%
 Most modern desktop systems can read UTF-8, an encoding
 of Unicode characters as byte sequences. In UTF-8 an
 unaccented Latin letter used in the fixture takes one

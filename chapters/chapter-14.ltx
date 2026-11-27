@@ -48,9 +48,9 @@ you have finished comparing the patterns.
 
 \section{Let the shell list its choices}
 \label{sec:14-expand}
-\IndexTerm{glob}
-\IndexTerm{pathname expansion}
-\IndexTerm{wildcard}
+\index{glob}%
+\index{pathname expansion}%
+\index{wildcard}%
 An unquoted pattern like \cmd|./march*.txt| is a \emph{glob}:
 the shell looks at names relative to the working directory and
 replaces the pattern with the matching pathnames, each as a separate
@@ -149,7 +149,7 @@ either merely from the way the name looks on your screen.
 
 \section{Respect the slash and the first dot}
 \label{sec:14-components}
-\IndexTerm{hidden file}
+\index{hidden file}%
 For pathname expansion, a wildcard does not eat the slash that
 separates directory components. Nor does it match a leading dot in
 a component under normal \cmd|sh| rules. To see the hidden receipt
@@ -238,7 +238,7 @@ your display makes them easy to see or not.
 
 \section{The same star can ask a different question}
 \label{sec:14-languages}
-\IndexTerm{regular expression}
+\index{regular expression}%
 Chapter~\ref{ch:19} will introduce the regular expressions
 used to search text inside files. Don't borrow the meaning of a
 glob's star when reading a regular expression. In a glob, the
