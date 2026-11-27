@@ -1,6 +1,6 @@
 # Instructions for a manuscript-writing agent
 
-Use the class `unix-terminals-for-pleb` and its 40 automatically loaded modules. Write chapter fragments, not standalone documents. Keep one master manuscript file responsible for `\BookPart`, `\BookChapter`, front matter, appendices and back matter. Each chapter fragment begins with prose or an objectives box, not another `\chapter`.
+Use the class `unix-terminals-for-pleb` and its 41 automatically loaded modules. Write chapter fragments, not standalone documents. Keep one master manuscript file responsible for `\BookPart`, `\BookChapter`, front matter, appendices and back matter. Each chapter fragment begins with prose or an objectives box, not another `\chapter`.
 
 ## Editorial contract
 
@@ -85,6 +85,7 @@ All commands below are supplied by the class. Standard LaTeX constructs such as 
 | manpages | `\ManPage{name}{section}`, `\ManCommand{name}{section}`, `\HelpSource{name}{text}` |
 | workflows | `workflow{title}`, `\WorkflowGoal{text}`, `\WorkflowResult{text}`, `\WorkflowCleanup{text}` |
 | links | `\WebLink{url}{text}`, hyperlink styling and bookmarks |
+| dialogues | `dialoguebox[box options]{short topic}`, `\Brian{text}`, `\Stephen{text}`, `\DialogueConclusion{one sentence}` |
 
 ## Syntax details
 
@@ -95,3 +96,16 @@ All commands below are supplied by the class. Standard LaTeX constructs such as 
 - `quicktable` example: `\begin{quicktable}{M{1in}Y}` with the body containing normal rows and rules. Use `longtable` for long multipage tables.
 - Glossary definitions are manually curated; `\GlossaryLink` does not generate entries. Indexing requires the makeindex build step. `\BookSee{Chapter}{ch:files}` uses a standard label.
 - Use text-only descriptions for the pipe diagram's three nodes; lengthy labels may exceed the page width. Provide a textual description when meaning is not obvious.
+- The class already loads `utp-dialogues` once. Dialogue boxes are numbered continuously. Give Brian and Stephen six to twelve short turns, with a genuine objection and a refinement. End with exactly one `\DialogueConclusion` that fits on one line in both editions; the module warns when it wraps. Use escaped `\texttt{...}` in speaker arguments, not verbatim or listing environments.
+
+```latex
+\begin{dialoguebox}{Which folder?}
+\Brian{Does this name always point to that file?}
+\Stephen{It does while your working directory stays the same.}
+\Brian{Then the name is only half the address.}
+\Stephen{For a relative name, yes.}
+\Brian{Can I say where it starts instead?}
+\Stephen{Yes. Start at the root with an absolute path.}
+\DialogueConclusion{A relative path needs a starting point.}
+\end{dialoguebox}
+```

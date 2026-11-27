@@ -1,29 +1,24 @@
-# Unix Terminal for the Plebeian — LaTeX toolkit v1.0
+# Unix Terminal for the Plebeian
 
-A modular book-design system for a practical, non-programmer-oriented introduction to Unix terminals, covering Linux, macOS, BSD and other Unix-like environments.
+Source for an illustrated, practical guide to the Unix terminal for everyday computer users. The book covers Linux, macOS, FreeBSD, OpenBSD and NetBSD, and distinguishes shared command interfaces from platform and shell extensions.
 
 ## Install and build
 
-Extract the archive into your manuscript directory. Keep `unix-terminals-for-pleb.cls` and all 40 `utp-*.sty` files in that directory (or install them together in a local TEXMF tree). The class automatically loads all 40 packages in dependency order. Do not load them again individually. These are original wrapper/support modules around standard LaTeX packages; the underlying TeX distribution is not bundled.
+Keep `unix-terminals-for-pleb.cls` and its 41 support modules in the repository. The class loads them automatically; do not load them again individually. The underlying TeX distribution is not bundled.
 
-Use a recent full TeX Live or MacTeX distribution (or equivalent MiKTeX installation), including Latin Modern fonts, tcolorbox, listings, TikZ/PGF, geometry, titlesec, tocloft, fancyhdr, enumitem, hyperref, bookmark, csquotes, makeidx, comment, microtype, fontspec and their dependencies. No shell escape, Python, Pygments, external image generators or shell execution is required. Terminal commands are printed, never run.
-
-Compile the demonstration:
+Use Make, Python 3.10 or later, `makeindex`, and a full TeX Live or MacTeX installation (or equivalent MiKTeX installation) with Latin Modern, tcolorbox, listings, TikZ/PGF, geometry, titlesec, tocloft, fancyhdr, enumitem, hyperref, bookmark, csquotes, makeidx, comment, microtype, fontspec and their dependencies. The Makefile sets the support search path while retaining TeX's default paths. The build disables shell escape. Terminal commands are printed, never run by TeX.
 
 ```sh
-latexmk -pdf example.tex
+make check-structure
+make check-examples
+make book                    # print edition with solutions
+make editions                # all four edition combinations
+make clean                   # remove edition build products
 ```
 
-Or manually:
+`make print`, `make screen`, `make answers` and `make noanswers` select subsets of the editions. Individual targets include `screen-noanswers`. Each edition writes to its own directory under `build/`. `TEXENGINE=lualatex` or `TEXENGINE=xelatex` selects another installed engine; see the release report for verified combinations.
 
-```sh
-pdflatex example.tex
-makeindex example.idx
-pdflatex example.tex
-pdflatex example.tex
-```
-
-Use `latexmk -lualatex example.tex` or `latexmk -xelatex example.tex` for other engines. `example.tex` is a one-chapter demonstration, not the book manuscript. The archive includes no compiled PDFs or build artifacts.
+Release builds require completed, peer-reviewed chapters and reject unresolved references, overfull boxes and other tracked log defects. `make draft` builds an explicitly named editorial PDF without applying the release gates. It is not a substitute for a release. `make check-examples` runs only registered fixture checks, not arbitrary code copied from the book.
 
 ## Class options and defaults
 
@@ -36,36 +31,11 @@ Use `latexmk -lualatex example.tex` or `latexmk -xelatex example.tex` for other 
 
 The four top-level sections are represented by LaTeX parts, with twelve chapters per part and continuous chapter numbering 1–48. Within a chapter use ordinary `\section` and `\subsection`. Use `\BookPart{Title}` and `\BookChapter{Title}` for the counted main manuscript. Call `\CheckBookStructure` immediately after chapter 48, before appendices. It emits warnings if the count differs from four parts, twelve chapters per part, and 48 total. Starting a new `\BookPart` also checks the previous part. The counters track these wrapper commands only, not ordinary `\part` or `\chapter` calls. Use `\chapter` for appendices, and `\FrontChapter`/`\BackChapter` for unnumbered matter.
 
-```latex
-\documentclass[print,twoside,answers]{unix-terminals-for-pleb}
-\author{Author name}
-\BookSubtitle{A practical guide for everyday computer users}
-\BookEdition{First edition}
-\begin{document}
-\frontmatter
-\MakeBookTitle
-\FrontChapter{How to use this book}
-\BookConventions
-\BookContents
-\mainmatter
-\BookPart{Part title}
-\BookChapter{Chapter title}
-\input{chapters/ch01}
-% Repeat for the remaining chapters and parts.
-% \CheckBookStructure  % enable once all 48 chapters are present
-\BeginAppendices
-% \chapter{Quick reference}
-\backmatter
-% Glossary and other back matter
-\PrintBookIndex
-\end{document}
-```
-
-The title defaults to “Unix Terminal for the Plebeian.” Override it with `\title{...}` if needed. Author, date, publisher and edition are intentionally unset. `\BookPublisher{...}` and `\date{...}` supply optional metadata.
+The detailed chapter map is [`chapters/MANIFEST.json`](chapters/MANIFEST.json). The master is [`unix-terminals-for-pleb.ltx`](unix-terminals-for-pleb.ltx). Chapter fragments contain prose, not `\chapter` or document wrappers. Original diagram sources live under `figures/`; runnable source and fixture materials live under `listings/`.
 
 ## Agent-facing authoring reference
 
-See `AGENT-GUIDE.md` for consistent manuscript conventions and the complete public command/environment inventory. See `PACKAGE-MANIFEST.md` for the exact 40-module inventory. `example.tex` demonstrates the principal features.
+See [`support/AGENT-GUIDE.md`](support/AGENT-GUIDE.md) for authoring conventions and the public API, [`support/PACKAGE-MANIFEST.md`](support/PACKAGE-MANIFEST.md) for the module inventory, and [`editorial/PLAN.md`](editorial/PLAN.md) for the dependency and coverage plan.
 
 ## Limitations
 
@@ -77,4 +47,4 @@ See `AGENT-GUIDE.md` for consistent manuscript conventions and the complete publ
 
 ## Validation performed
 
-The sample manuscript was compiled in the supplied environment with pdfLaTeX, LuaLaTeX and XeLaTeX. A pdfLaTeX multi-pass build with `makeindex` resolved the sample cross-references and index. A separate print/two-sided/noanswers build verified solution omission. The four-part structure is checked by the optional counting commands, not by the TeX engine itself.
+See [`editorial/RELEASE.md`](editorial/RELEASE.md) for actual validation results, tested systems, and release status.

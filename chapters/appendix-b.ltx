@@ -1,0 +1,82 @@
+Use this appendix to recall a technique, not to select an unfamiliar
+write operation. Every pathname is local unless a command explicitly
+uses a remote destination. Before any change, ask three questions:
+which machine, which directory, and which exact names?
+
+\section{Orient yourself}
+
+\begin{quicktable}{M{1.24in}Y}
+\toprule
+\textbf{Input} & \textbf{What to look for}\\
+\midrule
+pwd & The working directory. A path starting with a slash is absolute.\\
+ls -la & Directory entries, including names beginning with a dot.\\
+ls -ld ./notes & The entry itself, not the contents if it is a directory.\\
+cd .. & Move the shell one level up according to its current directory handling.\\
+man 1 ls & The local manual for the \texttt{ls} utility; use
+\texttt{q} to leave common pagers.\\
+command -v sh & What a POSIX-style shell recognizes as \texttt{sh}.\\
+\bottomrule
+\end{quicktable}
+
+\section{Inspect before changing}
+
+\begin{quicktable}{M{1.6in}Y}
+\toprule
+\textbf{Input} & \textbf{Purpose}\\
+\midrule
+file ./notes.txt & Ask for an identification of the file type, not a proof.\\
+head -n 5 ./notes.txt & Read at most the first five lines.\\
+wc -l ./notes.txt & Count newline characters.\\
+grep -nF -e ferry ./notes.txt & Show lines containing the literal string and their line numbers.\\
+diff -u old.txt new.txt & Display line differences in unified form.\\
+tar -tf parcel.tar & List the archive members without extracting them.\\
+\bottomrule
+\end{quicktable}
+
+For paths with spaces, quote the whole pathname. A leading
+\texttt{./} is a practical way to address a local file whose name starts
+with a hyphen. A shell pattern such as \cmd|*.txt| is not a regular
+expression: the shell can expand it before the invoked command sees
+any arguments.
+
+\section{Read the connecting punctuation}
+
+\begin{quicktable}{M{1.42in}Y}
+\toprule
+\textbf{Form} & \textbf{Effect in a POSIX shell}\\
+\midrule
+\texttt{a \textbar\ b} & Connect standard output of \texttt{a} to standard input of \texttt{b}.
+Standard error is not connected by this operator alone.\\
+\texttt{a > out} & Create or, by default, truncate \texttt{out} before running \texttt{a}.\\
+\texttt{a >> out} & Create or append to \texttt{out}.\\
+\texttt{a 2> errors} & Send standard error (descriptor 2) to a file. Do not put a space
+between the 2 and the greater-than sign.\\
+\texttt{a \&\& b} & Run \texttt{b} only if \texttt{a} reports success.\\
+\texttt{a \textbar\textbar\ b} & Run \texttt{b} only if \texttt{a} reports failure.\\
+\bottomrule
+\end{quicktable}
+
+The letters \texttt{a} and \texttt{b} stand for commands above, not
+literal input. Never direct output back into the file a command must
+read. A safe destination has a different name, not just a different
+spelling for the same underlying file.
+
+\section{When the next step is unclear}
+
+\begin{checklist}
+\item Stop typing if the display contains an unfamiliar continuation
+prompt or if the usual prompt has not returned. Identify whether a
+program, pager, editor or remote shell is waiting.
+\item Read the first diagnostic and check the exact command name,
+working directory and operand spelling.
+\item Compare what you expected with one observable result. A blank
+screen is not reliable evidence of success.
+\item Reproduce the issue on a dummy file. Keep originals and compare
+an inspected copy before replacing anything.
+\item Before acting remotely, verify the destination independently.
+Keep sample names, host keys, credential material and personal paths
+out of any diagnostic report you share unless required and safe.
+\end{checklist}
+
+\BookSee{Chapter}{ch:45}

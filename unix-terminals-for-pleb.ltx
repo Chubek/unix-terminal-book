@@ -1,0 +1,133 @@
+\ifdefined\UTPEditionOptions
+  \edef\UTPApplyOptions{\noexpand\PassOptionsToClass{\UTPEditionOptions}{unix-terminals-for-pleb}}
+  \UTPApplyOptions
+\fi
+\documentclass{unix-terminals-for-pleb}
+\BookSubtitle{An illustrated, practical guide for everyday computer users}
+\ifdefined\UTPEditorialDraft
+  \BookEdition{Editorial draft --- not for distribution}
+\else
+  \BookEdition{First edition}
+\fi
+
+\begin{document}
+\frontmatter
+\input{chapters/frontmatter.ltx}
+\input{chapters/preface.ltx}
+\BookContents
+\mainmatter
+
+\BookPart{Finding Your Way}
+\BookChapter{Your First Terminal Session}\label{ch:1}
+\input{chapters/chapter-1.ltx}
+\BookChapter{How Unix Reached Your Desk}\label{ch:2}
+\input{chapters/chapter-2.ltx}
+\BookChapter{Meet the Shell}\label{ch:3}
+\input{chapters/chapter-3.ltx}
+\BookChapter{Read the Prompt}\label{ch:4}
+\input{chapters/chapter-4.ltx}
+\BookChapter{Find Your Place}\label{ch:5}
+\input{chapters/chapter-5.ltx}
+\BookChapter{Paths Are Addresses}\label{ch:6}
+\input{chapters/chapter-6.ltx}
+\BookChapter{Work with Files}\label{ch:7}
+\input{chapters/chapter-7.ltx}
+\BookChapter{Directories and Links}\label{ch:8}
+\input{chapters/chapter-8.ltx}
+\BookChapter{Find Things by Name}\label{ch:9}
+\input{chapters/chapter-9.ltx}
+\BookChapter{Get Help at the Terminal}\label{ch:10}
+\input{chapters/chapter-10.ltx}
+\BookChapter{Edit a Plain Text File}\label{ch:11}
+\input{chapters/chapter-11.ltx}
+\BookChapter{Practice Without Regret}\label{ch:12}
+\input{chapters/chapter-12.ltx}
+
+\BookPart{Working with Text and Data}
+\BookChapter{Anatomy of a Command}\label{ch:13}
+\input{chapters/chapter-13.ltx}
+\BookChapter{Match Names with Patterns}\label{ch:14}
+\input{chapters/chapter-14.ltx}
+\BookChapter{Input, Output, and Errors}\label{ch:15}
+\input{chapters/chapter-15.ltx}
+\BookChapter{Send Output Somewhere Else}\label{ch:16}
+\input{chapters/chapter-16.ltx}
+\BookChapter{Build a Pipeline}\label{ch:17}
+\input{chapters/chapter-17.ltx}
+\BookChapter{Look Inside Text}\label{ch:18}
+\input{chapters/chapter-18.ltx}
+\BookChapter{Search the Contents}\label{ch:19}
+\input{chapters/chapter-19.ltx}
+\BookChapter{Sort and Count}\label{ch:20}
+\input{chapters/chapter-20.ltx}
+\BookChapter{Keep the Rows and Columns You Need}\label{ch:21}
+\input{chapters/chapter-21.ltx}
+\BookChapter{Transform and Compare Text}\label{ch:22}
+\input{chapters/chapter-22.ltx}
+\BookChapter{Bundle and Check Files}\label{ch:23}
+\input{chapters/chapter-23.ltx}
+\BookChapter{Read CSV and JSON}\label{ch:24}
+\input{chapters/chapter-24.ltx}
+
+\BookPart{Taking Control of Your Shell}
+\BookChapter{Quote What You Mean}\label{ch:25}
+\input{chapters/chapter-25.ltx}
+\BookChapter{See What the Shell Expands}\label{ch:26}
+\input{chapters/chapter-26.ltx}
+\BookChapter{Keep a Value in a Variable}\label{ch:27}
+\input{chapters/chapter-27.ltx}
+\BookChapter{What Commands Inherit}\label{ch:28}
+\input{chapters/chapter-28.ltx}
+\BookChapter{Choose a Shell Without Guesswork}\label{ch:29}
+\input{chapters/chapter-29.ltx}
+\BookChapter{Make a Small Repeatable Task}\label{ch:30}
+\input{chapters/chapter-30.ltx}
+\BookChapter{See What Is Running}\label{ch:31}
+\input{chapters/chapter-31.ltx}
+\BookChapter{Manage Jobs in One Shell}\label{ch:32}
+\input{chapters/chapter-32.ltx}
+\BookChapter{Know Who Can Read or Write}\label{ch:33}
+\input{chapters/chapter-33.ltx}
+\BookChapter{Account for Disk Space}\label{ch:34}
+\input{chapters/chapter-34.ltx}
+\BookChapter{Find and Maintain Optional Tools}\label{ch:35}
+\input{chapters/chapter-35.ltx}
+\BookChapter{Gather Useful Diagnostics}\label{ch:36}
+\input{chapters/chapter-36.ltx}
+
+\BookPart{Putting the Terminal to Work}
+\BookChapter{Understand a Network Connection}\label{ch:37}
+\input{chapters/chapter-37.ltx}
+\BookChapter{Sign In Safely with SSH}\label{ch:38}
+\input{chapters/chapter-38.ltx}
+\BookChapter{Transfer Files Between Machines}\label{ch:39}
+\input{chapters/chapter-39.ltx}
+\BookChapter{Return to a Remote Session}\label{ch:40}
+\input{chapters/chapter-40.ltx}
+\BookChapter{Back Up and Restore Documents}\label{ch:41}
+\input{chapters/chapter-41.ltx}
+\BookChapter{Inspect Media and Documents}\label{ch:42}
+\input{chapters/chapter-42.ltx}
+\BookChapter{Customize a Session Safely}\label{ch:43}
+\input{chapters/chapter-43.ltx}
+\BookChapter{Make the Terminal Accessible}\label{ch:44}
+\input{chapters/chapter-44.ltx}
+\BookChapter{Troubleshoot One Layer at a Time}\label{ch:45}
+\input{chapters/chapter-45.ltx}
+\BookChapter{Build a Daily Terminal Routine}\label{ch:46}
+\input{chapters/chapter-46.ltx}
+\BookChapter{Capstone: Organize Photos and Their Catalog}\label{ch:47}
+\input{chapters/chapter-47.ltx}
+\BookChapter{Capstone: Deliver and Restore a Remote Backup}\label{ch:48}
+\input{chapters/chapter-48.ltx}
+\CheckBookStructure
+
+\BeginAppendices
+\chapter{Portable Commands and Shells}\label{app:portability}
+\input{chapters/appendix-a.ltx}
+\chapter{Quick Reference}\label{app:quick}
+\input{chapters/appendix-b.ltx}
+\backmatter
+\input{chapters/backmatter.ltx}
+\PrintBookIndex
+\end{document}

@@ -1,0 +1,25 @@
+\ifdefined\UTPEditionOptions
+  \edef\UTPApplyOptions{\noexpand\PassOptionsToClass{\UTPEditionOptions}{unix-terminals-for-pleb}}
+  \UTPApplyOptions
+\fi
+\documentclass{unix-terminals-for-pleb}
+\begin{document}
+\BookChapter{Fixture}
+\begin{dialoguebox}{A reversible test}
+\Brian{Does a test need my own documents?}
+\Stephen{No, a fixture can create its own.}
+\Brian{But our fixture is text in a book.}
+\Stephen{Then the book build is what we are testing.}
+\Brian{Can both editions print this exchange?}
+\Stephen{Yes; only the exercise solution is conditional.}
+\DialogueConclusion{Use a fixture, not your own files.}
+\end{dialoguebox}
+\begin{exercise}{Confirm presence}
+This exercise appears in both editions.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+printf '%s\n' 'fixture answer token'
+\end{terminal}
+\end{solution}
+\end{document}

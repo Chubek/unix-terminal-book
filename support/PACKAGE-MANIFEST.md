@@ -40,3 +40,4 @@
 38. `utp-manpages.sty` — Manual-page and help-system references
 39. `utp-workflows.sty` — Reusable real-world walkthrough structure
 40. `utp-links.sty` — Hyperlinks and PDF navigation
+41. `utp-dialogues.sty` — Continuously numbered `dialoguebox[options]{title}` with `\Brian{text}`, `\Stephen{text}` and a final single-line `\DialogueConclusion{text}`. Already loaded by the class.

@@ -49,6 +49,8 @@ def main():
     send.add_argument("--reply-to")
     ack = commands.add_parser("ack")
     ack.add_argument("message_id")
+    retry = commands.add_parser("requeue")
+    retry.add_argument("message_id")
     publish = commands.add_parser("publish")
     publish.add_argument("key")
     publish.add_argument("json_value", help="JSON string, or @path to a JSON file")
@@ -60,7 +62,7 @@ def main():
     actor = BRANCHES.get(git("branch", "--show-current"))
     if actor is None:
         parser.error("run in your assigned worktree")
-    if args.action in {"route", "ledger"} and actor != "W0":
+    if args.action in {"route", "ledger", "requeue"} and actor != "W0":
         parser.error("only W0 can perform this operation")
     db_path = Path(git("rev-parse", "--path-format=absolute", "--git-common-dir")) / "utp-coordination.sqlite3"
     db = sqlite3.connect(db_path, timeout=30)
@@ -100,6 +102,13 @@ def main():
                 (now, now-900),
             )
             print(f"Routed or retried {changed.rowcount} messages")
+        elif args.action == "requeue":
+            changed = db.execute(
+                "UPDATE messages SET state='queued', attempts=0, delivered=NULL WHERE message_id=? AND state='timeout'",
+                (args.message_id,),
+            )
+            if not changed.rowcount:
+                parser.error("only a timed-out envelope can be requeued")
         elif args.action == "inbox":
             rows = db.execute(
                 "SELECT * FROM messages WHERE recipient=? AND state IN ('delivered','acknowledged') ORDER BY timestamp,rowid",

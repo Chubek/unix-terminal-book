@@ -1,0 +1,118 @@
+Use the manual for the command that will actually run. Two computers
+can both have a command named \texttt{stat} and disagree on what its
+options mean. Even on one computer, the shell may provide a built-in
+command with the same name as an installed utility.
+
+\section{Choose a portability target}
+
+\IndexTerm{POSIX} specifies interfaces and behavior across systems; it
+is not a package to install. The POSIX shell language is a useful
+common target for short scripts. For an interactive session, use the
+shell that suits how you work. To try a POSIX-style example in a shell
+with different syntax, start \IndexCommand{sh}, work in that child
+shell, and type \texttt{exit} when finished. The command \texttt{sh}
+does not identify one universal executable or one universal set of
+extensions.
+
+\begin{quicktable}{p{0.88in}YY}
+\toprule
+\textbf{Shell} & \textbf{Good fit} & \textbf{What not to assume}\\
+\midrule
+POSIX sh & Small scripts shared across families of Unix systems. &
+Arrays, \texttt{[[} tests and \texttt{source} are not portable sh syntax.\\
+Bash & Interactive work and scripts that explicitly require Bash. &
+An older Bash may lack features available in a current upstream release.\\
+Zsh & Interactive completion and configurable filename generation. &
+Default expansion behavior is not the same as Bash or POSIX sh.\\
+Ksh & Korn-shell scripts and interactive use where available. &
+Ksh implementations are not identical; check the installed manual.\\
+Fish & Interactive use with its own completion and scripting syntax. &
+Use an explicit sh interpreter for sh scripts, not Fish syntax.\\
+Csh/Tcsh & Existing C-shell workflows and interactive Tcsh use. &
+Assignments and control syntax differ from sh.\\
+\bottomrule
+\end{quicktable}
+
+When a script is intended for \texttt{sh}, test it with
+\cmd|sh script.sh|, not by pasting its lines into a more permissive
+shell. When it needs another interpreter, say so in the instructions.
+The shell in your terminal and the interpreter for a script need not
+be the same.
+
+\section{Prefer shared forms for shared tasks}
+
+\begin{longtable}{p{0.97in}p{1.55in}p{2.25in}}
+\toprule
+\textbf{Task} & \textbf{Shared starting point} & \textbf{Boundary}\\
+\midrule
+\endhead
+Print text & \texttt{printf '\%s\textbackslash n' text} &
+Pass the text as an operand, not as the format string. Do not depend on
+\texttt{echo} to handle backslashes or a leading \texttt{-n} consistently.\\
+Preview a copy & \texttt{ls -ld source target} &
+An absent target can produce a diagnostic. Check that each displayed
+object is the one you meant. \texttt{cp -i} prompts before many
+overwrites, but a preview also catches the wrong directory.\\
+Search literal text & \texttt{grep -F -e text file} &
+\texttt{-F} disables regular expressions; \texttt{-e} introduces the
+pattern even when it begins with a hyphen. Quote a pattern containing
+spaces or shell metacharacters.\\
+Sort an ASCII fixture & \texttt{LC\_ALL=C sort file} &
+The per-command locale setting is useful for reproducible practice.
+Do not mistake this order for alphabetical order in a reader's language.\\
+Compare contents & \texttt{cmp file1 file2} &
+Status 0 means identical, 1 means different, and a higher status denotes
+an error. A successful comparison is not a check of owners or permissions.\\
+Edit a stream & \texttt{sed 's/old/new/' in.txt} &
+Write to a different path after previewing; in-place options vary and
+are not part of the portable form.\\
+Measure space & \texttt{df -P .}; \texttt{du -sk .} &
+The first reports on a filesystem, the second on reachable entries.
+Do not expect their numbers to agree.\\
+Check for damage & \texttt{cksum file} &
+The default CRC is for accidental corruption checks, not proof of
+authenticity. SHA-256 command names and output formats vary.\\
+\bottomrule
+\end{longtable}
+
+\section{Recognize platform-specific interfaces}
+
+\IndexTerm{GNU utilities} and utilities shipped in the BSDs may share a
+portable core without sharing extensions. For example, GNU
+\texttt{stat} uses \texttt{-c} to request an output format; the native
+\texttt{stat} on macOS and the BSDs uses \texttt{-f} for formatting.
+These are different interfaces; substituting the letter alone is not a
+translation of the format string. Use a platform's own examples and
+manual.
+
+\begin{quicktable}{p{0.82in}YY}
+\toprule
+\textbf{System}&\textbf{Manuals}&\textbf{What to verify}\\
+\midrule
+Linux & Installed manuals; GNU manuals for GNU tools. &
+A distribution may instead ship BusyBox or another implementation.\\
+macOS & Installed manuals; Apple Terminal User Guide for the app. &
+An optional GNU tool and Apple's native utility can coexist.\\
+FreeBSD & Installed manuals; FreeBSD manual pages and Handbook. &
+Base commands and installed packages can have different update cycles.\\
+OpenBSD & Installed manuals; OpenBSD manual pages and FAQ. &
+Read the documentation for your release before using an extension.\\
+NetBSD & Installed manuals; NetBSD manual pages and Guide. &
+Base commands and pkgsrc-provided tools are not interchangeable by name alone.\\
+\bottomrule
+\end{quicktable}
+
+Try \cmd|command -v sort| in a POSIX-style shell to see how that shell
+resolves the name. That result is not a version number. Inspect the
+local manual and the installed package information before assuming a
+feature or scripting around the output. GNU-style \texttt{--version}
+and \texttt{--help} are not universal.
+
+\begin{furtherreading}
+\ReadingItem{The Open Group Base Specifications}{Shell language, utility descriptions and standard behavior}{https://pubs.opengroup.org/onlinepubs/9799919799/}
+\ReadingItem{GNU Coreutils manual}{GNU-specific syntax and extensions}{https://www.gnu.org/software/coreutils/manual/}
+\ReadingItem{Apple Terminal User Guide}{The macOS terminal application}{https://support.apple.com/guide/terminal/welcome/mac}
+\ReadingItem{FreeBSD manual pages}{Base and optional command manuals}{https://man.freebsd.org/}
+\ReadingItem{OpenBSD manual pages}{Release-specific documentation}{https://man.openbsd.org/}
+\ReadingItem{NetBSD manual pages}{Release-specific documentation}{https://man.netbsd.org/}
+\end{furtherreading}
