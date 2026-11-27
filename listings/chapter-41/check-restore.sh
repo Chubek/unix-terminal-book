@@ -1,7 +1,7 @@
 #!/bin/sh
 # POSIX sh syntax; mktemp and tar with -cf/-tf/-xf required. Local fixtures only.
 set -eu
-lab=$(mktemp -d)
+lab=$(mktemp -d "${TMPDIR:-/tmp}/utp-backup.XXXXXXXX")
 cleanup() {
     cd "$lab"
     rm -f documents/plan.txt documents/contact.txt \

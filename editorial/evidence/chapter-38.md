@@ -13,3 +13,7 @@
   Availability and defaults on macOS and the BSDs were not tested.
 - `figures/chapter-38/`: `destination.tikz`, `identity.tikz`,
   `shells.tikz`. Slice build and grayscale check: see `chapter-37.md`.
+- Revision check: the explicit `mktemp` template was rerun with the
+  test scratch directory on nvme. An invalid template stopped its
+  `&&` chain before the subsequent commands. The print/answers and
+  screen/noanswers slice builds both retained the exact fixture cleanup.

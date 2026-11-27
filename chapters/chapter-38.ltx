@@ -209,13 +209,21 @@ approved method of protection. Do not copy a private key to a server or
 submit it in a support ticket. A comment on the public key can identify
 you, so even public keys need not be posted indiscriminately.
 
-For optional practice, make a fresh local directory. Here
-\texttt{-d} makes a directory; check each step and stop if one fails.
+For optional practice, use a shell that accepts POSIX \texttt{sh}
+syntax and make a fresh local directory. Here \texttt{-d} makes
+a directory and \texttt{mktemp} replaces the final \texttt{X}s
+with a unique suffix. The example uses the system's local
+\texttt{/tmp}; use a different trusted absolute temporary-directory
+path if your system requires one. The \texttt{\&\&} operators
+run each next step only after the preceding command succeeds.
+If the final line does not show the new practice directory, stop;
+do not run key generation from your existing directory.
 This key pair is a disposable teaching prop, never to be enrolled.
 
 \begin{terminal}
-keylab=$(mktemp -d)
-cd "$keylab"
+keylab=$(mktemp -d /tmp/utp-key.XXXXXXXX) &&
+  cd "$keylab" &&
+  pwd
 \end{terminal}
 
 \cmd|ssh-keygen -t| selects the key type (here Ed25519, a common choice);
@@ -353,6 +361,20 @@ Remote prompt appears & A session started; still check the account and directori
 \bottomrule
 \end{quicktable}
 
+\paragraph{Key lab cleanup.}
+After the exercises, if you created the fixture key pair, check that
+\cmd|pwd| prints your key lab directory, not your real key directory.
+\cmd|rm -i| prompts for each removal; confirm only the synthetic
+files listed below. Use \cmd|rmdir| only after leaving the lab;
+it refuses to remove a nonempty directory. This is routine
+workspace cleanup, not secure erasure.
+
+\begin{terminal}
+pwd
+rm -i ./demo-key ./demo-key.pub
+cd && rmdir "$keylab"
+\end{terminal}
+
 \begin{exercise}{Read before dialing}\label{ex:38-offline}
 Change the user and port in the offline \texttt{-G} example to
 \texttt{student} and \texttt{2022}; leave \texttt{-F /dev/null},
@@ -386,10 +408,7 @@ Then remove the practice files and directory. Do not send either file.
 \end{exercise}
 \begin{solution}
 The public file is \texttt{demo-key.pub}; \texttt{demo-key} is private.
-Check that \cmd|pwd| prints your practice directory, use
-\cmd|rm -i ./demo-key ./demo-key.pub| and confirm only those fixture
-files, then \cmd|cd| and \cmd|rmdir "$keylab"|. This is routine
-workspace cleanup, not secure erasure.
+Follow the key lab cleanup steps above without sending either file.
 \end{solution}
 
 \begin{takeaways}

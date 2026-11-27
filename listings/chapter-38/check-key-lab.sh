@@ -2,7 +2,7 @@
 # POSIX sh syntax; OpenSSH with -G and Ed25519, mktemp required.
 # This does not connect or enroll the disposable teaching key.
 set -eu
-lab=$(mktemp -d)
+lab=$(mktemp -d "${TMPDIR:-/tmp}/utp-key.XXXXXXXX")
 cleanup() {
     cd /
     rm -f "$lab/demo-key" "$lab/demo-key.pub"

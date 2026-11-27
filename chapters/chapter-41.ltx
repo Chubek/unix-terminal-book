@@ -96,12 +96,27 @@ other users permission bits on newly created objects. The parentheses
 keep it from changing the outer shell's setting. It is not an
 encryption guarantee or a replacement for checking destination access.
 
+Each \texttt{\&\&} runs the next command only when the preceding
+one succeeds. \texttt{mktemp} replaces the \texttt{X}s with a
+unique suffix; \texttt{/tmp} here is the system's local temporary
+directory. Use a different trusted absolute temporary-directory path
+if your system requires one.
+
 \begin{terminal}
-backuplab=$(mktemp -d)
-cd "$backuplab"
-(umask 077; mkdir documents vault restore)
-printf '%s\n' 'Monday: one box of flyers' > documents/plan.txt
-printf '%s\n' 'Contact the community desk' > documents/contact.txt
+backuplab=$(mktemp -d /tmp/utp-backup.XXXXXXXX) &&
+  cd "$backuplab" &&
+  (umask 077 && mkdir documents vault restore) &&
+  pwd
+\end{terminal}
+
+Proceed only if the last line shows the new practice directory.
+If it doesn't, do not run the rest of the lab. The following
+redirections write new synthetic files; they would truncate existing
+files of those names outside the fresh directory.
+
+\begin{terminal}
+printf '%s\n' 'Monday: one box of flyers' > documents/plan.txt &&
+  printf '%s\n' 'Contact the community desk' > documents/contact.txt
 \end{terminal}
 
 This fixture uses ordinary files and a short path. For real
@@ -132,12 +147,13 @@ an existing archive. If there is already something at the destination,
 stop rather than trying the example there.
 
 \begin{terminal}
-tar -cf vault/documents-2030-01-07.tar documents
-cksum < vault/documents-2030-01-07.tar > vault/jan07.cksum
-cat vault/jan07.cksum
+tar -cf vault/documents-2030-01-07.tar documents &&
+  cksum < vault/documents-2030-01-07.tar > vault/jan07.cksum &&
+  cat vault/jan07.cksum
 \end{terminal}
 
-Check that tar reports success before computing a checksum.
+The checksum runs only if tar succeeds. If the sequence fails, stop;
+do not treat a partial archive or a partial checksum file as a backup.
 \cmd|cksum| with no operand reads standard input; the
 \texttt{<} supplies the archive bytes and \texttt{>} saves the
 output to a separate new file. In the default POSIX form the output
@@ -167,13 +183,13 @@ fictional \texttt{plan.txt}. Check \cmd|pwd| first, and do not run
 the redirection outside the lab.
 
 \begin{terminal}
-printf '%s\n' 'Tuesday: two boxes of flyers' > documents/plan.txt
-tar -cf vault/documents-2030-01-08.tar documents
-cksum < vault/documents-2030-01-08.tar > vault/jan08.cksum
-ls vault
+printf '%s\n' 'Tuesday: two boxes of flyers' > documents/plan.txt &&
+  tar -cf vault/documents-2030-01-08.tar documents &&
+  cksum < vault/documents-2030-01-08.tar > vault/jan08.cksum &&
+  ls vault
 \end{terminal}
 
-Again check tar's success before using the later commands. Expect
+Stop if the sequence fails. Expect
 two named archives and two checksum files. The archives do not
 replace one another, and both logical versions use the same
 internal path, \texttt{documents/plan.txt}. A backup name should let
@@ -364,32 +380,40 @@ Comparing the plan paths under \texttt{restore/monday} and
 one. Check \cmd|cat| to see each day's text.
 \end{solution}
 
-\begin{exercise}{Retire the practice data, not your documents}\label{ex:41-cleanup}
-Write down a recovery check you'd add for your real documents.
-Then verify \cmd|pwd| agrees with \cmd|"$backuplab"| and remove
-the synthetic lab. Use the solution as a checklist to avoid
-recursive deletion.
-\end{exercise}
-\begin{solution}
-An example is opening one restored budget sheet in its normal editor,
-checking its formula results and date. In the lab, confirm removals
-for explicitly named files. Skip the Tuesday-specific lines if you
-didn't create them and stop on anything unexpected.
+\paragraph{Lab cleanup.}
+After the exercises, confirm that \cmd|pwd| agrees with
+\cmd|"$backuplab"| before removing anything. Confirm only the
+named synthetic files at the \cmd|rm -i| prompts. If you didn't
+do the Tuesday restore exercise, skip the lines that name items
+under \texttt{restore/tuesday} and skip \texttt{restore/jan08.check};
+still remove both dated archives and both saved vault checksums.
+If a practice step failed part way through, inspect what it did
+create before removing those entries. Stop on anything unexpected.
 \begin{terminal}
 rm -i documents/plan.txt documents/contact.txt
 rm -i restore/monday/documents/plan.txt restore/monday/documents/contact.txt
 rm -i restore/tuesday/documents/plan.txt restore/tuesday/documents/contact.txt
-rm -i restore/jan07.check restore/jan08.check
+rm -i restore/jan07.check
+rm -i restore/jan08.check
 rm -i vault/documents-2030-01-07.tar vault/documents-2030-01-08.tar
 rm -i vault/jan07.cksum vault/jan08.cksum
 rmdir restore/monday/documents restore/monday
 rmdir restore/tuesday/documents restore/tuesday
 rmdir documents restore vault
-cd
-rmdir "$backuplab"
+cd && rmdir "$backuplab"
 \end{terminal}
 The final \cmd|rmdir| should succeed only after all the expected
 practice entries have been removed.
+
+\begin{exercise}{Retire the practice data, not your documents}\label{ex:41-cleanup}
+Write down a recovery check you'd add for your real documents.
+Then verify \cmd|pwd| agrees with \cmd|"$backuplab"| and remove
+the synthetic lab with the cleanup commands above.
+\end{exercise}
+\begin{solution}
+An example is opening one restored budget sheet in its normal editor,
+checking its formula results and date. Keep this check separate from
+the cleanup of synthetic files in the lab.
 \end{solution}
 
 \begin{takeaways}

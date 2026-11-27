@@ -13,3 +13,7 @@
   separate devices and real failure recovery were not tested.
 - `figures/chapter-41/`: `history.tikz`, `versions.tikz`, `drill.tikz`.
   Slice build and grayscale check: see `chapter-37.md`.
+- Revision check: both tar implementations passed again with the
+  explicit `mktemp` template and nvme test scratch. The revised
+  print/answers and screen/noanswers slice builds both retained
+  concrete cleanup steps outside the solutions.
