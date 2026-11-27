@@ -16,14 +16,14 @@ At a local shell prompt, ask the system to identify itself. This is a read-only 
 uname
 \end{terminal}
 
-The name \texttt{uname} can be read as ``Unix name.'' The single word it prints by default identifies the system in the sense defined by this utility. It doesn't necessarily match the name printed on your computer or in the system's graphical settings. Here are plausible results, not a list of text to type.
+The name \texttt{uname} can be read as ``Unix name.'' With no options, it prints the system-name string, just as it does with \texttt{-s}. This is one line, but the system name need not be a single word. It doesn't necessarily match the name printed on your computer or in the system's graphical settings. Here are plausible results, not a list of text to type.
 
 \begin{quicktable}{M{1in}Y}
 \toprule
 Result & How to interpret it here \\
 \midrule
 Linux & The running system reports Linux. This does not identify a distribution such as Debian or Fedora. \\
-Darwin & Expected on macOS: Darwin is the Unix-based core underlying macOS. The word is not the macOS product version. \\
+Darwin & Expected on macOS: Darwin is the Unix-based core underlying macOS. This name is not the macOS product version. \\
 FreeBSD & The system reports FreeBSD, not a generic release shared by all BSD systems. \\
 OpenBSD & The system reports OpenBSD; use its own manuals for local details. \\
 NetBSD & The system reports NetBSD; FreeBSD or OpenBSD options cannot be assumed to apply. \\
@@ -70,7 +70,7 @@ It prints the system name followed by the release on one line, separated by whit
 
 Unix began at Bell Labs around 1969. Early versions ran on machines that were very different from today's laptops. A printer or a text display could serve as the interface. The significant idea for us isn't the shape of the equipment: it is that a person could ask a small command to do one job and use its result to guide the next job. A short text instruction could be written down, sent to someone and tried again. Later chapters put that ability to work with commands whose results can feed other commands.
 
-In the 1970s, researchers at the University of California, Berkeley extended and distributed Unix software as the Berkeley Software Distribution, or BSD. Different systems took shape over the following years. FreeBSD, OpenBSD and NetBSD share BSD ancestry, but are maintained as distinct operating systems; a fix, feature or menu from one does not automatically appear in the others. Darwin draws in part on BSD work as well as other components, including Mach. The macOS desktop and products built over Darwin are not identical to another BSD system just because features at the command line look familiar.
+In the 1970s, researchers at the University of California, Berkeley extended and distributed Unix software as the Berkeley Software Distribution, or BSD. Different systems took shape over the following years. FreeBSD, OpenBSD and NetBSD share BSD ancestry, but are maintained as distinct operating systems; a fix, feature or menu from one does not automatically appear in the others. Apple's own XNU documentation describes the kernel in Darwin as combining Mach with components from FreeBSD and other work. That ancestry helps explain the resemblance; it doesn't make macOS a copy of FreeBSD or promise that their current utilities accept the same options.
 
 The GNU project began in the 1980s to build a free Unix-compatible operating system. Many of its utilities are used on Linux systems today. Linux began separately as a kernel in 1991. A typical desktop distribution combines Linux with a range of utilities, often including GNU utilities, and many other projects. There are Linux systems that use alternatives, such as BusyBox for some everyday commands. So ``Linux means GNU'' is as unreliable as ``BSD means FreeBSD.'' The projects and families in Figure~\ref{fig:2-families} are a set of influences and distinctions, not a certified family tree.
 
@@ -194,6 +194,7 @@ The first field of \texttt{uname -s -r} should match plain \texttt{uname}. The r
 \ReadingItem{The Open Group: Product Register}{Certified products and configurations.}{https://www.opengroup.org/openbrand/register/}
 \ReadingItem{GNU: The GNU Project}{The project history in its own words.}{https://www.gnu.org/gnu/thegnuproject.html}
 \ReadingItem{FreeBSD Handbook: Introduction}{The origins and goals of FreeBSD.}{https://docs.freebsd.org/en/books/handbook/introduction/}
+\ReadingItem{Apple Open Source: What is XNU?}{The Darwin kernel's Mach and FreeBSD origins.}{https://github.com/apple-oss-distributions/xnu#what-is-xnu}
 \ReadingItem{POSIX uname}{Definitions of the individual system fields.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/uname.html}
 \ReadingItem{GNU Coreutils: Which files are listed}{The short and long GNU spellings of the option.}{https://www.gnu.org/software/coreutils/manual/html_node/Which-files-are-listed.html}
 \end{furtherreading}
