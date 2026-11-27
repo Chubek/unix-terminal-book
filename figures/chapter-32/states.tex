@@ -1,0 +1,12 @@
+\begin{tikzpicture}
+\node[utp node] (fg) at (-2.5,0) {foreground};
+\node[utp node] (stop) at (0,1.4) {stopped};
+\node[utp node] (bg) at (2.5,0) {background};
+\draw[utp arrow] (fg.north) to[bend left=14]
+ node[above left,font=\small] {suspend} (stop.west);
+\draw[utp arrow] (stop.south west) --
+ node[below right,font=\small] {\texttt{fg}} (fg.north east);
+\draw[utp arrow] (stop.east) --
+ node[above right,font=\small] {\texttt{bg}} (bg.north);
+\draw[utp arrow] (bg.west) -- node[below,font=\small] {\texttt{fg}} (fg.east);
+\end{tikzpicture}

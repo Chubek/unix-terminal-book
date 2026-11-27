@@ -1,0 +1,466 @@
+You have started a slow export and want to count the files in its
+destination without opening a second terminal. Or perhaps you
+interrupted a pager with the wrong key, and the shell insists
+there is still a job. The shell can set work aside without losing
+track of it, but only within certain boundaries. We will use a
+timer and a tiny pipeline, not an export with files at risk.
+
+\begin{objectives}
+\item Move a practice job between stopped, foreground, and background states.
+\item Distinguish a shell job number from an operating-system PID.
+\item Collect a background job's outcome and explain what happens at logout.
+\end{objectives}
+
+\section{Who is using the terminal?}
+\label{sec:32-foreground}
+\index{job control}
+\index{foreground}
+The shell normally starts a command and waits until it finishes
+before printing another prompt. While that command is in the
+foreground, keys at the terminal go to the command or to the
+terminal line discipline, rather than becoming shell commands.
+If a program asks a question, typing \texttt{pwd} answers the
+program; it does not get your bearings. The prompt and the
+program's own messages are important clues about who is listening.
+
+For this practice use an ordinary interactive Bash or Zsh
+in a terminal, not a script, an editor's output pane, or redirected
+input. These examples assume their usual job-control settings and
+terminal key assignments. On systems where you use a different
+shell, open an interactive instance of an available Bash or Zsh.
+POSIX specifies a model with job control where supported; it does
+not promise it is enabled in every shell context. A shell that
+does not respond as described is a reason to stop and check its
+manual, not a reason to try random control characters on real work.
+
+\begin{terminal}
+sleep 90
+\end{terminal}
+
+While the timer is still in the foreground, press
+\KeyChord{Ctrl}{Z}. Do not type the letters or press Enter
+afterward. On the usual terminal settings, this is the suspend
+key. The system sends a stop request to the foreground group of
+processes, the timer stops running, and your shell gets the
+foreground back. It commonly announces a ``Stopped'' or
+``Suspended'' job. If you waited ninety seconds, the timer
+probably finished and there is nothing to suspend. If suspend
+doesn't work, let this short example expire. Which keys are
+assigned to interrupt and suspend can be inspected with
+\ManPage{stty}{1}; changing them is not part of this exercise.
+
+\begin{terminal}
+jobs
+jobs -l
+\end{terminal}
+
+\cmd|jobs| lists remembered jobs in this shell. \cmd|-l| requests a
+long form including process IDs. Compare your rows to this
+illustration, not to its numbers or spacing:
+
+\begin{terminaloutput}
+[1]+  7415 Stopped                 sleep 90
+\end{terminaloutput}
+
+The number in brackets is the shell's job number. The plus sign
+marks the current job, meaning the shell's default choice for
+some job commands; it need not be in the foreground now. A minus
+sign can mark the previous choice. The larger number in the
+illustration is a PID, described in Chapter~\ref{ch:31}. In
+this session, \texttt{\%1} would refer to job 1; if your shell
+shows a different number, use that number instead. Job numbers
+have meaning only to the shell that created them and can be
+reused. Don't assume the bracketed numbers will start at 1 if
+you already have jobs.
+Figure~\ref{fig:32-terminal} distinguishes the input owner
+from jobs that can still print.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-32/terminal.tex}
+\caption{The foreground owner determines who gets your keys.}
+\label{fig:32-terminal}
+\VisualDescription{A terminal points to the foreground job for
+keyboard input. A separate arrow from a background job shows that
+it can still produce output.}
+\end{figure}
+
+\section{Stop is not finish}
+\label{sec:32-resume}
+\index{bg@\texttt{bg}}
+\index{fg@\texttt{fg}}
+\index{jobs@\texttt{jobs}}
+The text ``Stopped'' in \cmd|jobs| means the process is suspended,
+not that it has exited or that its outputs were saved. It may
+still own memory, keep a file open, or keep resources reserved.
+A timed wait like \cmd|sleep| can expire while suspended, so
+resuming it close to the end may produce a prompt immediately.
+Try resuming it in the background while it is still stopped.
+Here and in the next examples use \cmd|%1| only if \cmd|jobs|
+shows that the timer is job 1.
+
+\begin{terminal}
+bg %1
+jobs
+\end{terminal}
+
+\cmd|bg| resumes a stopped job without giving it the terminal's
+foreground. A prompt returns. A row may now say ``Running'',
+or ``Done'' if the timer already finished. A finished job can
+vanish from the next listing after the shell reports it. If the
+timer is still running, try bringing it forward:
+
+\begin{terminal}
+fg %1
+\end{terminal}
+
+\cmd|fg| gives the job the foreground and waits. To finish
+quickly, press \KeyChord{Ctrl}{C} while the running timer still
+has the terminal. That is an interrupt, not another suspension.
+If the prompt returned before you pressed it, leave the timer
+alone: there is nothing left to interrupt. If you accidentally
+suspended it again instead, inspect the job and bring it to the
+foreground once more, then let it finish naturally. It takes
+practice to notice when a prompt has already returned. This is
+why a timer is a better target than a file-writing command.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-32/states.tex}
+\caption{Suspension changes scheduling; foreground and background
+also describe access to the terminal.}
+\label{fig:32-states}
+\VisualDescription{Foreground and stopped are connected by the
+suspend key and fg. Stopped also leads to background via bg.
+Background can return to foreground via fg.}
+\end{figure}
+
+\begin{quicktable}{M{1in}YY}
+\toprule
+Action & What changes & What remains true\\
+\midrule
+Ctrl-Z & The foreground job normally stops running. &
+Its processes and resources still exist.\\
+bg \%1 & A stopped job resumes in the background. &
+It normally cannot read from the terminal.\\
+fg \%1 & The job gets the foreground; resume it if stopped. &
+The shell waits for the job to stop or exit.\\
+Ctrl-C & The terminal normally sends an interrupt to the
+foreground group. & Programs can handle interrupts; results
+already written stay written.\\
+\bottomrule
+\end{quicktable}
+
+Figure~\ref{fig:32-states} helps when a program looks
+``frozen'' after a stray key. If the prompt appears and
+the job says it stopped, bring it forward if you still
+want to interact with it. If no prompt appears and the
+program is simply quiet, returning to the shell by
+starting a fresh terminal is a useful way to look up help
+without changing that program's state. If the terminal
+itself has changed how it displays input, don't assume
+it is a job-control problem; the terminal troubleshooting
+in Chapter~\ref{ch:45} starts from that different symptom.
+
+\section{Send quiet work to the background}
+\label{sec:32-background}
+\index{background}
+\index{wait@\texttt{wait}}
+An ampersand at the end of a command tells the shell to start the
+command asynchronously, meaning it should not wait for it to
+finish before continuing. Unlike \cmd|bg|, this starts new work;
+it doesn't resume existing work. Try it here, then read the
+two messages in order:
+
+\begin{terminal}
+sleep 5 &
+timer=$!
+printf 'back at the prompt, child %s\n' "$timer"
+wait "$timer"
+printf 'child exit status: %s\n' "$?"
+unset timer
+\end{terminal}
+
+The first \cmd|printf| doesn't wait for the timer. The \cmd|wait|
+line does, unless the timer already finished. The second
+\cmd|printf| reports the outcome of that completed child; expect
+zero after an uninterrupted timer. If the shell reports an
+invalid or unknown child, check that you issued \cmd|wait| in the
+same shell and saved \cmd|$!| immediately. Running many things
+in the background and then running plain \cmd|wait| is not a
+substitute for checking their individual outcomes: with no
+operands, POSIX \cmd|wait| waits for all known children and
+returns zero. A shell may also allow a job specification with
+its builtin; the simple PID form here is useful in scripts.
+
+For a pipeline the shell can track multiple processes as one job.
+Try an example with no files involved; \cmd|cat| just passes
+along the timer's empty standard output. It exits when the pipe
+closes. Read the \cmd|jobs -l| output before the timer ends.
+
+\begin{terminal}
+sleep 15 | cat &
+jobs -l
+\end{terminal}
+
+The shell describes one job, even when its display names two
+processes, as in Figure~\ref{fig:32-pipeline}. To clean up,
+run \cmd|wait| after making sure there
+is no other background work in this practice shell, or let the
+fifteen seconds expire. Pipeline status is not automatically
+every member's status (see Chapter~\ref{ch:17}); a successful
+last stage can conceal an earlier failure. Do not turn a
+multi-step data job into a background task just because the
+timer example behaves neatly.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-32/pipeline.tex}
+\caption{A pipeline may be one shell job and several processes.}
+\label{fig:32-pipeline}
+\VisualDescription{A dashed job boundary contains separate sleep
+and cat nodes. A pipe arrow leads from sleep to cat.}
+\end{figure}
+
+Next try a background command that does want input. This example
+requires enabled job control and a real terminal. In a script
+without job control, an asynchronous command's default input may
+instead be assigned from a source like \texttt{/dev/null}.
+
+\begin{terminal}
+cat &
+jobs
+\end{terminal}
+
+If the first \cmd|jobs| still shows ``Running'', wait a moment
+and run \cmd|jobs| again; the child may not have attempted the
+read yet. A background job that tries to read from the terminal
+normally gets stopped by the operating system. Inspect the row:
+some shells mention terminal input. To finish, run \cmd|fg|
+with that row's job number, then send end-of-input with
+\KeyChord{Ctrl}{D} on an empty input line in the usual local
+terminal settings. The foreground \cmd|cat| has no more input and
+exits. If you had written a partial line, first press Enter;
+the end-of-input key doesn't always terminate a nonempty line.
+No file is created. If the command was already done, no cleanup
+is required.
+
+A background job can usually still write terminal output. The
+result can cross the command you're entering, leaving the
+transcript hard to read even though the shell's edit buffer
+survives. Separate standard output and standard error into
+new files when doing this for real, or use a second terminal.
+Prefer a job whose required input is specified before launch.
+If the tool quietly expects a password or a confirmation, it
+is a poor background candidate. Do not redirect unknown prompts
+away and later infer that the job succeeded because it never asked
+you anything.
+
+\subsection{Keep the output without moving the question}
+To see the output behavior without interleaved terminal text,
+use the following miniature run. Work from a writable location
+and stop after the first line if it doesn't print a new directory.
+\cmd|mktemp -d| creates an isolated directory from the template;
+it is commonly available but not POSIX. The following grouped
+command waits briefly, then writes a fictional completion message.
+It has no question to ask. The redirection uses a new name
+in that fresh directory so it cannot overwrite a report.
+
+\begin{terminal}
+room=$(mktemp -d ./utp-jobs.XXXXXX) && cd "$room" && pwd
+\end{terminal}
+
+\begin{terminal}
+( sleep 3; printf '%s\n' 'practice finished' ) > ./result.txt &
+t=$!
+printf '%s\n' 'The shell can continue.'
+wait "$t"
+printf 'job status: %s\n' "$?"
+cat ./result.txt
+unset t
+\end{terminal}
+
+The parentheses group two commands in a subshell, and the
+redirection applies to the group. Immediately after launch
+the file can already exist but have nothing in it, since the
+shell opens the destination for the command before the useful
+output arrives. Wait before using the file as a completed
+report. Expect status zero and the single completion line.
+The practice group's status is that of the last command
+if both are reached; in real data work you should arrange
+to test each operation that matters, not just whether a
+final message was printed.
+
+To remove this fixture, verify your working directory with
+\cmd|pwd|. Confirm the removal only for the one file you
+created; the last directory removal refuses nonempty targets.
+
+\begin{terminal}
+rm -i ./result.txt
+cd .. && rmdir "$room"
+unset room
+\end{terminal}
+
+For a real long-running task, don't feed a file that is
+currently being edited to a job that expects a stable input.
+A copy in a working directory makes it clearer which version
+the job read. Also decide what should happen to the text sent
+to standard error. A run can produce a useful report on
+standard output and still print an error about a skipped item.
+If you only retrieve the report, you might miss the warning.
+Redirect both streams separately when appropriate, using
+the rules in Chapter~\ref{ch:16}. A background run isn't less
+important just because its messages are out of sight.
+
+If you have two completion files, give each run a distinct
+name. The prompt doesn't tell you which process finished
+first, and output in one shared file can blend together
+without a useful boundary. It is easiest to start one run,
+note the child ID and destination together, then start
+another only if both have room to make progress. Saving the
+first ID before starting the second matters because
+\cmd|$!| describes the latest asynchronous start.
+Waiting for the second run while checking the first run's
+file is like checking somebody else's receipt: even a
+successful status does not belong to that file.
+
+For everyday work, prefer two explicit observations over
+a complicated control sequence. If one job is supposed to
+consume the other's results, don't start both independently
+and hope they finish in the right order. The two commands
+are related by a dependency. A foreground sequence with an
+explicit success check is often clearer, or write the
+dependency down in a small script (Chapter~\ref{ch:30}).
+Keeping your prompt available is useful when tasks really
+can proceed independently.
+
+\begin{quicktable}{M{1.16in}YY}
+\toprule
+Context & Useful action & Don't assume\\
+\midrule
+Same interactive shell & Identify a job with \texttt{jobs}, then
+\texttt{fg} or \texttt{bg}. & A job number identifies a global PID.\\
+Noninteractive script & Save \texttt{\$!} immediately and
+\texttt{wait} for it. & A foreground terminal or a suspend key
+is available.\\
+Different terminal & Inspect a known process with \texttt{ps}. &
+Its original shell's job list moved with you.\\
+Closing a session & Check completion or plan for persistence in
+advance. & Starting with \texttt{\&} protects work from logout.\\
+\bottomrule
+\end{quicktable}
+
+\begin{dialoguebox}{Did I give it another room?}
+\Brian{If the job is in the background, where do its messages go?}
+\Stephen{I should have said it runs without the foreground, not without the terminal.}
+\Brian{So my export can still print over the line I'm typing?}
+\Stephen{Usually, yes. Input and output are different privileges here.}
+\Brian{And if it asks me to confirm an overwrite?}
+\Stephen{It can't usually read that answer in the background; it may stop.}
+\Brian{Then I'd rather keep questions in front of me.}
+\Stephen{Right. Give quiet, prepared work to the background.}
+\DialogueConclusion{Background work can still speak.}
+\end{dialoguebox}
+
+\section{The boundary at the session door}
+\label{sec:32-logout}
+Before closing a terminal, run \cmd|jobs| and look for work you
+expect to finish. The shell may warn about stopped jobs. Treat it
+as a chance to return to them, not a warning to silence. What
+happens on terminal closure depends on the shell, job state,
+terminal and system setup. In particular, some processes receive
+a hangup signal and terminate. Others may continue without usable
+input or output. Neither is the equivalent of closing a document
+after saving. A second shell can't take over job control merely
+because it sees a PID. Persistence needs planning, such as a
+terminal multiplexer discussed in Chapter~\ref{ch:40}, or a
+documented service intended for scheduled work. Even those do not
+protect a task against machine shutdown.
+
+Here is a final harmless check: open another terminal with a
+new shell while the practice timer is running. Run \cmd|jobs|
+there. The new shell may have jobs of its own, but does not inherit
+the timer's job entry. Return to the original shell to collect
+the timer. You now have an explanation for a common mismatch:
+\cmd|ps| can show that a process exists while \cmd|jobs| says
+nothing about it.
+
+If you wanted to continue pressing keys inside the original
+program, the distinction matters more than the numbers. A
+second terminal is excellent when you only want to look
+something up; you can leave the first program in front of
+its original terminal. Suspending it is better when you
+need to make a brief observation in exactly that shell
+and you can safely pause the program. Backgrounding it
+is better only if its work can proceed without a question.
+Closing its terminal is a fourth action with different
+risks. In particular, a background downloader or converter
+may hold files open and continue using storage even without
+any visible window. When a result turns out incomplete,
+collect the status before closing the shell if you still
+can. This information helps you decide whether to retry with a
+new output name or whether there is completion evidence to keep.
+
+\begin{exercise}{Interrupt or suspend?}
+\label{ex:32-suspend}
+Start \cmd|sleep 30|, suspend it immediately, then use a job
+listing to verify that it hasn't exited. Bring it back to the
+foreground and let it finish.
+\end{exercise}
+\begin{solution}
+Use \KeyChord{Ctrl}{Z}, then \cmd|jobs|. Look for a stopped or
+suspended row for the timer. With that row's number, for example
+1, use \cmd|fg %1|. Wait for the prompt. Run \cmd|jobs| again
+to verify there is no stopped timer. Nothing was written to disk.
+\end{solution}
+
+\begin{exercise}{Wait in the right shell}
+\label{ex:32-wait}
+Start a five-second background timer, save its child ID, and
+verify that counting characters is possible before collecting
+the timer. Then print the timer's exit status.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+sleep 5 &
+t=$!
+printf 'clock\n' | wc -c
+wait "$t"
+printf 'status: %s\n' "$?"
+unset t
+\end{terminal}
+The byte count is six, with the newline included. The timer exits
+with status zero if uninterrupted. Cleanup consists of waiting and
+dropping the variable, not closing the terminal.
+\end{solution}
+
+\begin{exercise}{Follow the pipeline as one job}
+\label{ex:32-pipeline}
+Repeat the fifteen-second pipeline. Identify its job number and
+use the long listing to look for evidence of separate processes.
+Bring the job to the foreground and let it end, or let the
+timer expire if you took longer than fifteen seconds.
+\end{exercise}
+\begin{solution}
+Run \cmd+sleep 15 | cat &+, then \cmd|jobs -l|. The formatting
+is shell-specific; in Bash the long form commonly shows separate
+PID lines for the two members. Use \cmd|fg %1| if the job is
+still running and the selected number really is 1. After it
+exits no files or processes from the exercise need cleanup.
+\end{solution}
+
+\begin{takeaways}
+\item A job belongs to one shell and may contain more than one process.
+\item Suspend, resume, interrupt, and wait are different actions.
+\item A background job is not a persistent session or a guarantee
+of successful completion.
+\end{takeaways}
+
+\NextChapter{Next, learn to predict where a command may read,
+write, and create files.}
+
+\begin{furtherreading}
+\ReadingItem{POSIX shell job control}{Foreground and background process groups and asynchronous lists.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/V3_chap02.html}
+\ReadingItem{POSIX wait}{Waiting for known child processes and interpreting status.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/wait.html}
+\ReadingItem{Bash job control}{Terminal interactions and job-control builtins.}{https://www.gnu.org/software/bash/manual/html_node/Job-Control.html}
+\end{furtherreading}

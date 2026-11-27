@@ -1,0 +1,7 @@
+\begin{tikzpicture}
+\node[utp node] (raw) {\texttt{-revised.txt}\\Starts with a hyphen};
+\node[utp node,below=4mm of raw] (safe) {\texttt{./-revised.txt}\\Starts with a dot};
+\node[utp node] (file) at (6,-.65) {The same file};
+\draw[utp arrow] (raw.east)--(file.west);
+\draw[utp arrow] (safe.east)--(file.west);
+\end{tikzpicture}

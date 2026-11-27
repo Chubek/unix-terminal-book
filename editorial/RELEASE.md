@@ -38,6 +38,13 @@ exercise hyperlinks now include a chapter component so the same visible
 exercise number in different chapters does not collide; the edition
 fixture checks cross-chapter anchor uniqueness.
 
+The first staged **full-manuscript draft** included 48 draft chapters,
+144 figures, 97 tables, 592 example blocks, 144 exercises and solutions,
+and 48 dialogues. Multi-pass pdfLaTeX with `makeindex` produced 520
+pages in print/answers and 482 pages in screen/noanswers, both 504 × 720
+points. This was a proof from pre-revision branch snapshots, not a
+release test or final review disposition.
+
 ## Verified at this checkpoint
 
 | Check | Environment | Result and scope |

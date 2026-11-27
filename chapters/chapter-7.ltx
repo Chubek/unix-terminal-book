@@ -1,0 +1,220 @@
+You need to send next Saturday's volunteer rota to a neighbor. The file you received is the only copy of the original; your new version will get a clearer name and a few corrections. A file manager offers a reassuring collection of icons. A terminal offers something different: you can state exactly which file is the source, which path should receive the result, and how you will check that nothing went astray.
+
+\begin{objectives}
+\item Copy a file without changing the original, and rename a practice copy.
+\item Predict the destination when it names a file or a directory.
+\item Inspect probable file types and verify that two files contain identical bytes.
+\item Recognize a collision before agreeing to replace any content.
+\end{objectives}
+
+\input{figures/chapter-7/operations.tikz}
+\section{Make a low-stakes original}
+\label{sec:7-original}
+The following commands use relative paths, so their effect depends on your working directory, as in Chapter~\ref{ch:6}. Use a spare local \cmd|/bin/sh| shell and choose a place where you are allowed to make a new directory, such as your home directory. Check the location with \cmd|pwd|. Type each line separately. If the first line fails, stop; do not enter a directory of the same name that was already there. Pick a new unique name and use it consistently. Before writing any fixture, make sure \cmd|cd| succeeded and \cmd|pwd| ends in the new directory's name. All the names starting with \cmd|./| below refer to this practice directory once you have entered it.
+
+\begin{terminal}
+mkdir ./utp-07-rota
+cd ./utp-07-rota
+pwd
+printf '%s\n' 'Saturday: morning shift' > './rota original.txt'
+\end{terminal}
+
+The word \cmd|mkdir| asks for a directory; the quoted path on the last line names a file inside it. \cmd|printf| prints its second quoted argument as text followed by a line break: \cmd|%s| means ``insert a string'' and \cmd|\n| means ``end the line.'' The greater-than sign sends the text into the named file instead of displaying it. Use it only with the new practice names specified here: an existing file at that path could be emptied first. We'll deal with redirection in detail in Chapter~\ref{ch:16}; for now, this is a recipe for making one known, harmless original.
+
+The single quotes around the path tell the shell to keep the two words of the name together. The quotes are not in the filename. The leading \cmd|./| means that this is an address in the current directory. It also prevents a name that begins with a hyphen from being read as an option. This is more than a precaution for fictional filenames: files downloaded from other people don't follow the naming rules you would choose.
+
+\section{A new name with the same content}
+\index{cp@\texttt{cp}}
+An \FirstUse{operand} is an item a command works on. In our first copy, the path of the original and the path to create are the two operands; their order matters. Say them aloud as ``from'' and ``to'' when checking a command line. Use two distinct paths and pick a destination that does not exist. Inspect the practice directory before and after:
+
+\begin{terminal}
+ls -a .
+cp -i './rota original.txt' './rota working.txt'
+ls -a .
+\end{terminal}
+
+The option \cmd|-a| makes \cmd|ls| report names beginning with a dot as well; here you will also see \cmd|.| and \cmd|..|, the current and parent directory entries. The \cmd|-i| option on \cmd|cp| requests confirmation before overwriting an existing destination. Normally there is no prompt on this first run and both file names appear in the second listing. If a question does appear, do not consent: the example assumes a new target. If you cannot interpret the question or doubt the path, interrupt the command with \KeyChord{Ctrl}{C}. Inspect the destination again instead of trying a more forceful option.
+
+\begin{figure}[htbp]
+\centering\UTPSevenCopy
+\caption{Copying into a fresh path leaves two names with independent file contents.}
+\label{fig:7-copy}
+\VisualDescription{The original leads to a new working copy; after copying, the original still exists.}
+\end{figure}
+
+Figure~\ref{fig:7-copy} describes the ordinary case with two separate regular files. You can now edit the working file without editing the original. There are ways for two paths to refer to the same underlying file, which Chapter~\ref{ch:8} explains; don't assume that renaming something, or a second name visible in a directory listing, created an independent copy. Likewise, a successful ordinary copy need not reproduce all the original attributes. The bytes may be identical while dates, owner, permissions, extended attributes, or other metadata differ. For sharing a rota, verifying its content may suffice. For a backup or a file carrying important attributes, choose and test a method suited to the restoration task.
+
+\section{Destination paths that change the result}
+A destination is not a blank into which the command automatically writes the exact name you have in mind. If you name an existing directory, the source's last component becomes the name inside that directory. If you instead name a file that doesn't exist, and its parent exists, that final component is the new filename. Test both routes:
+
+\begin{terminal}
+mkdir ./outbox
+cp -i './rota original.txt' ./outbox
+cp -i './rota original.txt' './outbox/week 1.txt'
+ls -a ./outbox
+\end{terminal}
+
+The first destination produces \cmd|./outbox/rota original.txt|; the second produces \cmd|./outbox/week 1.txt|. Neither operation creates a missing parent directory for you. A collision in the first command would be with the entry \emph{inside} the destination directory, not with the directory as a whole. This is why looking only for the existence of \cmd|outbox| would not tell you whether the first copy could replace something.
+
+\begin{figure}[htbp]
+\centering\UTPSevenDestination
+\caption{An existing directory receives the old basename; a new path supplies a new one.}
+\label{fig:7-destination}
+\VisualDescription{The path outbox leads to a child named rota original.txt, while outbox/week 1.txt already names the intended new child.}
+\end{figure}
+
+Try reading each path independently of the rest of the command. What does its last component denote now? Does its parent exist? Where would you look for the result? When moving many files in everyday work, these questions are more useful than remembering a particular order of prompts. Figure~\ref{fig:7-destination} follows the two destination paths side by side. This chapter deliberately uses one source at a time, so the checks remain visible. Don't use this two-file recipe as a way to merge collections or handle unknown links.
+
+\begin{quicktable}{M{1.12in}Y Y}
+\toprule
+Operation & Source afterward & Destination afterward\\
+\midrule
+cp -i FROM TO & Original path and contents remain. & A new copy at a fresh address; an existing regular file can be overwritten only if approved.\\
+mv -i FROM TO & Old path normally disappears after a successful move. & New name or location for the moved file; check for collisions first.\\
+cmp FROM TO & Read only; no edit. & Read only; no edit. Checks bytes rather than names.\\
+\bottomrule
+\end{quicktable}
+
+\section{Tell the copies apart, then compare them}
+\index{file@\texttt{file}}
+Files with the same suffix do not necessarily contain the same kind of material. \cmd|file| inspects a pathname and, for regular files, can use features of the contents to report a likely type. It does not open the document in its normal application, and it is not a security check. A wrongly named PDF may still be identified as a PDF; text could be identified broadly without telling you which application made it. Implementations and their data files may describe the same content differently. Try the practice original and the directory:
+
+\begin{terminal}
+file './rota original.txt' ./outbox
+\end{terminal}
+
+On a system that describes the practice line as ASCII text, the first result includes the file name, a colon, and that description. The second result describes a directory rather than text. A report such as ``data'' means the utility did not give a more specific classification; it is not a cue to run or open an unknown file. This command can help you choose a sensible reader or tell a colleague that a presumed document is really an archive, but it gives no guarantee that all bytes inside conform to a format.
+
+\index{cmp@\texttt{cmp}}
+To verify copying, use \cmd|cmp|. It asks whether the bytes match in order, not whether the content \emph{looks} the same when rendered. Try a matching pair:
+
+\begin{terminal}
+cmp './rota original.txt' './rota working.txt'
+printf '%s\n' "$?"
+\end{terminal}
+
+With two identical readable regular files, \cmd|cmp| says nothing and its \FirstUse{exit status}, the shell's numeric result for the command, is zero. The second line prints that result. In a POSIX-style shell, \cmd|$?| holds the status of the immediately preceding command; check it before running anything else. A diagnostic about reading a file is different from evidence that the contents differ. Create one deliberately different, uniquely named fixture and try again:
+
+\begin{terminal}
+printf '%s\n' 'Saturday: evening shift' > ./different.txt
+cmp './rota original.txt' ./different.txt
+printf '%s\n' "$?"
+\end{terminal}
+
+The comparison should report a difference and return 1. A comparison implementation may print a position such as ``byte 11, line 1,'' or may describe the difference differently. The position is a count in the underlying file, not a screen column. A shorter file which matches the beginning of a longer file can instead produce an end-of-file report. Chapter~\ref{ch:22} shows a way to inspect differences between lines of text when knowing ``not identical'' isn't enough.
+
+\begin{quicktable}{M{1in}Y Y}
+\toprule
+\textnormal{Result} & What it tells you & What to do\\
+\midrule
+0 & The bytes of the two files match. & Check the destination path too; equal bytes do not check metadata.\\
+1 & The bytes differ, including a possible length difference. & Confirm that you selected the intended pair and decide whether the change was intentional.\\
+>1 & A comparison problem occurred. & Read the diagnostic and check paths or readability; do not call the copy verified.\\
+\bottomrule
+\end{quicktable}
+
+\section{Rename or move without losing track}
+\index{mv@\texttt{mv}}
+In the next command the destination's parent already exists. The source is still the working copy; the original remains in the practice directory. Moving replaces the \emph{source name}, while copying leaves the source name alone. This difference is easy to miss when a file manager follows a selected item as it moves. The shell's working directory does not follow a file. After the move, the relative path beginning with \cmd|./outbox/| is how you find it from here.
+
+\begin{terminal}
+mv -i './rota working.txt' './outbox/rota ready.txt'
+ls -a .
+ls -a ./outbox
+cmp './rota original.txt' './outbox/rota ready.txt'
+\end{terminal}
+
+Look for the old name to disappear and the new name to appear where planned, and for \cmd|cmp| to be silent. \cmd|-i| has the same essential purpose here as with copying: ask before replacing an existing destination. The filesystem may be able to accomplish a move within one filesystem by changing the names that refer to a file, without making a new copy of its contents. Across filesystems, such as a move onto a separate storage volume, the utility must instead arrange a copy and remove the source after the copy succeeds. Don't treat a move across devices as instant or interruption-proof. For valuable material, prefer a verified copy first and make removal a separate decision.
+
+\begin{figure}[htbp]
+\centering\UTPSevenMove
+\caption{Check both sides of a move; a name missing from one directory is only half the evidence.}
+\label{fig:7-move}
+\VisualDescription{Before moving, the working name is present. After moving, that name is absent and a ready name is present in the outbox.}
+\end{figure}
+
+The output in Figure~\ref{fig:7-move} is a checklist, not a transcript. For a fresh-window verification, write down the absolute paths of both locations before moving; from another window, identical relative names may point somewhere else. If the command appears to fail, don't immediately run it again. Look for a surprising destination, read the first diagnostic, and check whether the old or new path is present before deciding the next action. A visible destination is not proof that a partially copied file is complete, and a duplicate path on another storage volume may not be the destination the command saw.
+
+\section{Rehearse a collision, not a loss}
+In the resolved practice directory, the next command deliberately points to the existing ready file. This is a controlled example with throwaway contents. Read both operands; the first contains different text, while the second currently matches the original. Decline the overwrite with a negative response appropriate to the prompt, or use \KeyChord{Ctrl}{C} if in doubt. The comparison afterward should still agree.
+
+\begin{terminal}
+cp -i ./different.txt './outbox/rota ready.txt'
+cmp './rota original.txt' './outbox/rota ready.txt'
+\end{terminal}
+
+A confirmation is the last chance to catch this decision, not a complete preview of the operation. Choose a new filename first whenever the goal is to preserve both versions. If the tool asks a question you didn't expect, stop and verify the path rather than train yourself to answer yes. Implementations differ in the status they report after a declined overwrite; verify what remained rather than inferring it from the status alone. On a real assignment, you could compare the proposed source to the existing destination without changing either. If someone else can write in the same directory, a prior listing is not a guarantee that the directory will stay unchanged while you decide.
+
+\section{When a copy has a job to do}
+For the handoff, there are really three items to account for: what you received, what you are free to edit, and what you mean to send. Names that describe those roles are more useful than names like ``new'' and ``newer,'' which stop telling you anything the moment a third version arrives. Keeping the received rota where it is also makes an unexpected mismatch easier to investigate. Instead of guessing whether you edited the wrong file, you have one reference path whose role hasn't changed.
+
+Before correcting the hours, a comparison of the working copy to the received file should succeed. \emph{After} correcting them, a mismatch can be the right result. Compare against the right expectation at each stage: use equality to check that a handoff copy matches your approved working version, and use a reader or text comparison to check the substance of the approved edits. Even a perfect byte comparison won't tell you whether you entered the right hours. It's evidence for a specific claim, not a substitute for reading.
+
+There is also a silent class of mistake that neither \cmd|-i| nor \cmd|cmp| can catch on its own: you make a correct copy in the wrong folder. Perhaps two directories called \cmd|outbox| exist. If you compare two paths from the same mistaken working directory, the bytes can match without answering where a recipient will look. Write down the destination independently, consult it after copying, and check from the recipient's side if practical. The method will carry from a local folder to a later network transfer: decide what the destination must be, then verify the result instead of assuming that an absence of errors is enough.
+
+\begin{dialoguebox}{Same name, same file?}
+\Brian{If I copy the original to the same name in the outbox, shouldn't the shell refuse because that name already exists here?}
+\Stephen{It can work because the two files have different addresses.}
+\Brian{Then two different addresses always mean two different files?}
+\Stephen{No. Two names can refer to one file. I meant these ordinary copies at new paths.}
+\Brian{And if the outbox already has my neighbor's version?}
+\Stephen{Then it is a collision. Check the intended path and choose a fresh name instead.}
+\Brian{So after checking the name, I check the bytes separately.}
+\DialogueConclusion{Check the destination and the contents separately.}
+\end{dialoguebox}
+
+\section{Practice and clean up}
+Do these exercises in the practice directory. To clean up afterward, check \cmd|pwd| first. Remove only the files you really created, using \cmd|rm -i| one file at a time; it asks before permanently removing the name. The demonstrations leave \cmd|'./rota original.txt'| and \cmd|./different.txt| here, and \cmd|'rota original.txt'|, \cmd|'week 1.txt'|, and \cmd|'rota ready.txt'| in \cmd|./outbox|. Include the directory prefix inside the quotes when referring to the outbox files. If any name is unexpected, answer no or interrupt. After \cmd|ls -a| shows no other entries in the relevant directories, remove the empty \cmd|outbox| with \cmd|rmdir ./outbox|, leave with \cmd|cd ..|, and remove the now-empty practice directory with \cmd|rmdir ./utp-07-rota| (substitute your chosen name). Chapter~\ref{ch:12} treats removal in full. You can also keep the directory rather than deleting anything.
+
+\begin{exercise}{A recipient-friendly title}
+\label{ex:7-recipient}
+Create a copy named \texttt{weekend handoff.txt} inside \texttt{outbox}. Confirm independently that the right name exists and that its contents match the original. Keep the original. Clean up only the new copy if you want it gone.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+cp -i './rota original.txt' './outbox/weekend handoff.txt'
+ls -a ./outbox
+cmp './rota original.txt' './outbox/weekend handoff.txt'
+\end{terminal}
+The new name should be listed; comparison should say nothing and return zero. Remove only \texttt{./outbox/weekend handoff.txt} with interactive removal.
+\end{solution}
+
+\begin{exercise}{Different names, different bytes}
+\label{ex:7-different}
+Using the examples already present, show that the original and the evening rota differ without changing either file. Explain why two filenames alone would not establish the difference. No new files need cleanup.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+cmp './rota original.txt' ./different.txt
+printf '%s\n' "$?"
+\end{terminal}
+Expect a mismatch report and status 1. A name is a way to locate contents, not a description of the contents.
+\end{solution}
+
+\begin{exercise}{Move a practice copy back}
+\label{ex:7-return}
+Move the ready rota from \texttt{outbox} to the practice directory under a fresh name, then verify both locations and return it to \texttt{outbox}. Don't move the original.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+mv -i './outbox/rota ready.txt' ./proof.txt
+ls -a .
+ls -a ./outbox
+cmp './rota original.txt' ./proof.txt
+mv -i ./proof.txt './outbox/rota ready.txt'
+\end{terminal}
+After the first move, expect \texttt{proof.txt} here and no ready file in the outbox. The final move restores the earlier state; there should be no \texttt{proof.txt} to clean up.
+\end{solution}
+
+\begin{takeaways}
+\item Copy to a fresh path to keep independent contents; moving a name has a different purpose.
+\item Predict the destination before typing and inspect both sides afterward.
+\item Use \texttt{file} for likely type and \texttt{cmp} for byte equality, not as substitutes for each other.
+\end{takeaways}
+
+\begin{furtherreading}
+\ReadingItem{POSIX cp}{Destination handling and interactive replacement for copying}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/cp.html}
+\ReadingItem{POSIX mv}{Destination handling and behavior across filesystems for moving}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/mv.html}
+\ReadingItem{POSIX cmp}{The Open Group specifies output and the three classes of exit status}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/cmp.html}
+\ReadingItem{file(1)}{The upstream implementation manual explains the tests used for classification}{https://github.com/file/file/blob/master/doc/file.man}
+\end{furtherreading}

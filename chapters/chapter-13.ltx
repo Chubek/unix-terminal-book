@@ -1,0 +1,429 @@
+The community hall sends you two versions of its Saturday schedule. You
+want to compare them without editing either one. A colleague suggests
+\cmd|cmp -s| and says a quiet screen means the schedules agree. But the
+screen is just as quiet when you mistype a filename. To do this job reliably
+you need to know what you asked the command to do and how it tells you what
+happened. Those are separate questions.
+
+\begin{objectives}
+\item Separate the command name, options, option values, and operands.
+\item Pass a name with spaces or an initial hyphen as one literal argument.
+\item Read a utility's exit status and distinguish a negative answer from an error.
+\end{objectives}
+
+\section{Start with two drafts}
+\label{sec:13-drafts}
+The examples use POSIX-style \texttt{sh}. If your everyday shell uses
+different syntax, type \cmd|sh| to start a practice shell, and type
+\cmd|exit| at its prompt when you finish. The unadorned commands in the
+input panels are what you type; the terminal's prompt is not part of them.
+This chapter doesn't need any of your own documents.
+
+\begin{terminal}
+lab=$(mktemp -d) && cd "$lab" && pwd
+\end{terminal}
+
+\cmd|mktemp -d| makes a new private directory on the platforms covered
+here, although it is not a POSIX utility. The \cmd|$(...)| captures the
+printed path and \cmd|lab=| remembers it; the double quotes preserve the
+path as one argument even if it has spaces. Each \cmd|&&| runs the next
+step only if the preceding one succeeds. If the line fails or doesn't
+print the new path, stop. Record the path shown by \cmd|pwd|. If you
+close the practice shell prematurely, the variable won't be there when
+you return, but the recorded path will still help you identify the lab.
+
+\begin{terminal}
+printf '%s\n' 'Doors noon' 'Tea at one' > schedule.txt
+cp schedule.txt 'Saturday draft.txt'
+printf '%s\n' 'Doors noon' 'Tea at two' > ./-revised.txt
+\end{terminal}
+
+Only run those lines in the new directory. The \cmd|>| writes the
+printed text into the named file, replacing contents if it already
+exists; Chapter~\ref{ch:16} explains this operation in detail. In
+\cmd|printf| the quoted format \cmd|%s\n| means print a string followed
+by a newline. It repeats for the two supplied strings. The quotes keep
+each phrase together. The copy has the original text; the third file
+differs only in the time for tea. These small, known differences give
+you something to check against your reading of the commands.
+
+\begin{terminal}
+cmp schedule.txt 'Saturday draft.txt'
+cmp schedule.txt ./-revised.txt
+\end{terminal}
+
+The first command normally says nothing: the two inputs match
+byte-for-byte. The second normally names the files and identifies the
+first differing position. Its exact wording varies with the utility;
+in this fixture the difference is on line two. That is a useful result,
+not a broken command. Conversely, \cmd|cmp| does not know whether what
+you meant by ``same'' was ``the same event times'' despite changes to
+formatting. It can answer only the question specified by its manual.
+
+\section{Read from the outside in}
+\label{sec:13-arguments}
+\index{argument}%
+\index{option}%
+\index{operand}%
+\index{cmp@\texttt{cmp}}%
+\index{printf@\texttt{printf}}%
+In \cmd|cmp -s schedule.txt 'Saturday draft.txt'|, read \cmd|cmp| as
+the name of the command, \cmd|-s| as the instruction to be silent,
+and the two paths as the things to compare. An \emph{argument} is an
+individual value the shell passes after the command name. An
+\emph{option} selects a behavior and an \emph{operand} supplies data
+or a target; both are passed as arguments. Some options take a value
+of their own. The shell doesn't consult the \cmd|cmp| manual and
+attach labels to the arguments. It gets the arguments ready; the
+command decides what they mean. Figure~\ref{fig:13-arguments} shows
+the difference.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-13/arguments.tikz}
+\caption{The shell hands over three arguments; \texttt{cmp} gives each a role.}
+\label{fig:13-arguments}
+\VisualDescription{The silent option, first path, and quoted second path occupy three separate argument positions. The second path remains one argument.}
+\end{figure}
+
+The blank between \cmd|Saturday| and \cmd|draft.txt| is part of the
+second path. The quotes themselves are shell notation, so \cmd|cmp|
+doesn't receive those. If you omit the quotes, you don't merely
+change the spelling of an operand: you supply an additional argument.
+Read the following \cmd|printf| call as a little inspection tool.
+It prints each data argument surrounded by square brackets, one per
+line. Those brackets are part of the format and not part of the names.
+
+\begin{terminal}
+printf '[%s]\n' schedule.txt 'Saturday draft.txt'
+printf '[%s]\n' schedule.txt Saturday draft.txt
+\end{terminal}
+
+Expect two bracketed lines in the former case, three in the latter.
+That remains a useful test when the intended command is more
+complicated. Once the shell has split an unquoted name into two
+arguments, a utility cannot always tell those apart from two separate
+names that you really meant to provide. Joining the words with quotes
+in the input is clearer than relying on a receiving program to guess.
+
+\begin{terminal}
+ls -l -d .
+ls -ld .
+head -n 1 'Saturday draft.txt'
+\end{terminal}
+
+\cmd|ls -l| requests a long listing, and \cmd|-d| asks for information
+about the directory named by the operand \cmd|.| rather than a listing
+of its contents. The detailed fields aren't needed here: check the final
+name. For these \cmd|ls| switches, \cmd|-ld| expresses the same request.
+\cmd|head -n 1| instead has an option \cmd|-n| that needs the argument
+\cmd|1| to supply a count; the path is still a different argument.
+Expect \texttt{Doors noon}. The roles are fixed by the \cmd|head|
+manual, not merely by where a word appears on the screen. When in
+doubt, prefer the spaced form documented in the synopsis and keep
+options ahead of operands. Some utilities accept interleaved options
+and operands; don't count on that habit traveling from your machine.
+
+\begin{quicktable}{M{1.4in}Y}
+\toprule
+Example fragment & What to look up \\
+\midrule
+cmp -s & Whether silence changes printing, status, or both. \\
+head -n 1 & The unit and allowed values of the count. \\
+ls -ld . & Whether the two switches can be grouped; what dot names. \\
+printf format data & The first operand is a format and the remaining operands are data. \\
+\bottomrule
+\end{quicktable}
+
+A synopsis commonly uses brackets to show optional material and
+ellipsis to show repetition. Neither is automatically something to
+type. Chapter~\ref{ch:10} explains how to find the manual for the
+utility you are actually running. Many GNU utilities offer long options
+starting with two hyphens, but portable examples should use the
+documented POSIX options where possible. Some utility names also name
+a shell builtin: for example \cmd|printf| may run inside the shell,
+even when a separate system executable exists. If you get surprising
+behavior, first identify what is running; requesting \cmd|--help| is
+not a universal substitute for reading the appropriate manual.
+
+\begin{terminal}
+command -V printf
+command -V cmp
+\end{terminal}
+
+\cmd|command -V| asks the shell to describe how it resolves the supplied
+name. The descriptions depend on the shell and your configuration.
+Compare the two descriptions rather than expecting a particular path.
+It's better to know which version of a command you're addressing before
+asking why a flag works on a colleague's machine but not on yours.
+
+\section{A hyphen can belong to a name}
+\label{sec:13-hyphen}
+\index{leading hyphen}%
+Look back at the third filename. Suppose an attachment arrives named
+\texttt{-revised.txt}. Writing quotes around this name preserves it as
+one argument, but it was already one argument: there was no space in
+it. The quotes don't tell the utility how to interpret it. After the
+shell removes them, the receiving program gets an argument beginning
+with \texttt{-} and may try to read it as an option. A portable way
+to pass a relative filename in the current directory is to spell it
+with a \texttt{./} prefix. The operating system locates the same file;
+the utility sees an argument that starts with a dot, not a hyphen.
+
+\begin{terminal}
+head -n 1 ./-revised.txt
+head -n 1 -- -revised.txt
+\end{terminal}
+
+Both requests print \texttt{Doors noon} with a conforming \cmd|head|.
+For utilities that recognize it, \cmd|--| ends option processing, so
+the following hyphen belongs to an operand. Don't put it in every
+command by reflex: consult the applicable manual or use the path form.
+In some utilities \cmd|-| alone is a special operand, often referring
+to standard input; naming the actual file as \cmd|./-| avoids assigning
+it that special meaning. Figure~\ref{fig:13-hyphen} puts the two layers
+side by side.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-13/hyphen.tikz}
+\caption{The prefix changes the argument's first character, not the file it names.}
+\label{fig:13-hyphen}
+\VisualDescription{Both spellings name the same file, but only the spelling with dot slash starts with a dot. Quotes alone leave the initial hyphen untouched.}
+\end{figure}
+
+Treat an odd filename as a good reason to test a read-only command
+first. For example, if you intend to file an attachment away under a
+new, clearer name, inspect it by its exact path before you consider
+moving it. You can also use an absolute path you already confirmed.
+Don't type an option from an error message just to make the message
+go away: if a filename was mistaken for an option, the answer is to
+repair the way you pass the filename. This matters particularly for
+operations that write, move, or delete things.
+
+\section{The answer you cannot see}
+\label{sec:13-status}
+\index{exit status}%
+The shell receives a number when a command finishes, independently of
+what the command prints. That number is its \emph{exit status}. Zero
+usually marks success. The exact meaning of a nonzero value is part of
+the command's contract: with \cmd|cmp|, a nonzero result can be a
+legitimate answer. Read \cmd|$?| as ``the previous status in this shell.''
+The double quotes preserve the value as one argument. Run the
+\cmd|printf| immediately after the command you want to check, without
+running an extra command in between. Even an innocent \cmd|pwd| will
+replace the status before you can look.
+
+\begin{terminal}
+cmp -s schedule.txt 'Saturday draft.txt'
+printf 'Status: %s\n' "$?"
+cmp -s schedule.txt ./-revised.txt
+printf 'Status: %s\n' "$?"
+cmp -s schedule.txt not-created.txt
+printf 'Status: %s\n' "$?"
+\end{terminal}
+
+The first status is zero; the second is one; the third must be above
+one for a conforming \cmd|cmp|. A diagnostic for the third command
+is allowed even with \cmd|-s|; its presence and wording are not the
+test. The former two conditions are answers after a comparison. The
+third means the comparison couldn't give you either answer. A
+terminal full of text does not itself prove a problem, either: plain
+\cmd|cmp| can describe the first difference as part of doing its job.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-13/status.tikz}
+\caption{Read a status relative to the question the command answers.}
+\label{fig:13-status}
+\VisualDescription{A comparison can say equal with zero, different with one, or not completed due to trouble with a status above one.}
+\end{figure}
+
+\begin{quicktable}{M{1.4in}Y}
+\toprule
+Status from cmp & Next decision \\
+\midrule
+0 & Contents match. Decide separately whether that suffices to replace either file. \\
+1 & Contents differ. Inspect the difference; don't infer which is newer. \\
+Greater than 1 & Check the filenames, accessibility, and diagnostic before taking any action. \\
+\bottomrule
+\end{quicktable}
+
+For another command, look up its own status rules instead of copying
+this table. The shell commonly reports status 127 if it cannot find
+the command and 126 if it finds the command to execute but cannot
+execute it. Those are not numbers returned by \cmd|cmp| after
+comparing your files. Read the message and name involved. In a command
+line with more than one command, make yourself ask \emph{which} result
+you are seeing. The right result for \cmd|pwd| tells you nothing about
+the left result for \cmd|cmp|. Chapter~\ref{ch:17} extends this
+distinction to pipelines, where the stage you see least may be the one
+that failed first.
+
+\section{Make an ambiguous instruction checkable}
+\label{sec:13-check}
+Imagine you get a message that says ``Use the latest schedule.''
+Nothing in \cmd|cmp| orders the files by date or tells you who
+approved them. A difference only proves that the files don't have
+the same bytes. On the other hand, if the task was to check that a
+copy landed intact, zero is evidence about the copy's bytes.
+The same tool gives a good answer to one request and an answer
+that needs more context for the other. Get as far as phrasing
+the question before choosing the options.
+
+Suppose you want the status for your own notes but want to
+type \cmd|pwd| before displaying it. Save the status right
+away. There is no blank on either side of the equals sign in
+the assignment; it stores data in the current shell rather
+than sending arguments to a command. Chapter~\ref{ch:27}
+develops variables beyond this small use.
+
+\begin{terminal}
+cmp -s schedule.txt ./-revised.txt
+comparison=$?
+pwd
+printf 'Saved comparison status: %s\n' "$comparison"
+\end{terminal}
+
+The path and the one now report different events. Typing
+\cmd|printf '%s\n' "$?"| on the last line instead would ask for
+the status of \cmd|pwd| and normally print zero. There wasn't
+a change in either schedule. You simply changed which question
+the printout answers. If you attach the result to an email,
+write ``the two schedules differ'' rather than ``the
+comparison failed.'' The former tells the recipient what
+they need to investigate.
+
+Taking arguments apart can help with another ambiguous
+message: a colleague sends a command containing
+\cmd|head -n '2 Saturday draft.txt'|. You could spend a while
+looking for an invisible punctuation error in the filename.
+Instead, read what the utility receives: after \cmd|-n|
+there is one argument, \texttt{2 Saturday draft.txt}. It isn't
+a line count. Nothing will be left over as a file operand.
+Compare that to two separate arguments, one for the number
+and one for the name.
+
+\begin{terminal}
+printf '<%s>\n' -n '2 Saturday draft.txt'
+printf '<%s>\n' -n 2 'Saturday draft.txt'
+\end{terminal}
+
+The angle brackets belong only to \cmd|printf|'s display
+format. Compare the second reported argument from each
+command. This test doesn't simulate \cmd|head|; it makes the
+boundary mistake apparent without starting it. Keep the
+placeholder \cmd|%s| in a format you control rather than
+making an unknown string the format. A name that includes
+a percent sign is just a name as a data argument, but a
+percent sign in the format can select a conversion. Try
+printing \cmd|'50% draft.txt'| as data with the fixed
+format. The result keeps the percent sign as written even
+though your lab contains no file by that name.
+
+Ask ``who had to understand that notation?'' The terminal
+app presents what you typed. The shell recognizes the quotes
+and prepares the argument list. The utility interprets
+\cmd|-n| and the count. The file lookup uses the path.
+A correct path doesn't repair an invalid count, and a
+supported count doesn't locate a misspelled file. Reading
+the diagnostic with those layers in mind is usually faster
+than changing two things and trying the command again.
+When you paste an example, watch for typographic quotation
+marks. If the shell displays a continuation prompt because
+it is waiting for a closing quote, cancel the incomplete
+input with \KeyChord{Ctrl}{C} and enter the whole command
+again. Don't add random punctuation at that prompt; it can
+become part of the command you were trying to fix.
+
+You can also deliberately change the comparison's reporting
+behavior. \cmd|cmp -l schedule.txt ./-revised.txt| reports each
+differing byte rather than just the first. The first column
+is its position, counted from one. The next two columns give
+the two byte values in octal, a base-eight notation. Expect
+three differences because \texttt{one} and \texttt{two}
+differ at all three positions in these files. The option
+doesn't change which bytes are compared. If you want a
+reader-friendly account of which \emph{lines} changed, use
+the comparison tools in Chapter~\ref{ch:22}; byte positions
+are useful for checking an exact copy but are an awkward
+way to read a schedule.
+
+\begin{dialoguebox}{Quiet but not certain}
+\Brian{I compared two files and nothing happened. So they match?}
+\Stephen{Plain \texttt{cmp} normally stays quiet when the files match.}
+\Brian{But you told me to use \texttt{-s}. It stayed quiet when I changed a line.}
+\Stephen{You're right. With that option the status reports the difference.}
+\Brian{Then anything other than zero means they're different?}
+\Stephen{Only one means different. A higher status points to trouble, such as a missing file.}
+\Brian{So I need to check that I got an answer before I use it.}
+\Stephen{Exactly. Ask for the status right after the comparison.}
+\DialogueConclusion{Silence is not a status.}
+\end{dialoguebox}
+
+\section{Practice and leave the directory tidy}
+A useful routine is to check the working directory, write the command
+as a sentence (``compare these two paths quietly''), then read it as
+individual arguments. Predict a result you can check before using any
+result as the basis for a later action. In these exercises only the
+practice files are used; the final cleanup applies to all three. Keep
+the setup files until you have completed the exercises.
+
+\begin{exercise}{Prove the boundary}
+Print a bracketed argument list containing the draft filename and the
+revised filename, without reading either file. Predict the number of
+bracketed entries. Alter just the draft argument to demonstrate a
+boundary mistake without doing anything to the real file.
+\end{exercise}
+\begin{solution}
+Use \cmd|printf '[%s]\n' 'Saturday draft.txt' ./-revised.txt| for
+two entries. Remove the quotes around the draft name and expect
+three entries. Both calls only print to the terminal; there are no
+extra files to clean up.
+\end{solution}
+
+\begin{exercise}{Make the distinction with status}
+Quietly compare the original schedule with the revision. Then change
+the second path to a nonexistent file and compare again. Print each
+status without running another command first.
+\end{exercise}
+\begin{solution}
+Use \cmd|cmp -s schedule.txt ./-revised.txt|, followed immediately
+by \cmd|printf '%s\n' "$?"|. It prints one. Repeat with
+\cmd|not-created.txt| instead, and the status is above one.
+Neither comparison changes a file; no additional cleanup is needed.
+\end{solution}
+
+\begin{exercise}{Separate the option's value from the operand}
+Read two lines of the file with an initial hyphen using a path
+that needs no end-of-options marker. Before running the command,
+identify the value belonging to its option.
+\end{exercise}
+\begin{solution}
+Use \cmd|head -n 2 ./-revised.txt|. The value of \cmd|-n| is
+\cmd|2| and the operand is \cmd|./-revised.txt|. The lines are
+\texttt{Doors noon} and \texttt{Tea at two}. There is no output file.
+\end{solution}
+
+Check \cmd|pwd| against the path you recorded, and stop if they
+differ. If you created an original of your own there, copy it
+somewhere safe first. Remove only the named practice files. The
+interactive \cmd|-i| flag to \cmd|rm| asks before removing each
+file. Confirm only the expected names. \cmd|rmdir| removes an
+empty directory; if it refuses, inspect what remains rather than
+switching to recursive deletion.
+
+\begin{terminal}
+rm -i schedule.txt 'Saturday draft.txt' ./-revised.txt
+cd ..
+rmdir "$lab"
+\end{terminal}
+
+\begin{takeaways}
+\item The shell supplies arguments; the utility assigns them roles.
+\item Quotes protect an argument boundary; a path prefix can protect the interpretation of a filename.
+\item Read the previous status immediately and interpret it using the correct command's manual.
+\end{takeaways}
+
+\begin{furtherreading}
+\ReadingItem{POSIX Utility Syntax Guidelines}{The conventions for option arguments, grouping, and the end-of-options delimiter.}{https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/V1_chap12.html}
+\ReadingItem{POSIX cmp}{The distinction between identical files, different files, and other results.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/cmp.html}
+\ReadingItem{NetBSD mktemp}{Creating a temporary directory without reserving a predictable name.}{https://man.netbsd.org/mktemp.1}
+\end{furtherreading}

@@ -1,0 +1,9 @@
+\begin{tikzpicture}
+\node[utp node] (path) at (-3.35,.65) {working\\directory};
+\node[utp node] (lookup) at (0,.65) {shell\\lookup};
+\node[utp node] (tool) at (3.35,.65) {selected\\tool};
+\node[utp node] (result) at (3.35,-.75) {result};
+\draw[utp arrow] (path)--(lookup);
+\draw[utp arrow] (lookup)--(tool);
+\draw[utp arrow] (tool)--(result);
+\end{tikzpicture}

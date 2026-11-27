@@ -1,0 +1,448 @@
+You need to send a two-line room booking to a volunteer and keep a
+record of a missing attachment. You want one file that contains the
+booking and another that contains only what went wrong. You don't
+want a command's warning pasted into the message, and you definitely
+don't want to erase the original booking while trying to make the
+copy. A useful redirection makes all three outcomes predictable:
+where the input comes from, where the ordinary output goes, and
+where the diagnostics go.
+
+\begin{objectives}
+\item Connect the three standard channels to files without mixing their contents.
+\item Explain truncation and appending, and avoid redirecting onto a source file.
+\item Follow descriptor duplication from left to right.
+\end{objectives}
+
+\section{Build a lab before writing anything}
+\label{sec:16-lab}
+Use a fresh \cmd|sh| session. Make and enter a new private
+directory with \cmd|mktemp -d|. The shell captures the path
+in \texttt{lab}, preserves it with quotes, and stops proceeding
+through the \cmd|&&| chain at the first failure.
+
+\begin{terminal}
+lab=$(mktemp -d) && cd "$lab" && pwd
+\end{terminal}
+
+Record the printed path. Stop if it doesn't identify a new
+directory. All writing examples refer only to this directory.
+\cmd|printf| prints each phrase followed by a newline. The
+\cmd|>| changes where the command writes, from the terminal
+to \texttt{booking.txt}; \cmd|cat| then reads it by name.
+
+\begin{terminal}
+printf '%s\n' 'Room 4' 'Thursday 18:00' > booking.txt
+cat booking.txt
+\end{terminal}
+
+The term \emph{redirection} means the shell changes what a
+descriptor is connected to before the command uses it. This is
+shell syntax. In the example, \cmd|printf| gets a format and
+two data arguments, not \cmd|>| or \cmd|booking.txt|. You can
+use the same output syntax for completely different utilities
+with no special cooperation from them. Where those utilities
+send particular messages is still their decision.
+\index{redirection}%
+
+\section{Choose a new destination}
+\label{sec:16-truncate}
+\index{truncation}%
+\index{append}%
+With \cmd|>| the shell normally opens an existing ordinary
+destination file and sets its length to zero as part of the
+redirection. That's \emph{truncation}. It happens before the
+command can read its input or tell you whether it has anything
+to print. If the file doesn't exist, the shell normally creates
+it, subject to the containing directory's permissions. To preserve
+previous contents, make a new output file, or use \cmd|>>| when
+the intended operation really is to add to an existing record.
+Appending doesn't supply a separator or newline on its own;
+the text being written must contain any required boundaries.
+
+\begin{terminal}
+cat booking.txt > handoff.txt
+printf '%s\n' 'Bring key' >> handoff.txt
+cat handoff.txt
+\end{terminal}
+
+You should see three lines. The third belongs to the handoff,
+not to the booking, and reading \texttt{booking.txt} again
+shows the original two lines. The following example uses an
+explicitly disposable file: do not substitute a name you care
+about. \cmd|false| writes nothing and returns a nonzero status.
+Look at the file after it runs.
+
+\begin{terminal}
+printf '%s\n' throwaway > disposable.txt
+false > disposable.txt
+printf 'Status: %s\n' "$?"
+wc -c < disposable.txt
+\end{terminal}
+
+\cmd|wc -c| counts bytes; \cmd|<| makes the file its standard
+input. The count is zero despite the nonzero status. In
+Figure~\ref{fig:16-open}, making the destination writable is a
+precondition for running the command, not a reward the shell
+grants it after success. If the destination cannot be opened
+at all, the command won't run. If it can be opened and the
+command later fails, you might have an empty or partial output
+file. Its existence isn't proof of a successful run.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-16/open.tikz}
+\caption{Opening the destination comes before running the command.}
+\label{fig:16-open}
+\VisualDescription{The shell opens or truncates the destination first. The command then runs. Its failure leaves the earlier file change in place.}
+\end{figure}
+
+\begin{warningbox}[Never use a source as its own destination]
+Don't try to rewrite a source by giving it to a command and
+redirecting that command's output back onto the same file. The
+shell could truncate it before the program reads the first
+byte. Two different names may also refer to the same file
+through links (Chapter~\ref{ch:8}). Use a new destination in a
+directory you control, check the result, and preserve a copy of
+the source before replacing anything. An unverified recovery
+tool is not a backup, and redirection has no general undo.
+\end{warningbox}
+
+\begin{quicktable}{M{1.25in}Y}
+\toprule
+Shell syntax & Connection requested \\
+\midrule
+< file & Open file for reading on descriptor 0. \\
+> file & Open file for writing on descriptor 1, normally truncating existing contents. \\
+>> file & Open file for appending on descriptor 1, creating it if needed. \\
+2> file & Open file for writing on descriptor 2; this also normally truncates. \\
+2>> file & Open file for appending on descriptor 2. \\
+\bottomrule
+\end{quicktable}
+
+An unquoted descriptor number belongs immediately next to
+the operator. In \cmd|2> notes.txt| the number identifies the
+channel; with a space before \cmd|>| in \cmd|2 > notes.txt|,
+the number can become a command argument instead. Whitespace
+after \cmd|>| and before the filename is fine. Quote a
+destination path that contains spaces just as you do other
+paths. Use the portable form \cmd|2>| instead of learning a
+shell-specific shortcut as if it worked everywhere.
+
+\section{Keep data and diagnostics apart}
+\label{sec:16-split}
+\index{standard error!redirecting}%
+An incoming booking is usable even when a second attachment
+is missing, as long as the missing attachment doesn't disappear
+from your record. \cmd|cat| emits the available file on standard
+output; the failure to open the missing file goes to standard
+error. Direct them to different new files:
+
+\begin{terminal}
+cat booking.txt missing.txt > included.txt 2> problem.txt
+printf 'Status: %s\n' "$?"
+cat included.txt
+cat problem.txt
+\end{terminal}
+
+Expect a nonzero status, a two-line booking, and a diagnostic
+whose wording depends on the implementation and locale.
+Keeping the streams apart lets you forward the booking as
+plain data while investigating the diagnostic. It doesn't
+answer whether an incomplete bundle ought to be forwarded.
+That depends on whether the missing attachment was essential.
+If you plan to share diagnostics, read them first; a real
+message may contain full paths or information meant only for
+the local user.
+
+\begin{terminal}
+wc -l < booking.txt > count.txt
+cat count.txt
+\end{terminal}
+
+This sets up two directions: descriptor 0 reads the booking,
+while descriptor 1 sends the result to a separate file.
+Expect two without a filename because the utility received no
+file operand. A command that doesn't read standard input won't
+use whatever you connected there, but the shell still attempts
+to open any named input. Chapter~\ref{ch:15} explains why a
+filename operand and standard input are different ways to
+supply data.
+
+\section{A duplicate follows the current connection}
+\label{sec:16-order}
+\index{file descriptor!duplication}%
+Sometimes you want one combined report for a human reader.
+\cmd|2>&1| tells the shell to make descriptor 2 refer to the
+connection descriptor 1 refers to \emph{at that moment}. The
+ampersand makes the \cmd|1| a descriptor number, not a filename.
+This is not a permanent rule that stderr will always follow
+future changes to stdout. Redirections are applied left to
+right. In the first line below, the shell sends descriptor 1
+to the file and then duplicates that connection. In the second
+line, the shell duplicates the original descriptor 1 first.
+
+\begin{terminal}
+cat booking.txt missing.txt > combined.txt 2>&1
+cat booking.txt missing.txt 2>&1 > data-only.txt
+\end{terminal}
+
+Both calls are expected to return nonzero. The first doesn't
+put a diagnostic on your screen because both streams point to
+\texttt{combined.txt}. The second leaves the diagnostic on
+whatever descriptor 1 was connected to initially, normally
+your screen, while the booking alone goes to
+\texttt{data-only.txt}. Read the files to check membership;
+order in a combined report isn't a universal transcript of
+events. Programs may buffer one stream differently from the
+other.
+
+\begin{terminal}
+cat combined.txt
+cat data-only.txt
+\end{terminal}
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-16/order.tikz}
+\caption{Copying a connection before or after moving it leads to different results.}
+\label{fig:16-order}
+\VisualDescription{With output redirected first, both numbered descriptors connect to the file. With the duplicate first, descriptor 2 retains the original terminal connection while descriptor 1 goes to the file.}
+\end{figure}
+
+\begin{quicktable}{M{1.65in}Y}
+\toprule
+Order of redirections & Where the diagnostic goes \\
+\midrule
+> combined.txt 2>\&1 & The named file; descriptor 1 had already been connected there when it was duplicated. \\
+2>\&1 > data-only.txt & The original descriptor 1 destination; the duplication occurred before descriptor 1 was redirected. \\
+> included.txt 2> problem.txt & Its own named file, independent of descriptor 1. \\
+\bottomrule
+\end{quicktable}
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-16/append.tikz}
+\caption{Replacing a report and extending a report are different choices.}
+\label{fig:16-append}
+\VisualDescription{A file already contains lines A and B. Writing C with the replace operator leaves only C; writing C with the append operator leaves A, B, and C.}
+\end{figure}
+
+\begin{dialoguebox}{Copying a connection}
+\Brian{I read \texttt{2>\&1} as ``send errors wherever the results go.''}
+\Stephen{That is close: send them where the results go right now.}
+\Brian{Why does ``right now'' matter? Surely the command hasn't started.}
+\Stephen{It hasn't. The shell sets up each connection in the order you wrote.}
+\Brian{If I move the results afterward, then I haven't moved the errors?}
+\Stephen{Exactly. Moving one descriptor doesn't change the other.}
+\Brian{Then I should write the file destination first when I want both in the file.}
+\Stephen{Yes. Set the destination, then copy the connection.}
+\DialogueConclusion{A duplicate shares the current destination.}
+\end{dialoguebox}
+
+\section{Make the unwanted overwrite fail before it starts}
+\label{sec:16-noclobber}
+\index{noclobber}%
+When trying an unfamiliar redirection, you can ask a
+practice shell to reject an ordinary \cmd|>| aimed at an
+existing regular file. \cmd|set -C| turns on this protection
+in POSIX \cmd|sh|; \cmd|set +C| turns it off again. This
+is a shell option, not a permanent attribute of the file.
+Try it on a new disposable example instead of aiming a
+test at your actual booking:
+
+\begin{terminal}
+printf '%s\n' 'first copy' > protected.txt
+set -C
+printf '%s\n' 'second copy' > protected.txt
+printf 'Status: %s\n' "$?"
+set +C
+cat protected.txt
+\end{terminal}
+
+Enter the lines at the interactive practice prompt. Expect
+a diagnostic after the attempted overwrite, a nonzero status,
+and \texttt{first copy} when you read the file. The failing
+redirection isn't a failure of the \cmd|printf| format.
+The shell never got as far as letting that invocation write.
+If the first line fails because a prior run left
+\texttt{protected.txt}, don't turn protection off just to
+repeat that setup over whatever is there; use a new lab.
+
+This protection, usually called \emph{noclobber}, is useful
+but limited. It doesn't stop an append with \cmd|>>|,
+and it doesn't control what a command does to a file it
+opens itself. It is not a permission change or a history
+of recoverable versions. A unique destination is a more
+generally useful habit, especially if someone else may be
+working in the same directory. Do not make a new result
+by reusing a path you haven't checked or by assuming that
+different-looking names are different files. Chapter~\ref{ch:8}
+discusses links; the warning earlier in this chapter applies
+whether the second name was given by you, a collaborator,
+or a backup routine.
+
+When several redirections are present, a mistake late in
+the line doesn't roll back an earlier one. The following
+uses two new targets, one of which cannot be opened because
+its parent directory doesn't exist:
+
+\begin{terminal}
+cat booking.txt > opened-first.txt 2> absent-dir/problem.txt
+printf 'Status: %s\n' "$?"
+wc -c < opened-first.txt
+\end{terminal}
+
+The first redirection creates the new file. The second
+fails before \cmd|cat| runs. Expect a nonzero status and
+an empty \texttt{opened-first.txt}. If your shell's diagnostic
+looks different from \cmd|cat|'s missing-file diagnostic,
+there's a reason: the shell had to report that it couldn't
+prepare the connection, before \cmd|cat| even tried to
+open its operand. Inspect the line for a failed destination
+before assuming that the named source is inaccessible.
+
+\section{Know when the saved copy is ready}
+When a redirected command works through a large input,
+someone may see the output file appear early and mistake
+it for a finished report. Wait for the command to finish
+and check its status before passing that file on. Read a
+sample and verify a count if the format gives you a
+useful expected count. If the command was interrupted,
+don't append a new attempt to the same output unless a
+documented workflow tells you exactly where to resume.
+Appending could repeat what it already wrote or attach
+new text to an incomplete last line. Starting a fresh
+output in that situation makes review simpler.
+
+For the handoff at the start of the chapter, the safest
+review is small: read the source and the new handoff,
+verify the time and the added reminder, and keep the
+diagnostic file out of the message. If the missing
+attachment matters, ask for it explicitly rather than
+quietly treating the two-line booking as a complete
+bundle. A redirection chooses where facts are recorded;
+it doesn't decide which facts are needed before you can
+use the result.
+
+\section{Change one connection at a time while diagnosing}
+If a command has two redirections and doesn't run, test each
+connection on its own before trying the whole line again.
+Start with a read that cannot modify the booking. Use the
+input path you set up and then a deliberately unavailable input:
+
+\begin{terminal}
+cat < booking.txt
+cat < missing.txt > never-opened.txt
+printf 'Status: %s\n' "$?"
+ls
+\end{terminal}
+
+The first line reads from standard input rather than
+receiving a filename operand and displays the booking.
+On the second line the shell first tries to open the
+nonexistent input; because that operation fails, it
+doesn't get as far as creating \texttt{never-opened.txt}.
+Check the nonzero status and notice that this name isn't
+in the lab listing. Compare that with
+\texttt{opened-first.txt}, which \emph{was} created when a
+prior example opened the destination before attempting the
+failing redirection. The shell stopped at the first failing
+redirection in both cases; in only one case had it already
+taken a step that left a file.
+
+For a real diagnostic, read the whole command from left to
+right and identify each destination before running it.
+Some words that look like destinations aren't part of a
+redirection at all. In \cmd|cat booking.txt|, the utility
+opens the named operand. In \cmd|cat < booking.txt|, the
+shell opens the file and \cmd|cat| reads the connection it
+was given. When the first style fails to open a file, the
+utility reports it; when the second fails, the shell does.
+\cmd|cat| with no operands would otherwise read the
+terminal, as Chapter~\ref{ch:15} demonstrated. Knowing
+which layer was supposed to open which file helps explain
+why the diagnostics may not use the same wording.
+
+Consider the order when rerunning a report as well. If the
+input path is uncertain, putting its redirection before
+the output can keep a failed open from touching the output,
+but it is not a guarantee that the source is readable to
+the end or that the report will finish. Even a successful
+open can be followed by a read or write error. Use a
+separate destination for every attempt where losing the
+last good report would matter. If a new version is empty
+or partial, you can inspect it without confusing it with
+the one you already verified.
+
+Finally, don't aim stdout and stderr independently at the
+same regular file to combine them. Something like
+\cmd|> report.txt 2> report.txt| opens the pathname twice.
+Besides the truncation issue, the two openings don't
+share the position at which subsequent writes occur, so
+parts of one stream can overwrite parts of the other.
+The demonstrated \cmd|> combined.txt 2>&1| instead
+duplicates an already opened destination. It can still mix
+results with diagnostics, and it doesn't promise a
+chronological transcript, but it doesn't independently
+open the same file a second time. Choose between a combined
+record and separate reports based on who will read the
+result and whether descriptor 1 needs to carry clean data.
+
+\section{Practice and cleanup}
+\begin{exercise}{Extend a report}
+Make a new \texttt{reminder.txt} containing the two booking
+lines. Add \texttt{Check lights} as a third line without
+touching the booking. Read both files.
+\end{exercise}
+\begin{solution}
+Use \cmd|cat booking.txt > reminder.txt| and then
+\cmd|printf '%s\n' 'Check lights' >> reminder.txt|. The
+reminder has three lines; the booking has its original two.
+The final cleanup removes the optional reminder.
+\end{solution}
+
+\begin{exercise}{Capture a failed read}
+Create separate \texttt{extra-data.txt} and \texttt{extra-error.txt}
+while reading only the absent \texttt{missing.txt}. Find which
+file is empty and check the status before reading either one.
+\end{exercise}
+\begin{solution}
+Use \cmd|cat missing.txt > extra-data.txt 2> extra-error.txt|,
+then \cmd|printf '%s\n' "$?"|. Expect a nonzero status, zero
+bytes in the data file, and a diagnostic in the error file.
+The final cleanup includes both exercise outputs.
+\end{solution}
+
+\begin{exercise}{Predict the copied destination}
+Read the booking followed by the missing file again. Use
+\texttt{order.txt} for stdout but put the diagnostic where
+stdout was originally. Predict the contents of the file.
+\end{exercise}
+\begin{solution}
+Use \cmd|cat booking.txt missing.txt 2>&1 > order.txt|.
+The screen shows the diagnostic; \texttt{order.txt} contains
+the two booking lines. The final cleanup includes this file.
+\end{solution}
+
+Check \cmd|pwd| against the recorded lab path. Only in that
+directory, remove each named practice file with confirmation.
+Omit names for optional exercises you didn't run. If you see
+anything you want to keep, save it elsewhere before proceeding.
+If \cmd|rmdir| fails, inspect what's left rather than switching
+to recursive deletion. Leave your practice shell after cleanup.
+
+\begin{terminal}
+rm -i booking.txt handoff.txt disposable.txt included.txt problem.txt
+rm -i count.txt combined.txt data-only.txt
+rm -i protected.txt opened-first.txt
+rm -i reminder.txt extra-data.txt extra-error.txt order.txt
+cd ..
+rmdir "$lab"
+\end{terminal}
+
+\begin{takeaways}
+\item The shell opens the destination before the command can run.
+\item Append only to a file that is meant to grow; use a separate fresh destination for transformations.
+\item Read redirections from left to right, as changes to numbered connections.
+\end{takeaways}
+
+\begin{furtherreading}
+\ReadingItem{POSIX Shell Command Language}{The Redirection section defines truncation, appending, and descriptor duplication.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/V3_chap02.html}
+\end{furtherreading}

@@ -1,0 +1,440 @@
+The organizer sends a long plain-text catalog of books donated
+for a sale. You want to check its heading, see whether there is a
+closing note, and estimate how much you have left to read. You
+do not want the whole catalog filling the terminal, nor do you
+want to open it in an editor just to look. A few small commands
+let you choose what to inspect. They also force you to say what
+you mean by a ``line'' or a ``character,'' distinctions that
+matter as soon as a file contains more than unaccented English.
+
+\begin{objectives}
+\item View the beginning, end, or a bounded section of a text file.
+\item Browse with a pager if one is available, without changing the file.
+\item Choose between newline, word, byte, and character counts.
+\end{objectives}
+
+\section{Prepare a catalog that fits on a page}
+\label{sec:18-setup}
+The small catalog here makes it possible to check every answer.
+Use \cmd|sh|, and start in a new private directory. The first
+line stores and prints the directory path; stop if it doesn't
+print a new path. Record that path and run the second command
+only after the setup succeeds. \cmd|>| opens the named output,
+truncating an existing file, so never use a filename you need to keep.
+
+\begin{terminal}
+lab=$(mktemp -d) && cd "$lab" && pwd
+printf '%s\n' 'Library sale' 'Saturday' 'Art books' \
+  'Field guides' 'Mystery novels' 'End of list' > catalog.txt
+\end{terminal}
+
+The backslash immediately before the newline continues the
+command. Nothing should come after it on that physical line.
+The format \cmd|'%s\n'| writes one newline after each phrase,
+and each quoted phrase becomes one data argument. Notice that
+the file has six lines but only three lines list types of
+books. A line count will not automatically decide which
+lines belong to the catalog body.
+
+\section{Open the front or the back}
+\label{sec:18-ends}
+\index{head@\texttt{head}}%
+\index{tail@\texttt{tail}}%
+\begin{terminal}
+head -n 2 catalog.txt
+tail -n 2 catalog.txt
+\end{terminal}
+
+The number argument to \cmd|-n| selects how many lines to
+print. For \cmd|head|, expect \texttt{Library sale} and
+\texttt{Saturday}; for \cmd|tail|, expect \texttt{Mystery novels}
+and \texttt{End of list}. There is no guarantee that a file
+has at least the requested number of lines. A short file can
+produce fewer without anything being wrong. Use the explicit
+\cmd|-n| forms instead of depending on older utility syntax,
+which varies. For a report you intend to share, verify the
+sample is the part you need, not merely a plausible-looking
+chunk at the right end.
+
+\begin{terminal}
+tail -n +3 catalog.txt | head -n 3
+\end{terminal}
+
+The plus before the first count changes it into a start
+position, with the first line numbered one. \cmd|tail|
+sends lines three through six into the pipe. \cmd|head|
+returns at most the first three lines of that stream. Expect
+\texttt{Art books}, \texttt{Field guides}, and
+\texttt{Mystery novels}. Figure~\ref{fig:18-window} shows
+the window. An early-finishing reader can cause a producer's
+write to fail when there's more output, so on a large file
+an early cutoff isn't a test of whether the entire input
+was read successfully. See Chapter~\ref{ch:17} for that
+pipeline distinction.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-18/window.tikz}
+\caption{Start at line three, then take no more than three lines.}
+\label{fig:18-window}
+\VisualDescription{Lines one and two are outside the selection because tail skips them. Lines three, four, and five pass through head. Head leaves out the closing sixth line.}
+\end{figure}
+
+\begin{quicktable}{M{1.65in}Y}
+\toprule
+Command form & Question it answers \\
+\midrule
+head -n 2 file & What do the first two lines say, or what's present if there are fewer? \\
+tail -n 2 file & What do the last two lines say, or what's present if there are fewer? \\
+tail -n +3 file & What is present starting at the third line? \\
+less file & What can I see by paging through the named text without altering it? \\
+\bottomrule
+\end{quicktable}
+
+\section{Read at your own speed}
+\label{sec:18-pager}
+\index{pager}%
+\index{less@\texttt{less}}%
+If \cmd|less| is installed, it is a \emph{pager}: it displays
+some text at a time and waits for navigation keys. It isn't a
+text editor. Check availability without installing anything:
+
+\begin{terminal}
+command -v less
+\end{terminal}
+
+\cmd|command -v| asks the shell how it would find a command
+of that name. If the lookup fails, skip the optional pager
+example; \cmd|head| and \cmd|tail| still work. \cmd|more|
+is the POSIX pager; check \cmd|man more| for your local keys
+and behavior. If \cmd|less| is available, run:
+
+\begin{terminal}
+less catalog.txt
+\end{terminal}
+
+Use Space to move forward by a screen and \texttt{b} to move
+backward by a screen. Press \texttt{q} to quit. The short
+catalog may already be visible in its entirety; the exercise
+trains you to recognize that the pager, not the shell, has
+control. Some configurations exit immediately for a short
+file. If you do see the shell prompt already, don't type
+\texttt{q} there. To search within an open \cmd|less| session,
+press \texttt{/}, type \texttt{guides}, and press \EnterKey.
+Here \texttt{guides} has no special pattern characters.
+Navigation and searching do not edit the catalog. They also
+do not produce a new list of matches to feed into another
+tool: Chapter~\ref{ch:19} covers that different task.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-18/pager.tikz}
+\caption{A pager moves the view over the text, not the text itself.}
+\label{fig:18-pager}
+\VisualDescription{A file feeds a pager and the pager supplies a screenful. Navigation keys move from the reader back into the pager, with no write connection from the pager to the file.}
+\end{figure}
+
+When the input file isn't known to be text, start with the
+file identification approach in Chapter~\ref{ch:7}. Don't
+dump an unknown program or media file onto the terminal with
+\cmd|cat| just to see what it is. A pager is most suitable
+for text you intend to read. Even for text, a file may contain
+tabs, unusually long lines, or control characters. A very
+long line may wrap across several screen rows even though
+it counts as one newline-terminated line. The number of
+screen rows isn't a reliable way to count records.
+
+\section{Choose the unit before counting}
+\label{sec:18-counts}
+\index{newline}%
+\index{byte}%
+\index{wc@\texttt{wc}}%
+\begin{terminal}
+wc -l -w -c catalog.txt
+wc -l < catalog.txt
+\end{terminal}
+
+The first report shows, in this order, six newlines, twelve
+words, seventy-two bytes, and the operand name. Spacing can
+vary. A word in the utility's sense is a nonempty sequence
+delimited by whitespace, not a judgment about grammar.
+The narrow count in the second line shows six with no
+filename because \cmd|<| connects standard input to the
+file and no operand names it. In that command \cmd|-l|
+counts newlines, not displayed rows or phrases. This is why
+you should say which unit you intend, rather than calling
+\cmd|wc| without options and guessing what its columns mean.
+
+\begin{terminal}
+printf '%s' 'last but not terminated' > partial.txt
+wc -l partial.txt
+wc -w partial.txt
+\end{terminal}
+
+There is no \cmd|\n| in this format, so the file has text
+but no final newline. On the tested implementation the
+newline count is zero and the word count is four. Such a
+file isn't a POSIX text file, whose lines end in newline
+characters, even though an editor may display the fragment
+as a line. If someone sends a report and your count is off
+by one, inspect the line endings and how the file was made
+before deciding that a record was lost. Don't rewrite the
+file merely to reconcile two counts taken in different units.
+
+\begin{quicktable}{M{1in}Y}
+\toprule
+Option & Unit and common mistake \\
+\midrule
+-l & Newlines, not the number of visually wrapped rows or unterminated fragments. \\
+-w & Whitespace-separated words under the utility's rules, not grammatical words. \\
+-c & Bytes, including the bytes for spaces and line endings, not displayed characters. \\
+-m & Characters in the active locale, not bytes or visual columns. \\
+\bottomrule
+\end{quicktable}
+
+\section{When bytes and characters diverge}
+\label{sec:18-unicode}
+\index{Unicode}%
+\index{UTF-8}%
+\index{locale}%
+Most modern desktop systems can read UTF-8, an encoding
+of Unicode characters as byte sequences. In UTF-8 an
+unaccented Latin letter used in the fixture takes one
+byte; \texttt{é} as a single precomposed character takes
+two. To make the test independent of how your PDF viewer
+copies accented text, type the following ASCII command.
+The \cmd|\303\251| escapes in the \cmd|printf| format name
+the two bytes by their octal values (base eight). \cmd|\n|
+adds one more byte for a newline.
+
+\begin{terminal}
+printf 'Caf\303\251\n' > accent.txt
+wc -c < accent.txt
+locale charmap
+wc -m < accent.txt
+\end{terminal}
+
+The byte count is six. \cmd|locale charmap| asks which
+character encoding the current locale uses. If it reports
+UTF-8, a conforming character count for this well-formed
+fixture is five: four letters and a newline. If it reports
+another encoding, don't expect five. To investigate, use
+\cmd|locale -a| to list installed locales and look for a
+UTF-8 one. For example, only if that exact name is available,
+\cmd|LC_ALL=C.UTF-8 wc -m < accent.txt| selects it just for
+that invocation. Locale names differ: do not assume
+\texttt{C.UTF-8} exists on macOS or any BSD system. You
+don't need to change your login settings or install anything
+to verify the byte count.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-18/units.tikz}
+\caption{Two UTF-8 bytes can represent one character.}
+\label{fig:18-units}
+\VisualDescription{The byte sequence for C, a, f, accented e, and newline has six bytes. The accented e occupies two adjacent bytes while each other character occupies one.}
+\end{figure}
+
+Even characters and things a reader perceives as letters
+can diverge. An accented letter can also be encoded as an
+unaccented letter followed by a separate combining accent.
+This can look the same but count differently. Other
+characters may take two screen columns; some marks take
+no additional column. Use bytes when budgeting a transfer,
+newlines when counting newline-delimited records, and
+characters only when you know which encoding is being
+read. If a form specifies a limit without saying whether
+it counts bytes, characters, or something else, check its
+rules rather than forcing your preferred count to agree.
+
+\begin{dialoguebox}{How long is the line?}
+\Brian{A file with four letters has six bytes. Is the counter including a secret letter?}
+\Stephen{It includes the newline, and one of the letters uses two UTF-8 bytes.}
+\Brian{Then should I count characters and subtract the newline to find the number of letters?}
+\Stephen{For this example that works, but it isn't a reliable rule for all text.}
+\Brian{What if I type the unaccented letter and then add the accent? It looks the same.}
+\Stephen{It can be stored as two characters instead of one. The screen isn't showing the byte boundaries.}
+\Brian{So a word limit, a character limit, and a storage limit can disagree honestly.}
+\Stephen{Yes. Ask which one the task actually needs.}
+\DialogueConclusion{Choose the unit before trusting the count.}
+\end{dialoguebox}
+
+\section{Read a difficult count from both directions}
+\label{sec:18-review}
+Imagine someone says the last line of a file is missing.
+Start by asking which observation prompted that conclusion.
+If they browsed on a narrow screen, a single long line
+may have wrapped over several rows. If they counted
+newlines, an unterminated final fragment may explain the
+difference. If they expected a closing marker, \cmd|tail|
+can tell you whether the ending actually contains it.
+The file can fail one of these expectations without
+anything having been deleted. Use a second observation to
+test the specific assumption.
+
+For instance, view the beginning of the catalog and then
+count only the bytes in that sample:
+
+\begin{terminal}
+head -n 1 catalog.txt | wc -c
+head -n 1 catalog.txt | wc -w
+\end{terminal}
+
+Expect thirteen bytes from \texttt{Library sale} with
+its space and newline, and two words. The two readings
+describe the same line. If you include the filename as a
+\cmd|wc| operand on the right by mistake, you'll get a
+count for the entire file, which is not the requested
+sample. Keep the command that chooses the sample separate
+from the command that measures it. If the count differs,
+inspect the sample by running the producer alone before
+blaming the count's unit or locale.
+
+Look at the last line of an unfamiliar export before
+passing it to a filtering tool. It may be a total,
+timestamp, or footer rather than another row of data.
+Similarly, \cmd|head -n 1| can tell you whether there's
+a header, but not whether all following rows use that
+same format. The first and last screens are useful samples,
+not substitutes for validating a whole file. This is
+especially important with a format like CSV where a
+logical record can contain embedded newlines and therefore
+can occupy more than one physical line. Chapter~\ref{ch:24}
+deals with that format separately.
+
+For a final comparison, make a second accent example with
+an unaccented \texttt{e} followed by a combining acute
+accent. The accent is encoded as octal bytes
+\cmd|\314\201|. As before, the file is a new lab fixture
+and the byte escapes let you type only ASCII at the prompt.
+
+\begin{terminal}
+printf 'Cafe\314\201\n' > combining.txt
+wc -c < combining.txt
+wc -m < combining.txt
+\end{terminal}
+
+This has seven bytes. Under a UTF-8 locale expect six
+characters, including the newline, rather than five.
+On a terminal capable of displaying both forms, this file
+and \texttt{accent.txt} can look the same. That doesn't
+make their bytes equal. In the lab you can use the
+comparison from Chapter~\ref{ch:13} to confirm that
+the files differ: \cmd|cmp -s accent.txt combining.txt|
+returns one. You don't need to see a difference on the
+screen to use that answer. If you intend to compare the
+visible text rather than compare saved bytes, first decide
+which differences are meaningful to your task. Some
+forms and databases require a particular text representation,
+while a count for a paper label may care only about
+space available for the letters. The same measurement is
+unlikely to answer both questions.
+
+While reading a real export, leave the original intact.
+Save any extracts separately and name them for what
+they contain. A count stored without its unit or the
+command's input path is easy to misinterpret later.
+When a collaborator asks how much text is present, give
+the unit with the number and say whether it describes an
+extract or the whole file. Neither a pager nor a counter
+can infer those details for the recipient.
+
+\section{Read two catalogs without losing the labels}
+Combining two files can answer a different question from
+reading each on its own. In this example the counter
+receives two named operands rather than a single stream:
+
+\begin{terminal}
+wc -l -c catalog.txt accent.txt
+\end{terminal}
+
+Look for six and seventy-two on the catalog row, one
+and six on the accent row, and totals of seven and
+seventy-eight. Padding and the total label can differ.
+Look at the column positions and name at the end of
+each row. Now combine the bytes and count those instead:
+
+\begin{terminal}
+cat catalog.txt accent.txt | wc -l -c
+\end{terminal}
+
+That produces only seven and seventy-eight because the
+counter gets one stream, without the two operand names.
+If the first input doesn't end in a newline,
+concatenating them won't insert one. Word counts can
+change when a final word from one file and an initial
+word from another meet without whitespace. These
+fixtures deliberately end with newlines. Don't generalize
+from their neat boundaries to an uninspected download.
+
+Keep the labels when you need to diagnose a discrepancy.
+One broad count can tell you how much is present but not
+which part changed; two named rows identify the file that
+needs inspection. In a handoff note, specify whether you
+measured the files separately or the concatenated stream.
+If someone repeats your command for different files,
+that distinction will help them reproduce the answer.
+The next chapter moves from inspecting the ends and
+measuring sizes to selecting lines by their contents.
+
+\section{Practice and cleanup}
+\begin{exercise}{Find the middle without an editor}
+Print just the fourth and fifth lines from the catalog.
+Say which command decides where to start and which decides
+where to stop. Make no changes to the source.
+\end{exercise}
+\begin{solution}
+Use \cmd+tail -n +4 catalog.txt | head -n 2+. The first
+stage starts at line four; the second limits the amount.
+Expect \texttt{Field guides} and \texttt{Mystery novels}.
+Neither command makes an output file here.
+\end{solution}
+
+\begin{exercise}{Compare what two counts actually measure}
+Print the newline and byte counts of \texttt{accent.txt}
+together. Verify whether \cmd|wc -m| provides a
+third distinct number in your locale.
+\end{exercise}
+\begin{solution}
+\cmd|wc -l -c accent.txt| shows one newline, six bytes,
+and the filename. \cmd|wc -m accent.txt| shows five
+characters in a UTF-8 locale. If you cannot select a UTF-8
+locale, report only the verified byte and newline counts.
+No additional files need removal.
+\end{solution}
+
+\begin{exercise}{Select a way to review the closing note}
+If \cmd|less| is available, find the closing note using
+pager navigation or search, then quit. Without a pager,
+read the note using the smallest necessary tail request.
+\end{exercise}
+\begin{solution}
+Open \cmd|less catalog.txt|, search with
+\texttt{/End of list} and \EnterKey, then quit with
+\texttt{q}. If there's no pager or it exits immediately,
+\cmd|tail -n 1 catalog.txt| prints \texttt{End of list}.
+Neither method changes the catalog or adds any files.
+\end{solution}
+
+After checking \cmd|pwd| against the recorded path, remove
+only the known fixtures, with confirmation. Omit any
+you didn't create. \cmd|rmdir| refuses to remove nonempty
+directories; investigate any unexpected contents rather
+than forcing removal. If you started a practice shell,
+finish with \cmd|exit|.
+
+\begin{terminal}
+rm -i catalog.txt partial.txt accent.txt combining.txt
+cd ..
+rmdir "$lab"
+\end{terminal}
+
+\begin{takeaways}
+\item Inspect a bounded part of a file before pouring the whole thing onto the terminal.
+\item A pager is for reading, not editing or producing a filtered data set.
+\item Newlines, words, bytes, characters, and display rows are not interchangeable units.
+\end{takeaways}
+
+\begin{furtherreading}
+\ReadingItem{POSIX head}{The portable line limit and behavior on short inputs.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/head.html}
+\ReadingItem{POSIX wc}{Counting options and the effect of the locale on words and characters.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/wc.html}
+\ReadingItem{OpenBSD wc}{Character counting and the role of the local encoding on OpenBSD.}{https://man.openbsd.org/wc}
+\ReadingItem{The less manual}{Interactive commands and optional behavior of the pager.}{https://greenwoodsoftware.com/less/less.html}
+\end{furtherreading}

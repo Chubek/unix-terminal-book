@@ -1,0 +1,7 @@
+\begin{tikzpicture}
+\node[utp node] (tty) at (0,1.4) {terminal};
+\node[utp node] (fg) at (-2,0) {foreground job};
+\node[utp node] (bg) at (2,0) {background job};
+\draw[utp arrow] (tty) -- node[left,font=\small] {keys} (fg);
+\draw[utp arrow,dashed] (bg) -- node[right,font=\small] {output} (tty);
+\end{tikzpicture}

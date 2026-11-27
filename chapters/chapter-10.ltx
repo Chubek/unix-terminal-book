@@ -1,0 +1,220 @@
+Someone sends you a terminal tip: ``Use the option that keeps the old file.'' You know that \cmd|cp| can replace a file, but the tip names an option you have never used. Before trusting it with your work, you need to know what the copy command on \emph{your machine} does. A local manual is often quicker than searching the web, and it can answer the more important question: what happens when you omit the option?
+
+\begin{objectives}
+\item Open, search, and quit a manual page without executing its examples.
+\item Look up a tool by purpose and select the correct section when a name is shared.
+\item Distinguish documentation for a shell builtin from documentation for a separate utility.
+\item Test an interpretation in a fresh directory before relying on it.
+\end{objectives}
+
+\input{figures/chapter-10/documentation.tikz}
+\section{Open and leave one page}
+\index{man@\texttt{man}}
+At the prompt of a spare local \cmd|/bin/sh| shell, open the manual for the familiar copy command:
+
+\begin{terminal}
+man cp
+\end{terminal}
+
+The \cmd|man| utility looks for documentation; this invocation does not run \cmd|cp| and does not copy anything. The page may be displayed inside a \FirstUse{pager}, an interactive viewer for output longer than the screen. While that viewer is active, letters go to the viewer and are not commands interpreted by your shell. Returning from the pager is how you get your prompt back. With the widely used \cmd|less| pager, press \Key{q} to quit without pressing \EnterKey. \Key{Space} advances a screen and \Key{b} goes back. If your installation prints the entire page without stopping, no quit key is needed; keep an eye out for your ordinary prompt. If a configured pager behaves differently, consult its on-screen help or interrupt the simple foreground \cmd|man| invocation with \KeyChord{Ctrl}{C}.
+
+Open the page again and try the slash search in \cmd|less|. Press \Key{/}, type \cmd|-i|, and press \EnterKey. The viewer searches forward from its current location. Press \Key{n} for another match. An occurrence in the synopsis is not the description of what the option does; keep going to read a paragraph that attaches a meaning to the option. The pager might report no further match if you start too far down. Go back to the beginning or quit and reopen the page. The key sequence goes to the pager, not into the command line below:
+
+\begin{terminal}
+man cp
+\end{terminal}
+
+\begin{figure}[htbp]
+\centering\UTPTenPager
+\caption{The viewer owns the keyboard until you return to the shell prompt.}
+\label{fig:10-pager}
+\VisualDescription{The shell starts man, the pager accepts navigation keys, and quitting the pager returns control to the shell.}
+\end{figure}
+
+Use Figure~\ref{fig:10-pager} as a small diagnosis when the prompt seems missing. A page of ordinary prose with a status line or a colon at the bottom might be a reader waiting for a navigation key. It isn't asking you to type another \cmd|man| command. If you typed \Key{q} after the shell prompt by accident, it may simply sit on the line awaiting \EnterKey; erase it instead. Text shown on a manual page is not entered automatically, so it is safe to quit when you see an unfamiliar example.
+
+\section{Read across a few parts of the page}
+Start with NAME: it tells you whether you opened the intended entry. Check SYNOPSIS for the possible shapes of the command, then DESCRIPTION or OPTIONS to connect the symbols with actions. EXAMPLES and SEE ALSO may not appear in every page, but they can supply useful confirmation or direct you to a related page. The synopsis is a shorthand, not a command to paste. A compact educational form for a two-operand copy looks like this:
+
+\begin{terminaloutput}
+cp [-i] source destination
+\end{terminaloutput}
+
+This is an illustrative excerpt made for this book, not a complete local synopsis. Square brackets here mean optional text: type \cmd|-i| or omit it; don't type the brackets. The words \emph{source} and \emph{destination} are positions for your file paths. A synopsis may show alternative command shapes on separate lines; pick one that corresponds to your task. An ellipsis often means an argument can be repeated, not that you should type three dots. Run a second lookup to see how a page shows arguments that can take values:
+
+\begin{terminal}
+man find
+\end{terminal}
+
+Find the description of \cmd|-name|. The word \emph{pattern} beside it describes what must follow the test. To look for literal \cmd|agenda.txt|, supply that as your pattern; the word \emph{pattern} was a placeholder unless the actual target is named that. In Chapter~\ref{ch:9} the starting path was a separate operand placed before tests. A page may list more than one test with its own operands, so distinguish the starting path from the argument to an option or test.
+
+\begin{quicktable}{M{1in}Y Y}
+\toprule
+\textnormal{Page part} & Question to ask & Copy example\\
+\midrule
+NAME & Did I open the right entry? & Is this the utility for copying files?\\
+SYNOPSIS & In which order are operands written? & Which path is the source?\\
+DESCRIPTION & What is the default, and when are there exceptions? & Could an existing directory change the final path?\\
+OPTIONS & What do these option names mean here? & Does this implementation describe \texttt{-i} as prompting before an overwrite?\\
+SEE ALSO & Which related documentation may help? & Is there a page for moving instead of copying?\\
+\bottomrule
+\end{quicktable}
+
+\section{When names collide, add a section}
+\index{manual sections}
+Manuals commonly group entries into numbered sections. A reference like \ManPage{printf}{1} means the entry named \cmd|printf| in section 1, which commonly describes user commands. \ManPage{printf}{3} refers to an entry in section 3, which commonly describes library functions used by programs. The parentheses and number are conventional documentation notation, not literal shell input. To choose a section on common Linux, macOS, and BSD manual systems, give its number as a separate argument:
+
+\begin{terminal}
+man 1 printf
+man 3 printf
+\end{terminal}
+
+Quit the first viewer before entering the second line. Section 1 should discuss a command that formats text; section 3, if installed, discusses a function programmers call from C. If one of the pages is absent, note the diagnostic; these examples don't depend on both being installed. Section conventions differ on some systems. Section 5, for example, commonly documents file formats, and the exact letter suffixes attached to a section vary. When a page gives a reference in parentheses, it is identifying a destination. If your \cmd|man| doesn't accept a section number in that position, consult its own manual with \cmd|man man|; this chapter's form is widely used rather than a syntax guaranteed by the POSIX \cmd|man| synopsis.
+
+\begin{figure}[htbp]
+\centering\UTPTenSection
+\caption{One spelling can name different documentation in different sections.}
+\label{fig:10-section}
+\VisualDescription{The name printf branches to the user command in section 1 and the C library function in section 3. A separate shell manual can describe the builtin.}
+\end{figure}
+
+Figure~\ref{fig:10-section} distinguishes two kinds of choice: the section of a local manual page, and the implementation you are actually invoking. They are not the same problem. The section number won't by itself distinguish a command built into the shell from a separate executable whose name happens to be the same.
+
+\section{Search by the job, then inspect command identity}
+\index{apropos@\texttt{apropos}}
+If you only remember a purpose, search the descriptions. Quoting keeps the phrase \cmd|copy files| together as one argument. These commands usually consult the same local manual metadata, but their exact match rules can vary; run them separately rather than expecting identical output on every installation.
+
+\begin{terminal}
+man -k 'copy files'
+apropos 'copy files'
+\end{terminal}
+
+Results commonly have the format ``name(section) -- description.'' A line about copying files to and from archives is a plausible match for the words, but if you are only copying one regular file, the manual for \cmd|cp| is a better next step. Search more broadly if ``copy files'' finds nothing: try \cmd|man -k copy| and read the short descriptions. A result is a clue to a manual page, not a verdict about what tool to run. If \cmd|apropos| is missing but \cmd|man -k| works, the search is still available. If both are empty even for familiar tools, the local index or manual pages may be missing. Don't install or rebuild system documentation just to finish this exercise.
+
+Use the shell's own report to decide which command identity matters. The following POSIX-style command asks how the shell would interpret a name, without running the named utility:
+
+\begin{terminal}
+command -V cd
+command -V printf
+command -V cp
+\end{terminal}
+
+\cmd|-V| asks for a descriptive report. Wording varies by shell and implementation. \cmd|cd| is a builtin in the practice shells: a separate program couldn't normally change the working directory of your already-running shell. \cmd|printf| may be a builtin as well, even if \ManPage{printf}{1} describes a separate program. \cmd|cp| often resolves to an executable, but a personal alias or function can stand between your typing and the program. If the report is unexpected, stop before trying a command whose effects you were about to assume. The same machine may have tools installed by the operating system and by a package manager.
+
+For example, if you are already using Bash, try \cmd|help cd|. Bash's \cmd|help| is a builtin, not a universal Unix command. Zsh generally documents its builtins under \cmd|man zshbuiltins| if those manuals are installed. Read the documentation for the shell you are actually using, not instructions inferred from the appearance of the prompt. A shell invoked as \cmd|sh| may be provided by another shell or package; start with the local \cmd|man sh| and its NAME or DESCRIPTION sections if available.
+
+\begin{quicktable}{M{1.1in}Y Y}
+\toprule
+\textnormal{Source} & Especially useful for & Important limitation\\
+\midrule
+man cp & Locally documented file-copy behavior. & May not be present, or might refer to a different installed version.\\
+help cd & Bash's own description of its builtin. & Specific to Bash, not a general help command.\\
+man -k copy & Finding candidate manual pages by keyword. & Depends on installed and indexed documentation.\\
+Upstream manual & Confirming features for a named release. & A newer manual may describe features you don't have.\\
+POSIX specification & Checking standardized usage. & Doesn't describe every implementation-specific option.\\
+\bottomrule
+\end{quicktable}
+
+\begin{figure}[htbp]
+\centering\UTPTenDecision
+\caption{Identify the command before choosing the authoritative help source.}
+\label{fig:10-decision}
+\VisualDescription{A command-identity check separates builtin help from separate program documentation. Both routes lead to testing on throwaway files.}
+\end{figure}
+
+\section{Make the documentation earn your confidence}
+Figure~\ref{fig:10-decision} ends with a small test because prose can leave room for misreading. In the following optional verification, confirm a writable parent with \cmd|pwd|, create a fresh practice directory, and stop if creation fails. Use another unique name if needed. Type the lines separately and confirm with \cmd|pwd| that you entered that new directory before proceeding. Two empty regular files are enough to trigger a question about overwriting. The example does not require you to answer yes. If the manual didn't describe the behavior expected, don't run the test; record the discrepancy instead.
+
+\begin{terminal}
+mkdir ./utp-10-manual
+cd ./utp-10-manual
+pwd
+touch ./one.txt ./two.txt
+cp -i ./one.txt ./two.txt
+\end{terminal}
+
+When asked whether to overwrite, decline or interrupt. The point is to connect the documented precondition (the destination exists) to the observed interaction. With both files empty, byte equality would tell you nothing about whether a write took place. If you wanted to verify that an earlier version survived, you would make different fixture contents and compare them as in Chapter~\ref{ch:7}. Likewise, don't infer the behavior of every option from one test. If a feature you need is an extension, such as a GNU-style long option, consult the documentation for that implementation. A \cmd|--help| invocation is common for GNU external tools, but not a portable way to ask every utility for help. Don't assume an unrecognized argument is harmless when using a command that alters files.
+
+\section{Follow a documentation trail without guessing}
+When a local lookup fails, first record what failed. If the shell says it cannot find \cmd|man|, that's different from \cmd|man| saying it has no entry for one name. If the page opened but your search did not find an option, you may have a different release, a page with a different spelling or subject, or a pager search that began too late. Ask a small question at each step. For instance, try a lookup for a familiar utility:
+
+\begin{terminal}
+man ls
+\end{terminal}
+
+If it displays a page, the earlier failure was not a failure to display \emph{any} local page. If it also fails, read the error before assuming that the whole manual system is broken. A missing page isn't evidence that its command is absent.
+
+The documentation viewer is itself a documented utility. If its error or lookup behaviour is puzzling, open the local description of \cmd|man|:
+
+\begin{terminal}
+man man
+\end{terminal}
+
+The first \cmd|man| is the command; the second is the entry to look up. Check how the local synopsis permits selecting a section, and see whether the page identifies which pager it normally runs. This is a local read-only lookup, not a change to those settings.
+
+For a shell builtin, find the shell's reference for your release. For a system utility on macOS, FreeBSD, OpenBSD, or NetBSD, prefer the matching system's manuals over a random Linux search hit, while giving the local installation the final say. For software installed separately, an upstream project may publish a manual for each version or maintain its own reference. If you cannot determine what version you have, stick to the behavior you can identify and verify. A standard such as POSIX helps when your question is about rules that more than one operating system is expected to share; it does not promise that extensions found in one manual are understood by another tool. On a minimal Linux system, the startup image may include command binaries but exclude documentation; using upstream documentation in that case is a workaround, not proof that you have the latest command.
+
+Distinguish a recipe from evidence. An example that combines several options may be showing what is possible, not recommending the safest default. Read descriptions individually and look for words such as ``unless,'' ``only when,'' and ``destination directory.'' These tiny clauses often describe the failure case you care about. The question for the rota isn't ``what flags can \cmd|cp| take?'' but ``if the destination already exists, can this operation replace it?'' Write down the condition, the documented action, and what you expect to see in your practice result. That short note is much easier to check than a copied line of flags.
+
+The useful outcome is often a smaller command. Suppose a suggested option would address a collision but its local meaning is uncertain. Choosing a fresh destination may solve the problem without needing the option at all. Good documentation work includes recognizing when a tool feature is unnecessary. Ask again what you need to preserve, and bring only those confirmed behaviors back to the real task.
+
+\begin{dialoguebox}{One machine, two manuals}
+\Brian{The manual documents \texttt{printf}, so that must be what my prompt runs.}
+\Stephen{It may be, if that page and command are from the same implementation.}
+\Brian{I asked the shell and it says \texttt{printf} is built in. Is the manual wrong?}
+\Stephen{Not necessarily. The external utility can be installed and documented even when the shell prefers its builtin.}
+\Brian{Then which description should I trust?}
+\Stephen{Match the documentation to the implementation your command invokes, and test the point that matters.}
+\DialogueConclusion{Identify the implementation before trusting its manual.}
+\end{dialoguebox}
+
+\section{Practice and clean up}
+For the optional verification directory, check \cmd|pwd| and \cmd|ls -a| before removing anything. Use \cmd|rm -i| with each of the two exact file paths individually, decline any unexpected question, leave with \cmd|cd ..|, and remove the empty practice root with \cmd|rmdir ./utp-10-manual| or the unique name you used. The exercises themselves only read local documentation and command information; they need no file cleanup.
+
+\begin{exercise}{One tool, one option}
+\label{ex:10-option}
+Open the \texttt{mv} manual and find whether \texttt{-i} applies when the destination exists. Identify the source and destination positions in one synopsis form. Close the viewer.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+man mv
+\end{terminal}
+Use the pager's search if available. Look for the description of prompting before a replacement, not just the spelling in the synopsis. In the two-path form the first path is the source. No move is made.
+\end{solution}
+
+\begin{exercise}{Which printf did you read?}
+\label{ex:10-section}
+Compare the two \texttt{printf} pages if available and describe a clue that distinguishes them. Then ask the shell for the identity of \texttt{printf}.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+man 1 printf
+man 3 printf
+command -V printf
+\end{terminal}
+Look for shell operands in section 1 and signs of C, such as an include directive, in section 3. The shell identity is a separate check. If one page is missing, record which.
+\end{solution}
+
+\begin{exercise}{Find a manual by purpose}
+\label{ex:10-keyword}
+Use a keyword search to find the file comparison utility from Chapter~\ref{ch:7}. Open its local documentation and locate either the byte-comparison description or the exit statuses.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+man -k 'compare'
+man 1 cmp
+\end{terminal}
+Look for \ManPage{cmp}{1}; the exact list is local. If the keyword had no results, try the second lookup directly to distinguish a missing or unhelpful index from a missing page.
+\end{solution}
+
+\begin{takeaways}
+\item Start with the local manual; read the default behavior as carefully as the options.
+\item A section number narrows a page lookup but does not identify the command the shell runs.
+\item Confirm the relevant interpretation with a small disposable test.
+\end{takeaways}
+
+\begin{furtherreading}
+\ReadingItem{POSIX man}{The scope of standardized manual lookup and keyword search}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/man.html}
+\ReadingItem{OpenBSD man(1)}{A concrete manual system with section selection and keyword lookup}{https://man.openbsd.org/man.1}
+\ReadingItem{GNU Bash manual}{See the section on Bash builtins for help}{https://www.gnu.org/software/bash/manual/}
+\end{furtherreading}
