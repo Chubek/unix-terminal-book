@@ -5,6 +5,8 @@
   explicit no-match message. Verified separate missing-file diagnostic,
   done line, and cleanup under Bash 5.3.15, its POSIX `/bin/sh` mode,
   and Zsh 5.9.2.
+- Injected a failing `mktemp` under each tested shell: the separate setup
+  block returned one with no output and never called `cd`.
 - Plan for reader trials is intentionally application-specific. No real
   screen reader, braille device, macOS/BSD terminal, or desktop
   preference changes tested. Apple and Orca documentation links are for

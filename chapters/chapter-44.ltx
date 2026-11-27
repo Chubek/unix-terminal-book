@@ -109,16 +109,22 @@ not convey.
 \section{Build a report you can read out of order}\label{sec:44-report}
 
 The practice uses POSIX shell syntax; type \cmd|sh| first in a spare
-terminal if needed. Create a fresh directory; if the assignment or
-\cmd|cd| fails, stop rather than creating these files elsewhere.
-The Xs in the template give \cmd|mktemp| a place to generate a
-unique name. \cmd|>| will write or replace its destination. Here
-the names are reserved for toy data, not an existing report.
+terminal if needed. \cmd|mktemp -d| is widely available but is not
+a POSIX utility. It creates a new directory with a unique name in
+place of the Xs. Run this setup by itself:
 
 \begin{terminal}
 lab=$(mktemp -d "${TMPDIR:-/tmp}/utp44.XXXXXX") &&
-    cd "$lab" && lab=$PWD
-pwd
+    cd "$lab" && lab=$PWD && pwd
+\end{terminal}
+
+Continue only if it prints the absolute path of the new directory
+with a name beginning \texttt{utp44.}. Note that exact path for
+cleanup. If the setup fails or prints an unexpected path, stop.
+The next command uses \cmd|>|, which can replace its destination.
+Run it only inside the verified fresh directory.
+
+\begin{terminal}
 printf '%s\n' 'open: call the library' 'done: return the book' \
     'open: choose next title' > ./tasks.txt
 \end{terminal}
@@ -412,14 +418,22 @@ then choose whether to reapply it. Close only the window you set
 aside, not a working session. No additional chapter file is needed.
 \end{solution}
 
-Cleanup: check \cmd|pwd| in the practice shell first. Remove
-the chapter's exact report names and leave the directory. Omit
-\texttt{done.txt} unless you did that exercise. Leaving your
-working shell is not required unless you opened a child for this
-practice.
+Cleanup: run \cmd|pwd| and compare the entire path with the one
+you recorded at setup. If it differs, stop: the names below might
+refer to files outside the practice directory. If you created
+\texttt{done.txt} in the exercise, remove that file separately
+before the main cleanup. Otherwise skip this first block.
 
 \begin{terminal}
-rm ./tasks.txt ./open.txt ./diagnostic.txt ./done.txt
+rm ./done.txt
+\end{terminal}
+
+Remove the remaining reports you made, then leave and remove the
+empty directory. If you opened a child shell for practice, you can
+exit it afterwards.
+
+\begin{terminal}
+rm ./tasks.txt ./open.txt ./diagnostic.txt
 cd / && rmdir "$lab"
 \end{terminal}
 

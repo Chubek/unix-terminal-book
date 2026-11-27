@@ -33,16 +33,22 @@ of inputs.
 
 Use a spare terminal and POSIX shell syntax. If your usual shell
 requires different syntax, start a child with \cmd|sh| first. The
-following setup makes a fresh directory; stop if the assignment
-or \cmd|cd| fails and don't type the writes elsewhere. Local
-\texttt{notes}, \texttt{before.txt}, and \texttt{after.txt} are
-fixture names, not an existing project. The redirections replace
-their destination files if the commands are run again.
+following setup uses \cmd|mktemp -d|, a widely available
+non-POSIX utility, to make a fresh directory. Run the setup on
+its own before any commands that write files.
 
 \begin{terminal}
 lab=$(mktemp -d "${TMPDIR:-/tmp}/utp46.XXXXXX") &&
-    cd "$lab" && lab=$PWD
-pwd
+    cd "$lab" && lab=$PWD && pwd
+\end{terminal}
+
+Expect the absolute path of a newly created \texttt{utp46.}
+directory with a generated suffix. Record the exact path for
+cleanup. If setup fails or the path is not the one you just
+created, stop. The following redirections replace the destination
+files if repeated, so run them only inside the verified directory.
+
+\begin{terminal}
 mkdir ./notes
 printf '%s\n' 'Library: ask for the key' 'Hall: confirm chairs' \
     > ./notes/monday.txt
@@ -211,9 +217,10 @@ head -n 8 ./changes.txt
 
 This short preview should include the change. Treat saved
 comparisons as potentially sensitive: unified output generally
-shows unchanged lines next to what changed. Redact or paraphrase
-the harmless portion of a real report before sharing. Don't
-paste a full diff into a public channel just because it is short.
+shows unchanged lines next to what changed. Redact private
+details, or share a paraphrase limited to the relevant,
+nonsensitive finding. Don't paste a full diff into a public
+channel just because it is short.
 
 If you are reviewing the two versions together, read the
 change in both directions. First, what does the newer file
@@ -266,10 +273,13 @@ file it came from.
 \section{Keep the repeatable part small}
 
 A script is justified when you repeat the check and want the
-same source files and status handling each time. Use the copy in
-\FilePath{listings/chapter-46/check-notes.sh}, or save the text
-below as \texttt{check-notes.sh} in the practice directory using
-your editor. Do not try to enter the entire listing as commands:
+same source files and status handling each time. If you have
+the book's source checkout or download, find
+\FilePath{listings/chapter-46/check-notes.sh} there and copy
+that file into the practice directory. If you only have the
+book, transcribe the printed listing below into a plain-text
+file named \texttt{check-notes.sh} in the practice directory.
+Do not enter the entire listing as interactive commands:
 it contains \cmd|exit| for the script. Use \cmd|sh ./check-notes.sh|
 to run it without changing the file mode. It reads fixed
 relative paths, so verify you are in the intended directory.
@@ -427,8 +437,9 @@ The routine exits with status two. Restore before the usual
 cleanup even if the output surprised you.
 \end{solution}
 
-Confirm the fixture root with \cmd|pwd|. Remove only the
-fixture names; omit \texttt{check-notes.sh} or \texttt{changes.txt}
+Compare \cmd|pwd| to the exact path recorded at setup; stop if
+they differ. Remove only the fixture names; omit
+\texttt{check-notes.sh} or \texttt{changes.txt}
 if you did not create them. Then remove the empty directories.
 
 \begin{terminal}

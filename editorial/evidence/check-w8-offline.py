@@ -60,6 +60,13 @@ def blocks_run(n, shell, cwd, prefixes, extra="", expected=0):
     return shell_run(shell, code, cwd, expected)
 
 
+def check_setup_gate(n, shell, cwd):
+    setup = get(examples(n), "lab=$(mktemp")
+    fail = "mktemp() { return 1; }\ncd() { printf 'unexpected cd\\n'; }\n"
+    out, err = shell_run(shell, fail + setup, cwd, expected=1)
+    assert not out and not err
+
+
 def check_43(cwd):
     bash = ["bash", "--noprofile", "--norc", "-i"]
     b = examples(43)
@@ -80,9 +87,10 @@ def check_43(cwd):
 
 def check_44(cwd, shell):
     out, _ = blocks_run(44, shell, cwd, [
-        "lab=$(mktemp", "head -n 2", "grep -n '^open:'", "grep -q '^waiting:'",
+        "lab=$(mktemp", "printf '%s\\n' 'open:", "head -n 2",
+        "grep -n '^open:'", "grep -q '^waiting:'",
         "printf '%s\\n' 'Last open", "head -n 1 ./absent",
-        "grep -n '^done:'", "rm ./tasks.txt",
+        "grep -n '^done:'", "rm ./done.txt", "rm ./tasks.txt",
     ])
     assert "search status: 0" in out and "No waiting items." in out
     assert out.count("3:open: choose next title") == 2
@@ -92,7 +100,8 @@ def check_44(cwd, shell):
 
 def check_45(cwd, shell):
     out, err = blocks_run(45, shell, cwd, [
-        "lab=$(mktemp", "(cd ./other && { pwd", '(PATH="$lab/other"; command -v utp45-report\n printf',
+        "lab=$(mktemp", "mkdir ./work", "(cd ./other && { pwd",
+        '(PATH="$lab/other"; command -v utp45-report\n printf',
         "ls -ld ./work", "(cd ./other && cat ../work/report.txt)",
         "(cd ./other && cat ./report.txt)", "rm ./work/report.txt",
     ])
@@ -106,7 +115,8 @@ def check_45(cwd, shell):
 def check_46(cwd, shell):
     b = examples(46)
     script = ROOT / "listings/chapter-46/check-notes.sh"
-    setup = get(b, "lab=$(mktemp") + get(b, "printf '%s\\n' 'Start at ten'")
+    setup = (get(b, "lab=$(mktemp") + get(b, "mkdir ./notes") +
+             get(b, "printf '%s\\n' 'Start at ten'"))
     # Copy using the harness rather than asking a reader to type a system path.
     out, err = shell_run(shell, setup + f'cp "{script}" ./check-notes.sh\n' +
                          "\n".join(get(b, x) for x in [
@@ -172,6 +182,8 @@ def main():
         for shell in [["sh"], ["bash", "--noprofile", "--norc"], ["zsh", "-f"]]:
             if not shutil.which(shell[0]):
                 continue
+            for n in (44, 45, 46):
+                check_setup_gate(n, shell, root)
             check_44(root, shell)
             check_45(root, shell)
             check_46(root, shell)

@@ -163,15 +163,23 @@ evidence without adding another uncertain operation.
 
 Use POSIX shell syntax below; start a child \cmd|sh| if needed.
 The practice creates a helper and a report in a fresh directory.
-Stop if setup fails, before performing any writes. The helper
-only prints a sentence. It stands in for a trusted program you
-know should be runnable. Its name, \texttt{utp45-report}, is
-chosen to reduce the chance of colliding with anything installed.
+Run the setup block by itself. The \cmd|mktemp| utility is not
+part of POSIX but is available on the systems discussed here.
 
 \begin{terminal}
 lab=$(mktemp -d "${TMPDIR:-/tmp}/utp45.XXXXXX") &&
-    cd "$lab" && lab=$PWD
-pwd
+    cd "$lab" && lab=$PWD && pwd
+\end{terminal}
+
+Continue only if the setup prints the absolute path of the new
+directory named \texttt{utp45.} followed by its generated suffix.
+Record the exact path for cleanup. If it did not print that path,
+stop before creating directories or redirecting output. This toy
+\cmd|sh| helper only prints a sentence. Create it and grant its
+owner execute permission only in this authorized practice directory,
+not on a shared project or managed system.
+
+\begin{terminal}
 mkdir ./work ./other
 printf '%s\n' 'Inventory: four notebooks' > ./work/report.txt
 printf '%s\n' '#!/bin/sh' "printf '%s\n' 'helper ran'" \
@@ -432,8 +440,9 @@ from the parent using \texttt{./work/report.txt}. Leave out
 irrelevant diagnostics and identifiers.
 \end{solution}
 
-Cleanup: use \cmd|pwd| to confirm the original practice
-directory. Omit \texttt{problem.txt} if you skipped that exercise.
+Cleanup: compare \cmd|pwd| with the exact practice path you
+recorded at setup. Stop if they differ. Omit \texttt{problem.txt}
+if you skipped that exercise.
 If a directory is not empty, inspect it rather than increasing
 the power of the removal command.
 

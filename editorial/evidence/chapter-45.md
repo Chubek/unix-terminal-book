@@ -7,6 +7,8 @@
   only a disposable pseudo-terminal. Terminal flow-control and
   `stty sane` recovery notes are conditional; no actual terminal modes
   were changed. See local `stty(1)`.
+- A simulated `mktemp` failure returned one and did not call `cd`; write
+  and chmod commands are in a separate block.
 - No remote connections, host-key failures, app-specific shortcut
   behavior, or macOS/BSD systems tested. No credentials were used.
 - Reproduce offline checks with

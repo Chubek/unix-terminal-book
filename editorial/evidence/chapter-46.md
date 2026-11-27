@@ -7,6 +7,8 @@
   routine (exit two without attempting the comparison). The harness
   ran the fixtures under Bash 5.3.15, its `/bin/sh` POSIX mode,
   and Zsh 5.9.2. The supplied script itself was invoked via `sh`.
+- A simulated `mktemp` failure returned one and did not call `cd`; the
+  notes and handoff writes are in separate blocks.
 - Header timestamp fields vary. No macOS/BSD systems or non-C locale
   semantics tested; non-ASCII case matching is flagged as locale-sensitive.
 - Reproduce offline checks with
