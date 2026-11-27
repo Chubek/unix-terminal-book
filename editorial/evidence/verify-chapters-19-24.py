@@ -157,18 +157,27 @@ def verify(chapter, root):
     assert setup[0].startswith("practice=$(mktemp -d /tmp/utp")
     env = dict(os.environ, TMPDIR=str(root), LC_ALL="C")
     first_example = 1
-    if chapter == 19:
+    if chapter in (19, 23):
         setup_code = blocks[0].replace("/tmp/", '"$TMPDIR"/')
+        previous = root / "handover"
+        previous.mkdir()
+        sentinel = previous / "rota.txt"
+        sentinel.write_text("previous directory; do not overwrite\n")
+        run('mktemp() { return 1; }\n' + setup_code, root, 1, env=env)
         run('mktemp() { printf "%s\\n" unexpected; }\n' + setup_code,
             root, 1, env=env)
         assert not (root / "meeting.txt").exists()
+        assert sentinel.read_text() == "previous directory; do not overwrite\n"
+        assert not (previous / "key-note.txt").exists()
+        sentinel.unlink()
+        previous.rmdir()
         run('pwd() { printf "%s\\n" wrong-location; }\n' + setup_code,
             root, 1, env=env)
-        unverified, = root.glob("utp19.*")
+        unverified, = root.glob(f"utp{chapter}.*")
         assert not list(unverified.iterdir())
         unverified.rmdir()
         run(setup_code, root, env=env)
-        work, = root.glob("utp19.*")
+        work, = root.glob(f"utp{chapter}.*")
     elif chapter == 21:
         run(blocks[0].replace("/tmp/", '"$TMPDIR"/'), root, env=env)
         work, = root.glob("utp21.*")

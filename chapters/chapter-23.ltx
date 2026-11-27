@@ -16,19 +16,35 @@ packing, inspecting, restoring and comparing.
 \index{checksum}
 
 \section{Pack named files together}
-Use a fresh directory for this exercise and a portable \cmd|sh|
-session. Run the first two commands separately and stop if either
-fails. These are deliberately synthetic documents: don't replace
-them with actual keys, key codes, names or personal contact details.
+Open a spare terminal tab and start a separate \cmd|sh| session.
+The setup exits that practice shell on failure, so it cannot
+continue writing in the directory where you started. The
+non-POSIX \cmd|mktemp -d| creates a fresh directory; the six
+Xs in the template mark its generated suffix. The \cmd|case|
+check accepts only a path with the expected prefix and six
+suffix characters. Then the bracketed test requires \cmd|pwd -L|
+to match the captured path exactly before any fixture writes.
+The logical path keeps the \texttt{/tmp} spelling even where
+it is a symbolic link. These are deliberately synthetic
+documents: don't replace them with actual keys, key codes,
+names or personal contact details.
 
 \begin{terminal}
-practice=$(mktemp -d /tmp/utp23.XXXXXX)
-cd "$practice"
-mkdir handover
-printf '%s\n' 'Friday: early shift' > handover/rota.txt
+practice=$(mktemp -d /tmp/utp23.XXXXXX) || exit 1
+case "$practice" in
+  /tmp/utp23.??????) ;;
+  *) printf '%s\n' 'Unexpected practice path.' >&2; exit 1 ;;
+esac
+cd "$practice" || exit 1
+[ "$(pwd -L)" = "$practice" ] || exit 1
+mkdir handover || exit 1
+printf '%s\n' 'Friday: early shift' > handover/rota.txt || exit 1
 printf '%s\n' 'Return the practice key to the desk.' \
-  > handover/key-note.txt
+  > handover/key-note.txt || exit 1
 \end{terminal}
+
+If the setup exits or reports an error, stop and investigate
+instead of running the next block at your usual prompt.
 
 An \FirstUse{archive} is a file containing a representation of
 other files and often their paths and metadata. In this example
@@ -446,7 +462,7 @@ cmp handover/key-note.txt recovered/handover/key-note.txt
 \end{solution}
 
 \paragraph{Cleanup.}
-Check \cmd|pwd| against \cmd|"$practice"| first. Only in this
+Check \cmd|pwd -L| against \cmd|"$practice"| first. Only in this
 disposable \texttt{utp23} directory, remove the named files,
 decline unexpected prompts, then remove the empty directories.
 An absent optional exercise file produces a harmless diagnostic.
