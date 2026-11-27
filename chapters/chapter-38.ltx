@@ -1,0 +1,405 @@
+Your evening class has a small Unix server. The instructor gives you an
+account so you can work on the same files from home and the classroom.
+The first connection asks whether you trust a key you have never seen.
+The sensible response is not to guess what the computer wants you to say.
+It is to know what would count as an answer. The printed server names
+in this chapter are examples: all hands-on work here can be done offline.
+
+\begin{objectives}
+\item Read an SSH destination and identify which account and machine it names.
+\item Verify the server's identity before authenticating yourself.
+\item Tell a remote shell from your local shell and close it deliberately.
+\end{objectives}
+
+\section{Obtain the connection details first}\label{sec:38-details}
+\index{ssh@\texttt{ssh}}\index{secure shell}\index{remote shell}
+SSH, or Secure Shell, gives you a protected connection to a service on
+another machine. What you do after connecting depends on what the account
+permits. An ordinary login often starts a shell much like the one at your
+desk. The terminal window stays on your machine; commands at the new
+prompt run as your remote account. In Chapter~\ref{ch:37}, the URL told a
+browser several things about a request. Here you supply the connection
+details as command arguments.
+Figure~\ref{fig:38-destination} labels the parts of a nondefault-port
+connection before you have to type them.
+
+Ask the account provider for the exact server name, your remote account
+name, any nondefault port, the expected host key fingerprint and key type,
+and the approved sign-in method. Find out whether the provider requires
+an institutional network or a VPN. A VPN is a connection into another
+network; it can make an otherwise inaccessible service available, but
+does not replace checking the service's identity. Only connect to services
+you are explicitly allowed to use. Do not point these commands at a
+different machine when the example name doesn't work.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-38/destination.tikz}
+\caption{The username belongs to the account on the destination.}\label{fig:38-destination}
+\VisualDescription{One label identifies the SSH port, one the account, and one the host. The account label is not the laptop's login.}
+\end{figure}
+
+For a standard-port login the shape of the command is:
+
+\begin{terminal}[title={Command form only: do not run with the example name}]
+ssh learner@unix.example.org
+\end{terminal}
+
+The \texttt{@} separates the remote user \texttt{learner} from the host
+\texttt{unix.example.org}. If you leave the user out, SSH normally uses
+your local username unless its configuration says otherwise. That can
+be surprising on a laptop named for you but an account named for your
+class. A port the provider explicitly gives you goes after the lowercase
+\texttt{-p} option; here, \texttt{2222} is an example, not a suggested
+alternative to try when the connection fails:
+
+\begin{terminal}[title={Command form only}]
+ssh -p 2222 learner@unix.example.org
+\end{terminal}
+
+OpenSSH is the SSH implementation used in these examples. It is not a
+POSIX utility; check availability and local behavior first on Linux,
+macOS, FreeBSD, OpenBSD, or NetBSD. The following reads the client
+version without opening a connection. The uppercase \texttt{-V} matters:
+lowercase \texttt{-v} is a different option that requests verbose output.
+Some terminals show no difference between output streams, but if you
+redirect version output and the file is empty, standard error may be
+where the line went.
+
+\begin{terminal}
+ssh -V
+\end{terminal}
+
+You can also inspect what the OpenSSH client would use, offline. In this
+specific example \texttt{-F /dev/null} supplies an empty alternative
+configuration file and suppresses the usual configuration files,
+\texttt{-G} prints the effective configuration and exits,
+\texttt{-T} disables terminal allocation for this inspection, and
+\texttt{-p 2222} sets the requested port. Use the empty configuration
+only for this exercise, not as advice to ignore your provider's settings.
+\cmd|grep -E| selects lines by an extended regular expression;
+\cmd|^| anchors the match to the start of a line, and the alternatives
+name three fields, each followed by one space.
+
+\begin{terminal}
+ssh -F /dev/null -G -T -p 2222 learner@unix.example.org |
+  grep -E '^(host|user|port) '
+\end{terminal}
+
+The result should include three fields: \texttt{host unix.example.org},
+\texttt{user learner}, and \texttt{port 2222}. It proves only how the
+client read these arguments, not that this host exists or has an account
+for you. If the client rejects \texttt{-G}, check \cmd|man ssh| rather
+than deleting the option and inadvertently opening a connection.
+Avoid casually substituting a bare \texttt{ssh -G} on a real host:
+configuration rules can invoke helper commands or perform name lookup.
+Also avoid posting the entire generated configuration, which can expose
+private paths or institutional settings.
+
+\begin{quicktable}{p{1.35in}Y}
+\toprule
+Information & Place to get it, or check it \\
+\midrule
+Host and port & A service owner or official setup instructions; not a guess based on an IP address. \\
+Remote account & The provider's enrollment details; may not match your local username. \\
+Host fingerprint & A trusted support channel or an authenticated provider page independent of the new connection. \\
+Sign-in method & Your account provider's instructions; a password, a user key, or an additional verification step may be required. \\
+\bottomrule
+\end{quicktable}
+
+\section{The server identifies itself before you sign in}
+\index{host key}\index{fingerprint}\index{known hosts}
+On the first connection OpenSSH might report something like this
+illustrative excerpt. The ellipsis represents omitted characters;
+real checks compare the entire fingerprint and the indicated key type.
+The default prompt can vary with the client and its configuration.
+
+\begin{terminaloutput}
+The authenticity of host '[unix.example.org]:2222' can't be established.
+ED25519 key fingerprint is SHA256:...
+Are you sure you want to continue connecting (yes/no/[fingerprint])?
+\end{terminaloutput}
+
+A \FirstUse{host key} is a key through which the server can demonstrate
+its identity. The \FirstUse{fingerprint} is a compact identifier made
+from the public key so you don't have to compare the entire key. A
+fingerprint displayed by the connection is a claim, not independent
+proof about whose key it is. Get the expected fingerprint from the
+provider before trusting the connection, and compare the fingerprint and
+type it actually reports. A server can have different host keys for
+different algorithms; if the owner supplied only a fingerprint for the
+wrong key type, ask for the corresponding trusted fingerprint.
+Figure~\ref{fig:38-identity} separates that evidence from the key
+claim shown by the connection.
+
+After you confirm the fingerprint and accept the key, SSH can record that
+identity in a known-hosts file, normally \texttt{\string~/.ssh/known\_hosts}
+for OpenSSH's user file; system-wide records and configuration can also
+apply. In future the client can compare what it sees with what it already
+knows. A connection without a first-use prompt may already be covered by
+a trusted host key record or the provider's managed configuration. It
+is not a reason to change that configuration.
+
+What counts as an independent channel? The course's access instructions
+inside its already authenticated learning system may be enough. So
+might calling the computing desk on a number you obtained when you
+registered, rather than one provided by a surprise prompt or mail.
+Two copies of a fingerprint copied from the same new connection aren't
+two channels. If all you have is the unfamiliar display, answer
+\texttt{no} or cancel and ask. Postponing a first login is less work
+than investigating whether you gave a password to a stranger.
+
+Preserve the distinction between a service name and a host key
+when moving between devices. A login that you verified yesterday on
+your workstation doesn't automatically create a trusted record
+on your new laptop. Repeat the approved verification or use the
+provider-managed host records. On shared systems avoid accepting a
+prompt on behalf of someone else just because you're at the keyboard.
+This is also why the key in a legitimate service-change announcement
+should be checked independently. An urgent-looking announcement by
+itself is not stronger evidence than an urgent-looking prompt.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-38/identity.tikz}
+\caption{Check host identity independently of account authentication.}\label{fig:38-identity}
+\VisualDescription{Compare the server's key claim with a fingerprint obtained independently. Only after a match does the example proceed to account sign-in.}
+\end{figure}
+
+\begin{warningbox}[If a known host changes]
+A rebuilt server can legitimately have a new key. An impostor can also
+present a different key. Stop on an unexpected change and report it
+through the provider's known channel. Do not disable host checks, delete
+all known-hosts entries, or remove the old entry just to silence the
+warning. After the provider confirms a rotation, follow their instructions
+to update the specific verified record.
+\end{warningbox}
+
+Encryption and identity are separate ideas. Encrypting a conversation
+protects it along the route, but you still need to know who is at the
+other end. Typing a password after accepting a stranger's first key is
+like telling the wrong person your password in an otherwise private
+room. Passwords or codes belong only at the approved sign-in prompt
+after the server identity check. Never put them in a command operand,
+shell variable demo, or configuration comment. A password prompt may
+display no characters while you type; that can be normal.
+
+\begin{dialoguebox}{Two keys, two questions}
+\Brian{I thought the key proves who I am. Why does the server have one?}
+\Stephen{SSH checks a key to establish whom it is talking to.}
+\Brian{You said ``it.'' Which end gets to check whom?}
+\Stephen{You're right: there are two checks. Your client checks the server's host key. The server then checks your account credentials.}
+\Brian{So knowing the server's fingerprint doesn't get me into my account.}
+\Stephen{No more than recognizing your bank gives you a bank account.}
+\Brian{And my personal key can't prove I've reached the right server.}
+\Stephen{Exactly; a strong sign-in method doesn't replace the first check.}
+\DialogueConclusion{Check the host, then prove your own identity.}
+\end{dialoguebox}
+
+\section{Learn what a public key file looks like}
+\index{ssh-keygen@\texttt{ssh-keygen}}\index{public key}\index{private key}
+A user key is a pair. A service can authorize the public part for your
+account; the client uses the private part to demonstrate possession
+without sending that private key to the server. In an ordinary OpenSSH
+key pair on disk the public file ends in \texttt{.pub}; the matching
+filename without that suffix is normally the private file. The
+passphrase protecting a local private key, when used, is not your account
+password, and is not sent to the server. For a real enrollment, follow
+the provider's key type, protection, and upload instructions. Use a
+passphrase for a real user key unless your provider requires another
+approved method of protection. Do not copy a private key to a server or
+submit it in a support ticket. A comment on the public key can identify
+you, so even public keys need not be posted indiscriminately.
+
+For optional practice, make a fresh local directory. Here
+\texttt{-d} makes a directory; check each step and stop if one fails.
+This key pair is a disposable teaching prop, never to be enrolled.
+
+\begin{terminal}
+keylab=$(mktemp -d)
+cd "$keylab"
+\end{terminal}
+
+\cmd|ssh-keygen -t| selects the key type (here Ed25519, a common choice);
+\texttt{-C} sets a synthetic comment; \texttt{-f} picks a filename inside
+the practice directory. \texttt{-N ''} assigns an empty passphrase
+only to this fixture so the exercise isn't interactive. Don't use that
+option for a reusable personal key. If a file already exists,
+decline to overwrite it and get out of the directory before
+investigating where you are.
+
+\begin{terminal}
+ssh-keygen -t ed25519 -C practice-only -f ./demo-key -N ''
+\end{terminal}
+
+You can list names without displaying the private file. The next command
+prints a fingerprint from the public file: \texttt{-l} lists fingerprint
+information and \texttt{-f} names the input. Expect the key size, a
+digest string, the practice comment, and the key type. Since the private
+data were generated afresh, there's no correct literal digest to match
+with a classmate. A second fingerprint of the same public file should
+be identical. Generating this pair does not change your \texttt{.ssh}
+directory or make it possible to sign in to any service.
+
+\begin{terminal}
+ls -l ./demo-key ./demo-key.pub
+ssh-keygen -lf ./demo-key.pub
+\end{terminal}
+
+For a sign-in to an authorized host, the provider might instruct you to
+choose an identity file with SSH's lowercase \texttt{-i} option. That is
+a path to the local private key that SSH should use, not an instruction
+to transfer it. There is no need to practice with a personal private
+file, adjust agent forwarding, or export keys to another machine to
+learn this distinction.
+
+Password, passphrase, and confirmation prompt are easy to confuse
+when everything is printed in the same window. A prompt to unlock your
+identity file usually refers to your local key; a prompt for the named
+account's password normally refers to the remote account. The client
+may attempt more than one authentication method; read each prompt
+instead of trying the same secret until it works. If the prompt
+doesn't agree with the instructions that came with the account,
+stop and ask the provider which methods should be enabled. Repeated
+attempts can trigger an account lock or make the relevant failures
+harder to spot in a support log.
+
+If a real private key may have been disclosed, telling the provider
+quickly matters more than renaming it on the laptop. The provider can
+help revoke the associated authorization and give you the approved
+replacement steps. Deleting a local copy is not a command to all
+servers to stop accepting the corresponding public key. For the
+practice pair no authorization exists, which is why you can remove
+both fixture files without coordinating a service-side change.
+
+\section{Notice when the shell changes rooms}
+On an authorized account, once signed in, use a harmless context check
+before editing anything. \cmd|pwd| shows the working directory and
+\cmd|id -un| asks \cmd|id| for the name (\texttt{-n}) associated with
+the current effective user ID (\texttt{-u}). These commands would run
+on the computer that is currently hosting the shell. The example output
+is fictional, printed here with no prompt to copy.
+
+\begin{terminal}[title={At the authorized remote prompt}]
+pwd
+id -un
+\end{terminal}
+\begin{terminaloutput}
+/home/learner
+learner
+\end{terminaloutput}
+
+Compare these with your local results. Both accounts could have the same
+name or directory layout: even a perfect literal match does not prove
+you are in the local shell. A useful additional check is the
+\cmd|hostname| observation from Chapter~\ref{ch:37}, considered alongside
+which connection you opened. Mark the local and remote terminal tabs
+differently if the application supports it. Avoid opening a second
+login inside the first one while you are learning: you can end up
+leaving only the inner shell and mistake the outer remote shell for home.
+
+Before running a command copied from instructions, check which shell
+is meant to see its metacharacters. For instance, a redirection entered
+at the local prompt belongs to that local shell, even if the program
+whose output you're capturing is an SSH client. A redirection typed
+after you've signed in at the remote prompt belongs to the remote shell
+instead. The previous chapters on quoting and redirection still apply;
+now the shell interpreting the notation may be on a different machine.
+Figure~\ref{fig:38-shells} shows why the original shell is still
+there to receive commands after SSH finishes.
+For this first login, keep the phases separate. Type the login command
+by itself, confirm the remote context, and then enter one harmless
+inspection command at a time. Do not paste blocks that assume you got
+past a password or fingerprint prompt. Unexpected results become
+much easier to recover from if the next operation hasn't already begun.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-38/shells.tikz}
+\caption{The same window can show two different shells at different times.}\label{fig:38-shells}
+\VisualDescription{The local shell starts an SSH client, which connects to a remote shell. Exiting the remote shell returns control to the local one.}
+\end{figure}
+
+When done, \cmd|exit| at the remote shell normally ends that shell
+and hands control back to your original local shell. Use \cmd|pwd|
+again to confirm you are back. If SSH is executing one remote command
+rather than starting a shell, its exit status ordinarily reflects
+the remote command; a client error is reported as 255. The command may
+itself choose 255, so the number alone doesn't diagnose the failure.
+Read the actual error before drawing a conclusion.
+
+Sometimes the support desk's first question is whether the account allows
+an interactive shell at all. A file-transfer-only account need not
+give you one; it may authenticate and reject an attempt to start an
+interactive session. Ask whether a shell is included rather than trying
+to get around the limitation. When reporting a failed login, note
+whether you saw the expected host key and whether you reached the
+provider's expected account authentication prompt. Share only the
+relevant sanitized error and context, never your password, private key,
+one-time code, or recovery credentials. The wording of a particular
+error can change from one client version to another: match the failure
+stage first.
+
+\begin{terminal}[title={Run exit remotely; run pwd after the local prompt returns}]
+exit
+pwd
+\end{terminal}
+
+\begin{quicktable}{p{1.4in}Y}
+\toprule
+Symptom & What it does and doesn't establish \\
+\midrule
+Cannot resolve host & You have not located the destination by name; recheck the supplied address and connection prerequisites. \\
+Host identification changed & A formerly recorded identity differs, not necessarily because of an attack; independently verify before continuing. \\
+Permission denied on sign-in & The server did not accept an available account authentication method; don't loop over guessed passwords. \\
+Remote prompt appears & A session started; still check the account and directories before manipulating files. \\
+\bottomrule
+\end{quicktable}
+
+\begin{exercise}{Read before dialing}\label{ex:38-offline}
+Change the user and port in the offline \texttt{-G} example to
+\texttt{student} and \texttt{2022}; leave \texttt{-F /dev/null},
+\texttt{-G}, and \texttt{-T} in place. Check the fields; the exercise creates no files
+and should not attempt a connection.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+ssh -F /dev/null -G -T -p 2022 student@unix.example.org |
+  grep -E '^(host|user|port) '
+\end{terminal}
+Look for \texttt{user student} and \texttt{port 2022}; the host has not changed.
+\end{solution}
+
+\begin{exercise}{Fingerprint a fixture twice}\label{ex:38-fixture}
+Run the fingerprint command from the practice directory twice.
+Compare the fingerprint field and identify the disposable comment.
+Leave both files in place until the final cleanup. If key generation
+is unavailable on your client, explain the intended comparison instead.
+\end{exercise}
+\begin{solution}
+\cmd|ssh-keygen -lf ./demo-key.pub| gives the same fingerprint both
+times for the same public key. \texttt{practice-only} is the comment,
+not the key or the fingerprint.
+\end{solution}
+
+\begin{exercise}{Choose what to disclose}\label{ex:38-disclose}
+Write on paper which of the two practice filenames a provider would
+normally request in a key enrollment, and which must not be sent.
+Then remove the practice files and directory. Do not send either file.
+\end{exercise}
+\begin{solution}
+The public file is \texttt{demo-key.pub}; \texttt{demo-key} is private.
+Check that \cmd|pwd| prints your practice directory, use
+\cmd|rm -i ./demo-key ./demo-key.pub| and confirm only those fixture
+files, then \cmd|cd| and \cmd|rmdir "$keylab"|. This is routine
+workspace cleanup, not secure erasure.
+\end{solution}
+
+\begin{takeaways}
+\item Get the destination, expected host keys, and account details from the provider.
+\item A host key identifies the server; a user credential authenticates the account.
+\item Check which shell is active before touching files; leave the remote shell explicitly.
+\end{takeaways}
+
+\begin{furtherreading}
+\ReadingItem{ssh(1)}{OpenSSH client syntax, host verification and exit status.}{https://man.openbsd.org/ssh}
+\ReadingItem{ssh\_config(5)}{OpenSSH settings and known-hosts file defaults.}{https://man.openbsd.org/ssh_config}
+\ReadingItem{ssh-keygen(1)}{Key types, key generation and fingerprint display.}{https://man.openbsd.org/ssh-keygen}
+\end{furtherreading}

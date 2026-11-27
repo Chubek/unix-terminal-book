@@ -1,0 +1,9 @@
+\begin{tikzpicture}
+\node[utp node] (a) {Laptop shell};
+\node[utp node,right=7mm of a] (b) {SSH client};
+\node[utp node,right=10mm of b] (c) {Server shell};
+\draw[utp arrow] (a)--(b);
+\draw[utp arrow] (b)--(c);
+\draw[utp arrow] (c.south) to[out=-140,in=-40] node[below,font=\small]
+  {Exit returns control to your laptop} (a.south);
+\end{tikzpicture}

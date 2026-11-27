@@ -1,0 +1,9 @@
+\begin{tikzpicture}
+\node[utp node] (a) {Name\\resolved};
+\node[utp node,right=6mm of a] (b) {TCP\\opened};
+\node[utp node,right=6mm of b] (c) {TLS identity\\checked};
+\node[utp node,right=6mm of c] (d) {HTTP\\response};
+\draw[utp arrow] (a)--(b);
+\draw[utp arrow] (b)--(c);
+\draw[utp arrow] (c)--(d);
+\end{tikzpicture}
