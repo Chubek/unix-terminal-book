@@ -1,0 +1,9 @@
+\begin{tikzpicture}
+\node[utp node] (a) {Master file\\keep it};
+\node[utp node,right=5mm of a] (b) {Convert};
+\node[utp node,right=5mm of b] (c) {New\\sharing copy};
+\node[utp node,right=5mm of c] (d) {Verify\\separately};
+\draw[utp arrow] (a)--(b);
+\draw[utp arrow] (b)--(c);
+\draw[utp arrow] (c)--(d);
+\end{tikzpicture}

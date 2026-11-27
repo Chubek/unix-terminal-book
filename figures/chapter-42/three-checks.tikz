@@ -1,0 +1,7 @@
+\begin{tikzpicture}
+\node[utp node] (a) {Filename\\suffix};
+\node[utp node,right=7mm of a] (b) {Recognizable\\byte pattern};
+\node[utp node,right=7mm of b] (c) {Format-aware\\inspection};
+\draw[utp arrow] (a)--(b);
+\draw[utp arrow] (b)--(c);
+\end{tikzpicture}

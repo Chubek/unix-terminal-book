@@ -1,0 +1,405 @@
+You click an old link to the minutes from January and find the
+February minutes instead. The document editor synchronized the latest
+change to every device, including the one you had been counting on
+as a spare. You need to go back to a particular version, not find one
+more copy of the current file. A useful backup lets you name what you
+want back, find it, and restore it somewhere safe.
+
+\begin{objectives}
+\item Tell a synchronized copy from a recoverable historical copy.
+\item Bundle a small document folder and preserve two distinct versions.
+\item Restore and verify one version without replacing any working files.
+\end{objectives}
+
+\section{Start with a loss you want to withstand}\label{sec:41-plan}
+\index{backup}\index{retention}\index{restore}
+If you lost a laptop on a trip, you would want a copy away from the
+laptop. If you overwrote a document at home, a copy elsewhere of the
+\emph{overwritten} document wouldn't help. If a provider closed
+your account, a copy under that same account might be inaccessible.
+Each of these is a different loss, and no slogan settles all three
+questions. Write down the documents to protect, how far back you
+might need to go, how much recent work you can afford to redo, and
+how long you can reasonably spend getting back to work. A volunteer's
+monthly newsletter and the current client invoices probably deserve
+different recovery schedules.
+
+Synchronization attempts to bring locations into agreement.
+Replication can protect against a single device failing, but agreement
+can also propagate an unwanted change. Some sync products offer real
+version history; check how long it lasts and whether deletion or
+account loss takes that history away. A backup retains a separate
+point in time according to a schedule and policy you can test.
+A recovery point is the version you can go back to. If a daily
+backup ran at breakfast, it generally can't recover the edits you
+made at noon before the crash. Keeping multiple dates protects you
+when you notice a bad change only later.
+In Figure~\ref{fig:41-history}, only the second row preserves a choice.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-41/history.tikz}
+\caption{Sync can spread an overwrite; retained versions preserve choices.}\label{fig:41-history}
+\VisualDescription{One row shows the newest version replacing an older synchronized copy. A second row keeps both versions as separate recovery points.}
+\end{figure}
+
+\begin{quicktable}{p{1.45in}Y}
+\toprule
+Problem to survive & What to look for in the plan \\
+\midrule
+Accidental edit or deletion & Distinct versions older than the mistake and a rule for keeping them long enough to notice. \\
+Failed or lost device & A copy not on that device or its internal disk. A folder on the same disk is not enough. \\
+Lost account or key & A separately accessible recovery path and tested access to any encryption keys. \\
+Theft, fire, or changing files from one compromised account & Approved copies separated by location or access; consider an offline or independently controlled copy. \\
+\bottomrule
+\end{quicktable}
+
+For personal documents you might have a working copy, a backup to
+external storage, and an approved separate-location backup. An external
+drive left plugged in can suffer the same accident as the computer,
+and making encrypted backups is only useful if you can unlock them
+when the original device is gone. Use the tools and retention
+rules appropriate to your workplace or household; protecting data
+must not mean moving it to a service you weren't authorized to use.
+Agree on who can read the files, where encryption keys are stored
+apart from the computer, and what to do when a person leaves the team.
+An archive made with \cmd|tar| is not encrypted just because it is
+a single file, and compressing it would not add privacy either.
+
+Decide what is worth the space. A document can be irreplaceable
+even if it takes only a few kilobytes, while a large downloaded
+installer may be easy to obtain again. On the other hand, a
+replacement installer doesn't recreate your settings or the
+document you edited with it. For a project that spans several
+applications, note which exports and source files you need to
+recover together. Ask which accounts own material you only
+appear to have because someone shared it with you. A shared
+link isn't a backup. It can be revoked or point to the latest
+version rather than the one you approved.
+
+You needn't begin by choosing backup software. Before spending
+money on storage, try writing a recovery sentence for one
+folder: ``If February's minutes are damaged, I want the last
+approved copy and can afford to wait until tomorrow to get
+it back.'' That gives you a useful test. A daily backup might
+be frequent enough, but it still needs a way to identify the
+approved copy; a label in the document or a dated milestone
+can be more reliable than guessing by modification time.
+
+\section{Practice with two dated versions}
+\index{tar@\texttt{tar}}\index{cksum@\texttt{cksum}}
+This exercise uses two short fictional documents. All copies stay
+under one temporary directory. The directories demonstrate roles;
+they can't protect themselves against failure of the one filesystem
+they live on. The syntax is for \texttt{sh}; stop if directory setup
+fails. \cmd|umask 077| in the subshell below denies ordinary group and
+other users permission bits on newly created objects. The parentheses
+keep it from changing the outer shell's setting. It is not an
+encryption guarantee or a replacement for checking destination access.
+
+\begin{terminal}
+backuplab=$(mktemp -d)
+cd "$backuplab"
+(umask 077; mkdir documents vault restore)
+printf '%s\n' 'Monday: one box of flyers' > documents/plan.txt
+printf '%s\n' 'Contact the community desk' > documents/contact.txt
+\end{terminal}
+
+This fixture uses ordinary files and a short path. For real
+documents, make the copy when writers are idle or use the
+application's documented consistent export or snapshot method.
+A running database, a changing mail store, or a cloud placeholder
+with no file bytes present is not equivalent to a closed text
+document. A successful archive can represent a mix of dates if
+a writer changed the source part way through. Likewise, files
+behind symbolic links may not be copied when only the links are
+archived. Inventory the files needed, including hidden files where
+relevant, and test recovery of any required attributes or links.
+Across filesystems and operating systems, owner IDs, access controls,
+extended attributes, resource forks, and case distinctions may not
+survive by default. Don't rely on this little text lab to prove they
+will.
+
+Make the first archive to a confirmed unused name outside the
+document folder. Like tar creation in Chapter~\ref{ch:23},
+\texttt{-c} means create and \texttt{-f} takes the archive pathname
+that follows. \texttt{documents} is a relative input name,
+including the directory itself and its contents. The archive file
+is not in that directory, so the command does not try to archive
+what it is writing. A date in a filename is a label, not magic:
+make sure it identifies one particular run and use a distinct name
+if you take multiple copies in one day. \cmd|tar -c| can overwrite
+an existing archive. If there is already something at the destination,
+stop rather than trying the example there.
+
+\begin{terminal}
+tar -cf vault/documents-2030-01-07.tar documents
+cksum < vault/documents-2030-01-07.tar > vault/jan07.cksum
+cat vault/jan07.cksum
+\end{terminal}
+
+Check that tar reports success before computing a checksum.
+\cmd|cksum| with no operand reads standard input; the
+\texttt{<} supplies the archive bytes and \texttt{>} saves the
+output to a separate new file. In the default POSIX form the output
+is a checksum number and a byte count. Archive details such as stored
+timestamps vary, so no particular numbers are expected. This kind
+of checksum helps detect accidental corruption; it isn't designed
+to prove authenticity against somebody who can change the archive
+and its accompanying checksum. Keep an independent trusted record
+when authenticity matters. Never upload private documents to a site
+just to calculate a checksum.
+
+There are two distinct checks you can run at different times.
+Immediately after creating the backup, confirm you selected the
+intended files and that anybody who will need to restore has a
+legitimate way to access it. Later, check whether the bytes still
+agree with what you recorded then. Calculating a new checksum and
+discarding the previous one every time you check would remove the
+very comparison you need. The practice writes the later reading
+to another path and compares the two files. That also makes it
+easier to diagnose a mistake if you have accidentally requested
+the digest of the wrong archive.
+
+Now deliberately change the working copy, not the archive, and
+write a second archive. On real documents save changes in the
+editor; here \texttt{>} replaces the entire content of the
+fictional \texttt{plan.txt}. Check \cmd|pwd| first, and do not run
+the redirection outside the lab.
+
+\begin{terminal}
+printf '%s\n' 'Tuesday: two boxes of flyers' > documents/plan.txt
+tar -cf vault/documents-2030-01-08.tar documents
+cksum < vault/documents-2030-01-08.tar > vault/jan08.cksum
+ls vault
+\end{terminal}
+
+Again check tar's success before using the later commands. Expect
+two named archives and two checksum files. The archives do not
+replace one another, and both logical versions use the same
+internal path, \texttt{documents/plan.txt}. A backup name should let
+you determine when the copy was made and which source it covers.
+A real backup catalog can also record where a copy lives, how to
+access it, and when it was last restored. A catalog that names
+sensitive clients or patients may itself require protection.
+Notice the direction of the restore arrow in
+Figure~\ref{fig:41-versions}: it doesn't point back to the working folder.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-41/versions.tikz}
+\caption{Store dated archives apart from the working documents.}\label{fig:41-versions}
+\VisualDescription{A working folder feeds two differently dated archives. The first goes to a separate restore folder, not back into the working folder.}
+\end{figure}
+
+\section{Restore into an empty directory and compare}\label{sec:41-restore}
+\index{cmp@\texttt{cmp}}
+Rehearse the loss now: get Monday's plan back while leaving Tuesday's
+working version in place. Check the earlier archive against its saved
+checksum before you extract. Use a new output path for the recomputed
+record. \cmd|cmp| without options compares bytes and emits no ordinary
+output on a match; immediately inspect the exit status. Zero is a match,
+one is a difference, and a value greater than one is an error.
+
+\begin{terminal}
+cksum < vault/documents-2030-01-07.tar > ./restore/jan07.check
+cmp ./restore/jan07.check ./vault/jan07.cksum
+printf '%s\n' "$?"
+\end{terminal}
+
+An unexpected checksum is a reason to stop. Check that you compared
+the intended version and that the checksum file was not changed.
+Try a separate verified copy if the archive is damaged. Don't retry
+the same extraction into the working documents. Notice that the
+checksum record is a lab file in the restore area, not a file from
+the archive. For an empty extraction destination create a dedicated
+subdirectory under that area.
+
+Before extraction, list the members of the trusted archive with
+\texttt{-t} (list) and \texttt{-f} (archive path). Expect only
+the directory and its two documents, though traversal order can
+differ. A list of names doesn't establish that every file opens
+or contains the expected revision. For unfamiliar archives, a list
+alone is not a full security review: path traversal components,
+absolute paths, links, and special files can have effects outside
+the directory you intended. Practise only with the archive you made
+from simple trusted files, without administrative privileges.
+
+\begin{terminal}
+tar -tf vault/documents-2030-01-07.tar
+\end{terminal}
+
+Stop if the listing fails or shows unexpected paths. If it checks out,
+create a dedicated destination and inspect it. \texttt{-a} includes
+names that begin with a dot: only \texttt{.} and \texttt{..} should
+appear. If \texttt{mkdir} fails or there are other entries, stop.
+
+\begin{terminal}
+mkdir restore/monday
+ls -a ./restore/monday
+\end{terminal}
+
+Extract only in the new empty directory. This
+\texttt{-x} means extract; \texttt{-f} again supplies the filename.
+Here a parenthesized subshell changes its own working directory;
+\texttt{\&\&} runs tar only after a successful \texttt{cd}.
+The \texttt{../../} part reaches the lab root from two levels
+down. The surrounding shell's directory does not change.
+
+\begin{terminal}
+(cd ./restore/monday && tar -xf ../../vault/documents-2030-01-07.tar)
+cat ./restore/monday/documents/plan.txt
+cat ./documents/plan.txt
+cmp ./restore/monday/documents/contact.txt ./documents/contact.txt
+\end{terminal}
+
+On success the two displayed plan lines should be Monday's
+one box and Tuesday's two boxes, in that order. The contact
+file was never changed, so comparing it should yield status zero.
+That is a useful check on a known constant but says nothing about
+whether the archived plan is the right snapshot; you inspected that
+separately. With real documents, open representative files in their
+normal application, check which revisions they are, and confirm that
+any collaborator can use them as intended. Byte checks, human checks,
+and application checks serve different purposes.
+Figure~\ref{fig:41-drill} includes verification twice: once for
+the bundle and again for the separate files you recovered.
+
+If you actually need an older revision, stop after restoring it
+and compare it with the live one. Your aim may be to recover a
+single table or note, not roll back a whole folder with other
+people's current work in it. A restored version can also contain
+old mistakes or access settings you shouldn't reintroduce. Keep
+the verified recovered version apart until you have decided what
+will be merged back, make a separate copy of the current version
+before replacing anything, and have collaborators review any
+proposed rollback. A successful restore demonstrates that you have
+a choice, not that you should automatically choose the older copy.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-41/drill.tikz}
+\caption{A restore drill checks both the archive and its recovered files.}\label{fig:41-drill}
+\VisualDescription{Choose a date, verify and list the archive, extract into a clean location, and open or compare the recovered files.}
+\end{figure}
+
+\begin{quicktable}{p{1.45in}Y}
+\toprule
+Observation & What you can reasonably claim \\
+\midrule
+The backup job reported success & It thought it made a copy; check scope, location, and status. \\
+Saved checksum matches & The current archive agrees with the recorded checksum for this version, subject to the checksum's limits. \\
+The expected files open after extraction & This version is recoverable in this test environment using the access you had for the drill. \\
+A second device can restore independently & The tested copy is not dependent on access to the first device. Test credentials and keys as part of that drill. \\
+\bottomrule
+\end{quicktable}
+
+\begin{dialoguebox}{Which copy is safe?}
+\Brian{I have five copies of the newsletter. Surely one will save me.}
+\Stephen{Five is a good start. Where are they?}
+\Brian{Five dated folders on the same drive.}
+\Stephen{Then they help with an accidental edit, but not a failed drive.}
+\Brian{What if I move them all to the same cloud account?}
+\Stephen{That changes the failure you're protected from. Now ask what happens if you lose the account.}
+\Brian{So count the failures these copies can survive, not the folders.}
+\Stephen{And prove it with a restore drill.}
+\DialogueConclusion{Separate copies by the failures they must survive.}
+\end{dialoguebox}
+
+\section{Write down what the next person must do}
+Keep a short recovery note with the backups: when the job runs,
+which folders are included, where the copies live, who has
+approved access, and the steps to restore a dated version to a
+new location. Do not include a passphrase in the same note as an
+encrypted backup unless that is part of a securely managed recovery
+procedure. Repeat the drill after replacing drives, moving accounts,
+or changing the software. Record the actual restore time once,
+including any wait for a key or network transfer. If restoring a
+large project would take two days, a note saying ``quick restore''
+is misleading even if you genuinely have the data.
+
+A useful recovery note can be followed when you are not the
+person who wrote it. Give the date format, explain which copy
+should be the first to try, and point to the approved method of
+gaining access when the ordinary device is gone. If your only
+instructions are on the disk you are protecting, test whether a
+spare copy of the instructions is available too. If you manage
+backups for a group, make sure more than one authorized person
+knows who has the key and where the policy is documented. A
+one-time restore by the account owner isn't a test that someone
+else can do the job.
+
+Retention is a decision, not an instruction to delete whichever
+archive is largest. A policy might keep daily versions for a week
+and monthly versions for a year, but organizational or legal rules
+can require different time limits. Confirm recovery options before
+retiring any copy; inspect what would remain before removing
+anything. For storage usage, see Chapter~\ref{ch:34}. For a second
+location, Chapter~\ref{ch:39} shows how to verify an authorized
+transfer. No network copying is needed in this chapter.
+
+\begin{exercise}{Identify the older snapshot}\label{ex:41-identify}
+List the members of the older archive and confirm that they include
+the plan and the contact note. Does that list alone tell you which day
+the restored plan will mention? This creates no additional files.
+\end{exercise}
+\begin{solution}
+\cmd|tar -tf vault/documents-2030-01-07.tar| lists
+\texttt{documents/plan.txt} and \texttt{documents/contact.txt},
+and the directory entry. The name of the plan is the same both days.
+The restore-and-read test distinguishes them.
+\end{solution}
+
+\begin{exercise}{Restore the second day without overwriting the first}\label{ex:41-second}
+Repeat the verification and extraction for January 8. Recompute its
+checksum to a new path \texttt{restore/jan08.check}, then use a new
+directory \texttt{restore/tuesday}. Compare the two restored plan files
+while keeping the working files. Save both restored copies for cleanup.
+\end{exercise}
+\begin{solution}
+\cmd|cksum < vault/documents-2030-01-08.tar > restore/jan08.check|
+records the check; \cmd|cmp restore/jan08.check vault/jan08.cksum|
+should match. Check the member list as before; then
+\cmd|mkdir restore/tuesday| and
+\cmd|(cd restore/tuesday && tar -xf ../../vault/documents-2030-01-08.tar)|.
+Comparing the plan paths under \texttt{restore/monday} and
+\texttt{restore/tuesday} should report a difference and return status
+one. Check \cmd|cat| to see each day's text.
+\end{solution}
+
+\begin{exercise}{Retire the practice data, not your documents}\label{ex:41-cleanup}
+Write down a recovery check you'd add for your real documents.
+Then verify \cmd|pwd| agrees with \cmd|"$backuplab"| and remove
+the synthetic lab. Use the solution as a checklist to avoid
+recursive deletion.
+\end{exercise}
+\begin{solution}
+An example is opening one restored budget sheet in its normal editor,
+checking its formula results and date. In the lab, confirm removals
+for explicitly named files. Skip the Tuesday-specific lines if you
+didn't create them and stop on anything unexpected.
+\begin{terminal}
+rm -i documents/plan.txt documents/contact.txt
+rm -i restore/monday/documents/plan.txt restore/monday/documents/contact.txt
+rm -i restore/tuesday/documents/plan.txt restore/tuesday/documents/contact.txt
+rm -i restore/jan07.check restore/jan08.check
+rm -i vault/documents-2030-01-07.tar vault/documents-2030-01-08.tar
+rm -i vault/jan07.cksum vault/jan08.cksum
+rmdir restore/monday/documents restore/monday
+rmdir restore/tuesday/documents restore/tuesday
+rmdir documents restore vault
+cd
+rmdir "$backuplab"
+\end{terminal}
+The final \cmd|rmdir| should succeed only after all the expected
+practice entries have been removed.
+\end{solution}
+
+\begin{takeaways}
+\item Plan around a specific loss; agreement across devices isn't a history.
+\item Retain distinct dated versions and keep copies separate from the systems they protect.
+\item Restore to a new location and verify the usable content before trusting the plan.
+\end{takeaways}
+
+\begin{furtherreading}
+\ReadingItem{GNU tar manual}{Archive creation, member listing, extraction, and caveats.}{https://www.gnu.org/software/tar/manual/}
+\ReadingItem{FreeBSD tar(1)}{The libarchive implementation's locally applicable flag and attribute notes.}{https://man.freebsd.org/cgi/man.cgi?query=tar&sektion=1}
+\ReadingItem{POSIX cksum}{Default checksum and byte count output.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/cksum.html}
+\end{furtherreading}

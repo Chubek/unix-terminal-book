@@ -1,0 +1,9 @@
+\begin{tikzpicture}
+\node[utp node] (a) {Working\\documents};
+\node[utp node,right=7mm of a] (b) {January 7\\archive};
+\node[utp node,below=4mm of b] (c) {January 8\\archive};
+\node[utp node,right=7mm of b] (d) {New folder:\\restore Monday};
+\draw[utp arrow] (a)--(b);
+\draw[utp arrow] (a.south) |- (c);
+\draw[utp arrow] (b)--(d);
+\end{tikzpicture}

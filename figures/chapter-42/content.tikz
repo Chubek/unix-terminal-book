@@ -1,0 +1,9 @@
+\begin{tikzpicture}
+\node[utp node] (a) {Sharing copy};
+\node[utp node,below=9mm of a] (b) {Embedded\\information};
+\node[utp node,left=5mm of b] (c) {Visible\\content};
+\node[utp node,right=5mm of b] (d) {Filename\\and companions};
+\draw[utp arrow] (a)--(b);
+\draw[utp arrow] (a)--(c);
+\draw[utp arrow] (a)--(d);
+\end{tikzpicture}
