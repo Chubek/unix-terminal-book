@@ -4,7 +4,7 @@
 \fi
 \documentclass{unix-terminals-for-pleb}
 \begin{document}
-\BookChapter{Fixture}
+\chapter{Fixture}
 \begin{dialoguebox}{A reversible test}
 \Brian{Does a test need my own documents?}
 \Stephen{No, a fixture can create its own.}
@@ -14,7 +14,7 @@
 \Stephen{Yes; only the exercise solution is conditional.}
 \DialogueConclusion{Use a fixture, not your own files.}
 \end{dialoguebox}
-\begin{exercise}{Confirm presence}
+\begin{exercise}[label=ex:fixture-one]{Confirm presence}
 This exercise appears in both editions.
 \end{exercise}
 \begin{solution}
@@ -22,4 +22,8 @@ This exercise appears in both editions.
 printf '%s\n' 'fixture answer token'
 \end{terminal}
 \end{solution}
+\chapter{Counter reset}
+\begin{exercise}[label=ex:fixture-two]{Confirm restart}
+The chapter changes, so this exercise's visible sequence restarts.
+\end{exercise}
 \end{document}

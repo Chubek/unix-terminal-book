@@ -29,6 +29,12 @@ will give Homebrew sustained attention while comparing it with the
 package workflows on Linux and the BSDs. This is a drafting assignment,
 not a completed feature.
 
+Chapters 1–6 entered peer review at `utp/W1` commit `59e359a`. They
+have not been imported. The exercise hyperlinks now include a chapter
+component so the same visible exercise number in different chapters
+does not collide; cross-chapter anchor uniqueness is covered in the
+edition fixture.
+
 ## Verified at this checkpoint
 
 | Check | Environment | Result and scope |

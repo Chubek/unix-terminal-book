@@ -2,6 +2,8 @@
 \ProvidesPackage{utp-exercises}[2026/11/27 v1.0 Numbered practice activities]
 \RequirePackage{utp-callouts}
 \newtcolorbox[auto counter,number within=chapter]{exercise}[2][]{utp box,title={Exercise~\thetcbcounter: #2},#1}
+% The visible counter restarts in each chapter; PDF destinations must not.
+\expandafter\def\csname theHtcb@cnt@exercise\endcsname{\theHchapter.\arabic{tcb@cnt@exercise}}
 \newcommand{\ExerciseHint}[1]{\par\textbf{Hint:} #1\par}
 \newcommand{\ExerciseGoal}[1]{\par\textbf{Goal:} #1\par}
 \endinput

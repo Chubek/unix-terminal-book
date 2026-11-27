@@ -1,12 +1,12 @@
 {
   "parts": ["Finding Your Way", "Working with Text and Data", "Taking Control of Your Shell", "Putting the Terminal to Work"],
   "chapters": [
-    {"number":1,"part":1,"title":"Your First Terminal Session","prerequisites":[],"topics":["terminal app","shell","input and output"],"owner":"W1","reviewer":"W8","assets":[],"status":"planned"},
-    {"number":2,"part":1,"title":"How Unix Reached Your Desk","prerequisites":[1],"topics":["Unix history","POSIX","Linux","macOS","BSD"],"owner":"W1","reviewer":"W3","assets":[],"status":"planned"},
-    {"number":3,"part":1,"title":"Meet the Shell","prerequisites":[1,2],"topics":["interactive shells","builtins","external utilities"],"owner":"W1","reviewer":"W5","assets":[],"status":"planned"},
-    {"number":4,"part":1,"title":"Read the Prompt","prerequisites":[3],"topics":["prompts","line editing","history","completion","interrupt"],"owner":"W1","reviewer":"W8","assets":[],"status":"planned"},
-    {"number":5,"part":1,"title":"Find Your Place","prerequisites":[4],"topics":["navigation","pwd","cd","ls"],"owner":"W1","reviewer":"W4","assets":[],"status":"planned"},
-    {"number":6,"part":1,"title":"Paths Are Addresses","prerequisites":[5],"topics":["absolute and relative paths","root","home","dot and dot-dot"],"owner":"W1","reviewer":"W6","assets":[],"status":"planned"},
+    {"number":1,"part":1,"title":"Your First Terminal Session","prerequisites":[],"topics":["terminal app","shell","input and output"],"owner":"W1","reviewer":"W8","assets":[],"status":"review"},
+    {"number":2,"part":1,"title":"How Unix Reached Your Desk","prerequisites":[1],"topics":["Unix history","POSIX","Linux","macOS","BSD"],"owner":"W1","reviewer":"W3","assets":[],"status":"review"},
+    {"number":3,"part":1,"title":"Meet the Shell","prerequisites":[1,2],"topics":["interactive shells","builtins","external utilities"],"owner":"W1","reviewer":"W5","assets":[],"status":"review"},
+    {"number":4,"part":1,"title":"Read the Prompt","prerequisites":[3],"topics":["prompts","line editing","history","completion","interrupt"],"owner":"W1","reviewer":"W8","assets":[],"status":"review"},
+    {"number":5,"part":1,"title":"Find Your Place","prerequisites":[4],"topics":["navigation","pwd","cd","ls"],"owner":"W1","reviewer":"W4","assets":[],"status":"review"},
+    {"number":6,"part":1,"title":"Paths Are Addresses","prerequisites":[5],"topics":["absolute and relative paths","root","home","dot and dot-dot"],"owner":"W1","reviewer":"W6","assets":[],"status":"review"},
     {"number":7,"part":1,"title":"Work with Files","prerequisites":[6],"topics":["cp","mv","file","cmp","overwrite previews"],"owner":"W2","reviewer":"W6","assets":[],"status":"planned"},
     {"number":8,"part":1,"title":"Directories and Links","prerequisites":[6,7],"topics":["mkdir","rmdir","hard links","symbolic links"],"owner":"W2","reviewer":"W5","assets":[],"status":"planned"},
     {"number":9,"part":1,"title":"Find Things by Name","prerequisites":[8],"topics":["find","quoted name patterns","hidden files","safe discovery"],"owner":"W2","reviewer":"W3","assets":[],"status":"planned"},

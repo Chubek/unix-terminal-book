@@ -4,6 +4,7 @@
 import argparse
 import itertools
 import os
+import re
 import subprocess
 import tempfile
 from pathlib import Path
@@ -32,6 +33,12 @@ def main():
             log = (dest / "fixture.log").read_text(errors="replace")
             if "Dialogue conclusion exceeds one line" in log or "Overfull \\" in log:
                 raise SystemExit(f"Fixture overflow in {layout}-{answers}")
+            if re.search(r"destination with the same identifier|duplicate destination|ignoring duplicate", log, re.I):
+                raise SystemExit(f"Duplicate PDF destination in {layout}-{answers}")
+            aux = (dest / "fixture.aux").read_text()
+            exercise_anchors = re.findall(r"\{(tcb@cnt@exercise\.[^{}]+)\}", aux)
+            if len(exercise_anchors) != 2 or len(set(exercise_anchors)) != 2:
+                raise SystemExit(f"Expected two distinct exercise anchors in {layout}-{answers}")
             text = subprocess.check_output(["pdftotext", str(dest / "fixture.pdf"), "-"], text=True)
             info = subprocess.check_output(["pdfinfo", str(dest / "fixture.pdf")], text=True)
             expected = ("Dialogue Box 1", "Use a fixture, not your own files.", "This exercise appears in both editions.")
