@@ -1,0 +1,40 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{utp-dialogues}[2026/11/27 v1.0 Socratic dialogue boxes]
+\RequirePackage{utp-callouts}
+\RequirePackage{xparse}
+
+% Continuous numbering throughout the book; optional tcolorbox keys (e.g. label).
+\newtcolorbox[auto counter]{dialoguebox}[2][]{%
+  utp box,colframe=UTPAccent,colback=UTPSoft,
+  colbacktitle=UTPAccent,coltitle=white,
+  title={Dialogue Box~\thetcbcounter: #2},%
+  fontupper=\small,#1}
+
+\newlength{\UTPDialogueSpeakerWidth}
+\newsavebox{\UTPDialogueConclusionBox}
+\newcommand{\UTPDialogueTurn}[2]{%
+  \par\addvspace{.35\baselineskip}%
+  \begingroup
+  \settowidth{\UTPDialogueSpeakerWidth}{\sffamily\bfseries Stephen:\enspace}%
+  \hangindent=\UTPDialogueSpeakerWidth\relax\hangafter=1\relax
+  \noindent\makebox[\UTPDialogueSpeakerWidth][l]{%
+    \sffamily\bfseries\color{UTPAccent}#1:}%
+  \ignorespaces#2\par\endgroup}
+\NewDocumentCommand{\Brian}{+m}{\UTPDialogueTurn{Brian}{#1}}
+\NewDocumentCommand{\Stephen}{+m}{\UTPDialogueTurn{Stephen}{#1}}
+
+% Warn about an overlong conclusion, but allow wrapping instead of clipping.
+% Authors must shorten it before release; the warning is a quality gate.
+\NewDocumentCommand{\DialogueConclusion}{m}{%
+  \par\addvspace{.55\baselineskip}%
+  \noindent{\color{UTPRule}\rule{\linewidth}{.45pt}}\par\nobreak
+  \begingroup
+  \sbox{\UTPDialogueConclusionBox}{\bfseries Together:~\normalfont\itshape #1}%
+  \ifdim\wd\UTPDialogueConclusionBox>\linewidth
+    \PackageWarning{utp-dialogues}{Dialogue conclusion exceeds one line; shorten it}%
+    \noindent\textbf{Together:}~\textit{#1}\par
+  \else
+    \noindent\usebox{\UTPDialogueConclusionBox}\par
+  \fi
+  \endgroup}
+\endinput

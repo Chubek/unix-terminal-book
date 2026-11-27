@@ -11,6 +11,7 @@
 \DeclareOption*{\PassOptionsToClass{\CurrentOption}{book}}
 \ProcessOptions*\relax
 \LoadClass[11pt,openany]{book}
+\RequirePackage{utp-dialogues}
 \RequirePackage{utp-colors}
 \RequirePackage{utp-typography}
 \RequirePackage{utp-layout}
