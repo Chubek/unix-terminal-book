@@ -1,0 +1,50 @@
+#!/usr/bin/env expect
+# Optional Expect (Tcl) check for Bash with its initial VT-style editing.
+# Run in a disposable directory: HOME and startup settings are isolated.
+set timeout 4
+set bash [auto_execok bash]
+if {$bash eq ""} {error "Bash is required for this optional probe"}
+proc see {text} {
+    expect {
+        -exact $text { return }
+        timeout { error "Timed out waiting for $text" }
+        eof { error "Session ended before $text" }
+    }
+}
+set env(HOME) [pwd]
+set env(INPUTRC) /dev/null
+set env(HISTFILE) /dev/null
+set env(TERM) vt100
+set env(PS1) "ready> "
+set env(PS2) "more> "
+spawn $bash --noprofile --norc -i
+see "ready> "
+send -- "bind 'set enable-bracketed-paste off'\r"
+see "ready> "
+send -- "printf '%s\\n' 'Reservd'\033\[D\033\[De\r"
+see "\r\nReserved\r\n"
+see "ready> "
+send -- "printf '%s\\n' 'Delivery ready'\r"
+see "\r\nDelivery ready\r\n"
+see "ready> "
+send -- "\033\[A\r"
+see "\r\nDelivery ready\r\n"
+see "ready> "
+send -- "printf '%s\\n' 'not finished\r"
+see "more> "
+send -- "\003"
+see "ready> "
+send -- "printf '%s\\n' 'The first line\rand the second'\r"
+see "\r\nThe first line\r\nand the second\r\n"
+see "ready> "
+send -- "sleep 8\r"
+see "sleep 8"
+after 150
+send -- "\003"
+see "ready> "
+send -- "exit\r"
+expect {
+    eof {}
+    timeout {error "Shell did not exit"}
+}
+puts "Chapter 4 Bash editing and interrupt checks passed."
