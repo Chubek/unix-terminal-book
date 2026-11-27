@@ -48,7 +48,8 @@ uniq -c votes.txt
 Six votes went in, but Chess still appears in two places. \cmd|uniq|
 looks for runs of equal adjacent lines: sections of the input
 in which the same line appears without a break. It does not
-maintain a running list of everything it has seen. That design is
+maintain a running list of everything it has seen
+(Figure~\ref{fig:20-groups}). That design is
 useful if you need to preserve the order in which things
 happened. Consider a list of room changes: Room A, Room A, Room B,
 Room A. Collapsing adjacent entries leaves A, B, A, correctly
@@ -176,7 +177,7 @@ the first differing digits are 1 and 2. With \cmd|-n|, sort
 compares the leading quantities numerically: first 1, then
 both spellings of 2, then 10 and 20. The numerical comparison
 doesn't turn \texttt{02} into \texttt{2} on output. These are
-still the original lines, which can preserve meaningful
+still the original lines (Figure~\ref{fig:20-numbers}), which can preserve meaningful
 differences in a catalog or ticket roll.
 
 \begin{figure}[htbp]
@@ -260,7 +261,7 @@ printf '%s\n' '02' '2' | LC_ALL=C sort -n -u
 
 The first pipeline counts two distinct original lines once
 each. The second prints one representative because those
-two numeric keys compare equal. Don't rely on which spelling
+two numeric keys compare equal (Figure~\ref{fig:20-keys}). Don't rely on which spelling
 is kept for tied keys by a recipe that doesn't promise a
 representative. If you need to audit which spelling was
 originally used, don't drop either line.
@@ -295,6 +296,117 @@ it. For the expanded tally, all counts add to nine. They should
 agree with \cmd|wc -l votes.txt| because each fixture vote ends
 with a newline and none has been omitted. That check won't find a
 wrong label, but it will catch some dropped or extra lines.
+
+\section{Test the tally on the awkward votes}
+Imagine the transcription contains \texttt{Chess},
+\texttt{chess}, and \texttt{Chess club}. The first two
+may represent the same request; whether the third does
+depends on whether people meant equipment and open play,
+or an organized club. The difference affects what the library
+will buy or schedule. Don't ask a character comparison to
+settle a substantive question. Put the proposed mapping in
+the report or keep separate categories. Then someone who
+disagrees with your grouping knows which decision to revisit.
+
+Run a deliberately small comparison. The first pipeline counts
+exact spellings. The second translates ASCII letters to lowercase
+before counting. \cmd|tr| maps characters in its first set to
+characters in its second set, so \texttt{C} becomes \texttt{c},
+and likewise for the other letters. For more on that tool, see
+Chapter~\ref{ch:22} after this practice. The comparison only affects bytes
+passing through the pipe, not files.
+
+\begin{terminal}
+printf '%s\n' Chess chess 'Chess club' |
+  LC_ALL=C sort | LC_ALL=C uniq -c
+printf '%s\n' Chess chess 'Chess club' |
+  LC_ALL=C tr '[:upper:]' '[:lower:]' |
+  LC_ALL=C sort | LC_ALL=C uniq -c
+\end{terminal}
+
+The first tally should print Chess, Chess club and chess as
+three separate choices. The second should print a count of 2
+for chess and 1 for chess club. Notice what changed on the
+output: the spellings themselves are now lowercase. If you
+need a title-case display later, use a separate presentation
+rule rather than picking one arbitrary original vote as the
+canonical spelling. This kind of translation is reasonable for
+these small ASCII labels, not for all natural-language text.
+
+Another tempting recipe is to sort while ignoring case and then
+use ordinary \cmd|uniq|. Those steps are asking different
+questions: the sort may place equivalent-looking labels close
+together, but the counter still checks their original text.
+Conversely, a case-ignoring \cmd|sort -u| might lose all but one
+such label and lose the number of votes entirely. A predictable
+pipeline has matching definitions of equality where each stage
+needs them. Here translating once gives both later stages the
+same data to compare, and the original spellings are still
+available in the source if they matter.
+
+\subsection{Decide what to do with blank lines}
+An empty line isn't the same thing as the end of input.
+It is a record with no characters before its newline. If
+the export uses blank lines to separate batches, they are
+probably not votes; if each line represents a returned ballot,
+a blank line might be a submitted ballot with no response.
+Count the two cases differently. A report could say there
+were six submissions, five marked votes and one blank, for
+example. Don't hide that distinction merely to make the
+output tidier.
+
+Use \cmd|grep -v| to invert selection. The expression
+\cmd|^$| matches a line whose start and end are adjacent,
+so this example removes exactly the empty records. It does
+not remove a row containing just spaces. Testing blank-looking
+spaces requires a different rule; inspect a preview first.
+
+\begin{terminal}
+printf '%s\n' Chess '' Maps Chess |
+  grep -v '^$' | LC_ALL=C sort | LC_ALL=C uniq -c
+\end{terminal}
+
+Look for three votes in the output: two Chess and one Maps.
+Had you omitted the filter, the total would be four and
+one tally row would look like a number with nothing next
+to it. That row would be evidence of a choice in your rule,
+not an arithmetic error. Remember that a grep stage can
+return 1 when it removes everything, while the downstream
+sort and count stages can still succeed and print nothing.
+For a real tally, inspect the intermediates and document
+what counts as a vote, what was excluded and why.
+
+At the end, give the report the intended time period and
+file scope. A familiar result can come from reading last
+month's file. A surprising jump might come from counting
+both the raw and corrected exports. A count that adds up
+is useful evidence only once the inputs, comparison rules
+and exclusions are accounted for. The original file is what
+lets you run the same check again.
+
+A ranked list also needs a policy for ties at the end.
+If the library can fund two activities and the second
+highest count is shared by three choices, taking the
+first two lines of the report chooses a winner by the
+secondary ordering. Alphabetical order might be useful
+for displaying those choices, but it may be a poor way
+to pick which one receives funding. Keep all entries tied
+at a boundary until the people making the decision have
+agreed on a rule. The count is the result of a comparison;
+the decision to cut the list at a particular position
+comes from outside that comparison.
+
+If the list takes far longer to sort than you expect,
+check the input size before concluding the command is
+stuck. Sort may need to see all the lines before it can
+produce the first one, and on a large input it can use
+temporary disk space. For a new recipe, run it on a
+short known fixture first. That's also an opportunity to
+try the smallest useful cases: no votes, one vote, and
+two identically spelled votes with a different vote
+between them. A report that behaves correctly on all
+three is easier to trust than one you have only seen
+produce a plausible ranking on a large file.
 
 \begin{furtherreading}
 \ReadingItem{POSIX sort}{Keys, numeric and reverse comparison, uniqueness and locale variables}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/sort.html}

@@ -54,7 +54,8 @@ Put the options first, the pattern next, and the filenames last.
 the first line is 1. The number and colon are a label on the
 output, not characters that \cmd|grep| added to the file. A match
 need not occupy the whole line; the result contains the entire
-line regardless of where the phrase occurs. The single quotes tell
+line regardless of where the phrase occurs
+(Figure~\ref{fig:19-search}). The single quotes tell
 the shell to pass the space as part of one argument. They are not
 characters that must be present in the notes.
 
@@ -236,7 +237,7 @@ one or more selected lines, 1 means no selected lines, and a
 value greater than 1 means an error. In GNU grep, the usual
 error status is 2. An error can happen after a match has already
 been printed from an earlier file; visible output doesn't rule
-out partial failure. Don't discard diagnostic output until you
+out partial failure (Figure~\ref{fig:19-status}). Don't discard diagnostic output until you
 understand what you are discarding.
 
 \begin{terminal}
@@ -289,6 +290,69 @@ pattern unchanged or the shell complains it couldn't match
 anything, check the working directory instead of assuming the
 notes are empty. Files with a \texttt{.txt} suffix can still be
 binary or have an encoding unsuitable for the current locale.
+
+\subsection{Follow the match back to the note}
+The first occurrence of a phrase is not necessarily the answer.
+Here the first line says 9 and the update says 10. The line
+numbers tell you which came later in the file, but they don't
+prove the update was written later, or that it applies to the
+same gate. Read the sentences around both occurrences before
+putting the result on a calendar. In a folder with notes from
+several years, a date in the document is stronger evidence
+than a plausible result from a vaguely named file.
+
+Try reading the first four lines in their original order.
+\cmd|head -n 4| requests the first four lines, not the four
+lines after your search match. It works well here because the
+sample is short. On a real note, open the file in a pager and
+navigate to the reported line number instead of printing the
+whole folder to the terminal.
+
+\begin{terminal}
+head -n 4 ./meeting.txt
+\end{terminal}
+
+When you search across several files, the prefix separates
+different kinds of evidence: the name identifies which input
+was opened, the number identifies a line in that version,
+and the remaining text is the content that was selected.
+Insertions or deletions in the document can move that line
+number later. Don't pass around a bare line number as if it
+were a permanent identifier. If you send a teammate the
+result, include the relevant note name or date and enough
+context to distinguish an update from an old instruction.
+
+\subsection{Read a zero before you read it as certainty}
+Use the count option on the two fixtures. It prints one count
+per file, including zero for an input with no selected lines.
+It is easy to scan once you know whether your question is
+about files, lines, or occurrences.
+
+\begin{terminal}
+grep -c -i -F 'gate opens' meeting.txt errands.txt
+\end{terminal}
+
+Expect 2 for the meeting and 0 for the errands. The zero for
+errands doesn't mean there is no gate information there:
+``gate code changed'' is present, but does not contain this
+particular phrase. A line mentioning a phrase three times
+still adds just one to the count. To answer a question like
+``how many times does the phrase occur?'' you would need a
+different procedure and rules for overlapping occurrences.
+Keep the simpler line count if all you need is a rough idea
+of how much material to read.
+
+If silence surprises you, change just one thing at a time:
+check the path list, open a known input, try a shorter fixed
+string, then restore case and location constraints one by
+one. An invisible difference can matter: a copied phrase
+with a nonbreaking space will not necessarily match the
+same words with a normal space. An overbroad case-insensitive
+search can have the opposite problem, finding many related
+lines that aren't relevant. Use the exact search to narrow
+the work, then read the selected text. The terminal is
+good at making the candidate list; deciding which candidate
+settles the question is still yours.
 
 What about \cmd|grep -R|, often seen in recipes? Recursive
 options and their rules for symbolic links are outside the

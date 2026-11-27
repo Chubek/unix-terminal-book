@@ -75,6 +75,11 @@ or count fields with simple text tools until you know that
 the particular input really allows it. A small file can
 run into the same problem as a million-row export.
 
+Trace the two separator commas in Figure~\ref{fig:24-csv}
+before reading the example again. The position of the
+comma inside the caption doesn't matter once the reader
+knows it is inside a quoted field.
+
 \section{Read CSV with a CSV reader}
 This optional step uses Python 3's standard \texttt{csv}
 module; it is not an assumption about the Unix base system.
@@ -168,6 +173,10 @@ JSON value & How to read it in this catalog \\
 \bottomrule
 \end{quicktable}
 
+Figure~\ref{fig:24-json} gives the simplified path from
+the array to its members. It doesn't show every field:
+the caption and score belong to those same objects.
+
 \section{Ask jq for values, not lines}
 \label{sec:24-jq}
 \cmd|jq| is an optional JSON utility available separately
@@ -244,6 +253,11 @@ does not grant permissions.
 \end{dialoguebox}
 
 \section{Save a fresh report and verify it}
+The decision and the projection are separate steps
+(Figure~\ref{fig:24-filter}). If you projected the ID
+first, the Boolean would no longer be available there
+to decide which object to include.
+
 This report keeps two fields and preserves a JSON array,
 even if no objects qualify. It uses the same test as
 before. In jq, \cmd|{id, caption}| constructs an object
@@ -278,6 +292,122 @@ can contain formula-like strings that a spreadsheet treats
 as active expressions during import unless you explicitly
 choose an appropriate text-only import mode. Do not use
 real private records to explore those settings.
+
+\section{Check the contract, not just the punctuation}
+The sample catalog has two records, each with an ID,
+caption, share flag and score. That description is a
+\FirstUse{schema} in the everyday sense: a contract about
+the data you expect, separate from the rules about where
+commas and braces are permitted. A file can be valid JSON
+but fail the contract. For example, \texttt{false} on its
+own is valid JSON, but it isn't the requested array.
+A catalog can also be an array with a malformed entry
+that still parses as an object.
+
+Inspect the candidate's decision inputs before exporting.
+This jq filter sends each share value through \cmd|type|
+and prints the object ID beside the resulting type name.
+The parentheses mean that jq evaluates the inner filter
+to produce the value associated with the new name
+\texttt{share\_type}; it does not mean one of the photo's
+original fields is named that. The \cmd|-c| flag makes
+each resulting JSON object compact, useful here for one
+diagnostic object per line.
+
+\begin{terminal}
+jq -c '.[] | {id, share_type: (.share | type)}' photos.json
+\end{terminal}
+\begin{terminaloutput}
+{"id":"001","share_type":"boolean"}
+{"id":"002","share_type":"boolean"}
+\end{terminaloutput}
+
+This is a small diagnostic, not a complete schema validator.
+It will show the type \texttt{null} for a missing share
+member or a member whose value is explicitly null. To
+distinguish the two, ask whether the object has the named
+member. JSON parsing alone doesn't tell you whether IDs
+are unique, whether a caption is accurate, or whether a
+member is meaningful to the recipient. If an unexpected
+type appears, check the export settings or ask the person
+responsible for the source. Do not grant permission by
+guessing at the intended meaning of a misspelled value.
+
+\subsection{Distinguish a missing member from an explicit null}
+Both photos have a score in the sense that both objects contain
+the member named \texttt{score}. Only one carries a numeric
+value. In some applications an explicit null means ``not yet
+scored,'' while a missing member means the exporting version
+of the app doesn't supply scores at all. Those interpretations
+come from the exporter, not from JSON. But a utility can
+preserve the distinction so you have a chance to use it.
+
+\begin{terminal}
+jq -c '.[] | {id, score_present: has("score"), score}' photos.json
+printf '%s\n' '{}' '{"score":null}' |
+  jq -c '{score_present: has("score"), score}'
+\end{terminal}
+
+Both objects from the fixture should show
+\texttt{"score\_present":true}, and their values should
+still be 7 and null. The second command provides two JSON
+values in a stream. Its first output has a false presence
+flag, and its second has a true flag. In both outputs the
+constructed score is null; the \cmd|has("score")| filter
+supplies the extra information that an ordinary field read
+does not. Choose a meaningful handling rule rather than
+converting all such entries to 0, which could be a real score.
+
+CSV has a similar problem with a different appearance.
+Two adjacent delimiters represent a field whose contents
+are empty, whereas an export with a missing column may
+mean the field is not represented at all. A \texttt{0} in
+that column might instead be a literal string that needs
+interpretation. When comparing exports from two versions of
+an application, check that the header still includes the
+columns you rely on and ask how missing values are encoded.
+A plausible-looking empty result can come from using the
+wrong export for your question.
+
+\subsection{Make a narrow interchange copy}
+Sometimes the recipient really wants CSV, not JSON.
+The appropriate operation is to construct an ordered
+array of fields and send it through a CSV writer. The jq
+filter \cmd|@csv| implements CSV quotation for a row
+represented as an array. With \cmd|-r| the resulting
+CSV string is emitted as text rather than surrounded
+by JSON quotes.
+
+\begin{terminal}
+jq -r '.[] | select(.share == true) | [.id, .caption] | @csv' \
+  photos.json
+\end{terminal}
+\begin{terminaloutput}
+"001","Bridge, east side"
+\end{terminaloutput}
+
+The field separator is the comma after the closing quote
+of the string ID, not the comma after Bridge. There is
+no header in this output. If you need one, produce and
+verify a header with the same agreed field order. The ID
+is quoted, but some spreadsheet importers will infer a
+numeric type anyway and show 1 in place of 001. When
+leading zeros matter, select a text column in the importer
+and check the first and last IDs after import. A
+correctly written CSV file is not proof that every reader
+uses the right import settings.
+
+These structured examples keep their contract narrow on
+purpose. In a real interchange, also record how encoding
+is chosen, how the reader handles unexpected or duplicate
+names, and what should happen to material not included in
+the schema. Don't assume that the text displayed by one
+app is interchangeable with the bytes exported by another.
+When an export looks wrong, inspect one representative
+row or object along the entire path: original value,
+parsed value, projected value, written result and display
+in the receiver. The first stage at which it changes
+tells you which settings or tool to revisit.
 
 \begin{furtherreading}
 \ReadingItem{RFC 4180}{A description of a common CSV format and its quotation rules}{https://www.rfc-editor.org/rfc/rfc4180}

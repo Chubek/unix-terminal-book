@@ -61,7 +61,7 @@ each displayed line with a dollar sign; other implementations
 can differ in how they represent nonprinting characters.
 A tab is one character regardless of its visual width. In the
 ladder row, find two consecutive tabs, with no shelf text
-between them. That empty field must remain in its proper slot
+between them (Figure~\ref{fig:21-boundaries}). That empty field must remain in its proper slot
 or the state will end up in the wrong column.
 
 \begin{figure}[htbp]
@@ -175,7 +175,8 @@ Read the program \emph{from left to right} as a rule: if
 the state on this row is out, print the item's name. Awk
 then applies the rule to each row, one after another. It
 neither needs a loop typed on the command line nor evaluates
-the words it reads from the file as shell commands.
+the words it reads from the file as shell commands
+(Figure~\ref{fig:21-rule}).
 The \texttt{state} header does not compare equal to
 \texttt{out}, so this command happens to skip it.
 That is acceptable here but implicit; for a report that
@@ -258,7 +259,7 @@ The names following \cmd|paste| determine the column order.
 If an input is shorter, empty fields can appear for its
 missing lines; the tool does not report a missing key.
 It also cannot tell whether \texttt{states.txt} came from
-another day's export.
+another day's export (Figure~\ref{fig:21-paste}).
 
 \begin{figure}[htbp]
 \centering
@@ -283,11 +284,130 @@ To adapt the technique to a real export, inspect a small set
 of first and last lines and ask for the format description.
 Tabs, spaces and commas are not interchangeable. If you
 actually have CSV rather than TSV, a comma inside a quoted
-name is not a field boundary; Chapter~\ref{ch:24} uses a
-reader that understands those quotation rules. Treat empty
+name is not a field boundary. For a CSV-specific reader, see
+Chapter~\ref{ch:24} after this practice. Treat empty
 shelves as missing data, not a reason to fill in a value
 you didn't observe. Preserve the original and label any report
 derived from a filtered or repaired copy.
+
+\section{Check the shape before counting the results}
+The first open-loans report was short enough to verify by
+reading both files. A bigger sheet needs a check of its
+structure before you interpret the extracted columns. Start
+at the header. Three fields with the wrong names or order
+will pass a field-count check. The third field could now be
+a shelf rather than a state, in which case the original
+filter quietly leaves out every open loan. A header check
+should identify that as the wrong export, not as good news
+about overdue tools.
+
+For the fixture, all the expected labels are known.
+\cmd|head -n 1| prints the first physical line without
+scanning the rest. Use the diagnostic display you tried
+earlier to confirm the tab boundaries. Then print the
+positions of any data records with a state other than the
+two supported values. Use both checks rather than trying
+to infer structure from the final report alone.
+
+\begin{terminal}
+head -n 1 loans.tsv | sed -n 'l'
+awk -F '\t' \
+  'NR > 1 && $3 != "in" && $3 != "out" { print NR }' loans.tsv
+\end{terminal}
+
+The first line should identify the header names item,
+shelf and state in that order. The second command should be
+silent. In the awk rule, \cmd|>| compares numbers and
+\cmd|&&| means ``and'': this is a data row, it is not in,
+and it is not out. That last pair of conditions catches
+spellings like \texttt{OUT} and \texttt{out } with an
+extra space. It also catches rows without field 3. It
+does not replace the separate field-count check, which
+can catch an extra tab after a perfectly good state. A
+diagnostic that prints line numbers instead of all field
+contents can be easier to share without revealing
+individual entries in a larger report.
+
+When you find a suspicious line number, go back to the
+source with its context. Do not start by editing the
+source to make it fit the command. An empty item name may
+need a volunteer's follow-up, while an empty shelf for a
+step ladder might mean it is hung on a wall instead of a
+shelf. Ask whether the missing value is allowed. A program
+that fills both with a default could make two quite
+different problems disappear from view.
+
+\subsection{Pick a presentation without changing the data}
+The earlier report used a tab so someone could feed it
+back into another tab-aware utility. A report for people
+at the checkout desk can be simpler. Choose a readable
+sentence for each item, and keep the state in the
+selection rather than in the displayed name. In this
+awk example a quoted string contains fixed text, and the
+comma in the print action joins that text to the first
+field with the usual single blank.
+
+\begin{terminal}
+awk -F '\t' '$3 == "out" { print "Still out:", $1 }' loans.tsv
+\end{terminal}
+
+Expect \texttt{Still out: Hand saw} and then
+\texttt{Still out: Step ladder}. This output is useful at
+a glance, but it is not TSV. Don't rely on another tool
+splitting it into columns without agreement on a new
+format. For instance, the space after ``Hand'' belongs
+to the item's name, and a colon could belong to the name
+in another sheet. A portable plain-text view for people
+and an unambiguous export for machines are different
+deliverables, even when they come from the same rule.
+
+If you have to save either deliverable, redirect to a
+new name, verify the command's status, and count or inspect
+the rows as a separate step. For a machine-readable report
+with a header, there should be three rows in this fixture:
+one header and two records. More generally, compare
+the number of reported records with the number that meet
+the rule, not with the total number of records in the
+sheet. If the counts disagree, check whether you projected
+before filtering, sorted only one column, or mixed up
+which export you treated as the source. That sequence of
+checks often reveals more than a quick glance at the
+first plausible item.
+
+\subsection{Keep related fields together during sorting}
+The checkout desk may ask for names in order. Start
+with whole records, then reorder those records by item.
+Don't sort just the item list and try to recover the
+states by their old positions. For other lists, it may
+be easier to sort a projected report that retains a
+stable identifier. The important question is which
+fields must stay associated through every transformation.
+A checkout sheet with two copies of the same saw needs
+something to distinguish the two loans; the name alone
+does not identify a particular copy.
+
+Try sorting the fixture after dropping its header and
+keeping the state with the name. The first awk pattern
+is true after the header and the action prints the whole
+record. A \cmd|print| with nothing after it is shorthand
+for \cmd|print $0|. The second stage sorts the complete
+lines; the first field is the item, so it determines the
+order for these distinct names. Finally, cut selects the
+item and state columns in that order.
+
+\begin{terminal}
+awk 'NR > 1 { print }' loans.tsv |
+  LC_ALL=C sort | cut -f 1,3
+\end{terminal}
+
+Expect Clamp set, Hand saw, Out bin and Step ladder, with
+the correct state shown beside each. The original order
+in the file does not change. If you need a header in a
+saved version, handle it separately; sorting a header
+along with records makes its position an accident of
+spelling. Before handing off a saved report, check that
+one known record from the source still has the right
+state in the new order.
 
 \begin{furtherreading}
 \ReadingItem{POSIX cut}{Field selections, delimiters and the treatment of lines without delimiters}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/cut.html}

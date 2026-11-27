@@ -73,7 +73,7 @@ settings file is enough reason to inspect before distributing.
 \section{Compress without replacing the archive}
 Compression represents a byte stream differently so it often
 takes fewer bytes to store or send. It doesn't make a member
-list, and it is not encryption. Here \cmd|gzip -c| writes
+list, and it is not encryption (Figure~\ref{fig:23-layers}). Here \cmd|gzip -c| writes
 compressed bytes to standard output and leaves the input file
 in place. Redirect the output to a fresh name. Don't write
 the result over the source or run the command if either of the
@@ -163,7 +163,7 @@ Stop if \cmd|mkdir| fails. \cmd|-x| extracts; \cmd|-C|
 tells the tar implementations used here to change into the
 named directory before extracting. Because the member paths
 start with \texttt{handover/}, that directory appears
-\emph{inside} \texttt{recovered}. The original is still next
+\emph{inside} \texttt{recovered} (Figure~\ref{fig:23-restore}). The original is still next
 to the archive. The two comparisons should return status 0.
 This is a restore drill: inspect the reconstructed files,
 not only the name of the archive or the size of its output.
@@ -201,7 +201,7 @@ Common tool & Command and reading \\
 \midrule
 GNU Coreutils & \texttt{sha256sum handover.tar.gz}; the hex digest precedes the filename. \\
 macOS Perl wrapper & \texttt{shasum -a 256 handover.tar.gz}; the algorithm option selects SHA-256. \\
-BSD alternatives & \texttt{sha256 -q handover.tar.gz} where available, or OpenBSD \texttt{sha256 -q} from its digest utility; consult the local manual. Quiet output shows the digest only. \\
+BSD alternatives & Use \texttt{sha256 -q handover.tar.gz} where available, or OpenBSD \texttt{cksum -a sha256 -q handover.tar.gz}. Here \texttt{-q} shows only the digest. \\
 \bottomrule
 \end{quicktable}
 
@@ -219,7 +219,7 @@ digits match. The same output from two files on one disk says
 nothing about resilience to loss of that disk. If you attach
 a digest to a real delivery, the recipient should recalculate
 it after downloading the file and compare against the expected
-value. For adversarial tampering, an expected digest delivered
+value (Figure~\ref{fig:23-verify}). For adversarial tampering, an expected digest delivered
 through the same untrusted channel as the file does not
 authenticate either one.
 
@@ -253,6 +253,140 @@ utility names and options are likewise outside these POSIX
 interfaces. Consult \texttt{man tar} and the applicable
 digest manual on the destination machine.
 \end{platformnote}
+
+\section{Rehearse the handoff, not just the packing}
+Think through what the recipient can do without calling you.
+They need to identify the exact artifact, obtain the expected
+fingerprint by an appropriate channel, inspect what they got,
+restore it somewhere they can write and open the files.
+The filenames \texttt{handover.tar} and
+\texttt{handover.tar.gz} describe two different byte
+sequences. If someone compares the compressed download
+against a digest of the decompressed file, the mismatch
+doesn't necessarily point to damaged data; it can point to
+a mismatch in instructions. Put both the filename and
+algorithm beside a shared digest, and record whether it
+applies before or after decompression.
+
+There is a useful failure test you can do without modifying
+an archive at all. Calculate one digest for the archive and
+one for just the rota. Then pretend the recipient accidentally
+picked the rota when comparing against the archive's digest.
+The file chosen is valid and the command works, but the pair
+of bytes is not the intended pair.
+
+\begin{terminal}
+sha256sum handover.tar.gz handover/rota.txt
+\end{terminal}
+
+Use the equivalent command from the table if necessary. Read
+the two labels along with the different digests. In real
+work, if the fingerprint doesn't match, stop before using
+the delivery. Check the algorithm, filename, version and
+source of the expected fingerprint. If they all agree,
+obtain a clean copy and compare again. Do not edit the received
+file in an attempt to make a comparison pass, or dismiss a
+mismatch as harmless because a familiar title is visible.
+Re-downloading won't help if the sender repeatedly selects
+the wrong source artifact, which is why useful instructions
+name what the file \emph{should} contain.
+
+\subsection{Choose what to pack on purpose}
+The original exercise gave tar a whole directory because the
+directory was new and every file was part of the handover.
+For a real deliverable, an explicit member list can be a
+better boundary. An editor might leave a hidden autosave
+alongside a finished file. A note may be safe to keep
+locally but inappropriate to distribute. An explicit list
+also gives the recipient a short inventory against which
+to check their copy. It makes omissions easier to see
+than a long listing does.
+
+When deciding what metadata to carry, distinguish sharing
+documents from preserving a filesystem. This exercise checks
+the two restored files byte for byte, not whether an
+owner or timestamp was restored. Tar archives can carry
+mode bits, ownership information and times; factors such
+as implementation, options, permissions and the
+destination filesystem affect what can be restored.
+Some systems have additional metadata that is not handled
+uniformly. If a job requires that information, define the
+requirement and test representative files on the destination
+before discarding the source. Do not change permissions or
+switch identities just to make the toy exercise look like
+a preservation test.
+
+If space is tight, remember that listing and restoring are
+different operations. The exercise temporarily uses room
+for both the compressed and restored tar files, and later
+for the expanded document tree. The compressed byte count
+alone cannot tell you whether the expanded data will fit.
+If a restore runs out of space, assume the destination is
+partial. Keep the source archive and don't merge partial
+results with a working folder. Verify available room and start
+again in a distinct empty destination rather than hoping a
+second extraction will finish what the first one started.
+
+\subsection{Check the members you actually sent}
+When packing a set of files, there can be a gap between
+the list you pass as operands and the list in the bundle.
+A named directory can grow between the time you inspect
+it and the time tar reads it. If a source file is being
+actively saved while tar runs, the bytes captured may not
+represent the settled version you expected. For an ordinary
+document handoff, close the editor after saving and use a
+small explicit list of final files. Don't rely on packing a
+live, changing tree as a snapshot of everything at one instant.
+
+An extended member listing can help you check more than
+the names. Here \cmd|-v| requests a verbose listing.
+It still doesn't extract. Output formatting and which
+metadata fields appear vary by implementation.
+
+\begin{terminal}
+tar -tvf handover.tar
+\end{terminal}
+
+Look for the directory and two ordinary file entries.
+The path at the end of each entry identifies the member;
+the preceding parts can show a type and permission string,
+owner, size and modification time. A directory's displayed
+size isn't the sum of the files inside it. The archive
+also may not contain the names printed by your file browser
+exactly as shown there; for example, a directory member
+commonly ends with a slash. This listing can disclose
+metadata you didn't intend to share, such as account names.
+If that matters, review a known-safe publication process
+before sending. The exercise has no real data to redact.
+
+The next step is to open the recovered text and confirm its
+meaning. Byte equality with a mistaken original only
+reproduces the mistake accurately. In a handover, someone
+who wasn't involved in creating the bundle can often spot
+such problems: the note says Friday, for example, but the
+instructions say to use the bundle on Saturday. You can
+verify byte integrity mechanically while still asking a
+person to verify that the information is the right one.
+
+\subsection{An archive is one ingredient in a backup}
+The word ``backup'' describes an ability to recover, not
+a filename ending. This archive and its local copy are
+both on the same storage in the exercise. They can help
+practice comparisons but cannot save you from the loss
+of that storage. A good backup arrangement distinguishes
+the original, independent copies and the versions you are
+prepared to recover. It also makes sure the people who
+need the recovery procedure can find it. For an extended
+restore plan, see Chapter~\ref{ch:41} after this practice.
+
+Reading one restored copy that matches today's source is
+already a better check than admiring a progress bar. It
+still doesn't tell you whether an older version is recoverable
+or whether another device can access the bundle. Set the
+scope of each check in plain words: ``I recovered these
+two files from this archive into a fresh directory and
+their contents matched.'' That is useful, testable evidence
+and does not promise more than you actually tested.
 
 \begin{furtherreading}
 \ReadingItem{GNU tar manual}{Creation, listing, extraction and security considerations}{https://www.gnu.org/software/tar/manual/}

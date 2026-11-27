@@ -1,0 +1,6 @@
+# Chapter 23 — Bundle and Check Files
+
+- 3 TikZ diagrams: `figures/chapter-23/{layers,restore,verify}.tikz`; 2 tables, 3 exercises and solutions, 1 dialogue.
+- Reusable `listings/chapter-23/check-handover.sh`: sh syntax with optional-on-POSIX gzip and tar utilities. It only lists a trusted lab archive and does not claim to propagate gzip failures through the pipeline.
+- `verify-chapters-19-24.py` checked GNU tar 1.35, gzip 1.14-modified and GNU Coreutils 9.11 (including SHA-256) on EndeavourOS under Bash-as-sh and zsh. The driver also passed with `tar` mapped to libarchive bsdtar 3.8.9 on the same Linux system. It checks the inventory as an unordered set, byte comparison and restore success paths, equality of 64-hex digests for a byte-identical copy, the listing script and cleanup.
+- `https://man.openbsd.org/cksum` verified the OpenBSD `cksum -a sha256 -q` interface by documentation. This is not a substitute for native runs; no macOS, FreeBSD, OpenBSD or NetBSD machine was tested. `shasum` and BSD digest spellings in the table are alternatives, not additional prerequisites for this Linux check.

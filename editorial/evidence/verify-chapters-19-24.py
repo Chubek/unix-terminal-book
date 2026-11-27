@@ -56,10 +56,11 @@ ANSWER_CASES = {
     },
     21: {
         "cut -f 1,3": "item\tstate\nHand saw\tout\nClamp set\tin\nStep ladder\tout\nOut bin\tin\n",
-        "awk -F '\\t' '$3 == \"out\"": "Hand saw\nStep ladder\n",
+        "awk -F '\\t' '$3 == \"out\" { print $1 }'": "Hand saw\nStep ladder\n",
         "awk -F '\\t' -v": "state\titem\nout\tHand saw\nout\tStep ladder\n",
         "awk -F '\\t' 'NF": "status: 0\n",
         "cut -f 1 loans.tsv >": "state\titem\nout\tHand saw\nin\tClamp set\nout\tStep ladder\nin\tOut bin\n",
+        "awk 'NR > 1": "Clamp set\tin\nHand saw\tout\nOut bin\tin\nStep ladder\tout\n",
     },
     22: {
         "sed 's/5/6/'": "Repair cafe\nClose: 6\nAccessible entrance\nAsk about Bay 6\n",
@@ -75,9 +76,11 @@ ANSWER_CASES = {
     24: {
         "cut -d": 'caption\n"Bridge\n"The ""Old"" Gate"\n',
         "python3 -": '001: Bridge, east side\n002: The "Old" Gate\n',
-        "jq -r '.[] | select(.share == true)": "001\n",
+        "jq -r '.[] | select(.share == true) | .id'": "001\n",
         "jq -r '.[] | select(.share == false)": "002\n",
         "jq '.[] | .score | type'": '"number"\n"null"\n',
+        "jq -c '.[] | {id, share_type": '{"id":"001","share_type":"boolean"}\n{"id":"002","share_type":"boolean"}\n',
+        "jq -r '.[] | select(.share == true) | [.id": '"001","Bridge, east side"\n',
     },
 }
 NONZERO = {
@@ -135,6 +138,9 @@ def verify(chapter, root):
         out = "".join(line.lstrip(" ") + "\n" for line in out.splitlines())
     if chapter == 23:
         assert set(out.splitlines()) == MEMBERS
+        assert (work / "handover.tar").read_bytes() == (work / "restored.tar").read_bytes()
+        for name in ("rota.txt", "key-note.txt"):
+            assert (work / "handover" / name).read_bytes() == (work / "recovered" / "handover" / name).read_bytes()
     elif chapter == 24:
         import json
         assert json.loads(out) == [{"id": "001", "caption": "Bridge, east side"}]
