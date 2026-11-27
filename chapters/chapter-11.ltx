@@ -1,0 +1,227 @@
+You keep a short list of errands on your laptop. It's three lines, none needs boldface, and you want to correct one word without opening a word processor. A terminal editor is well suited to the job, but it changes who receives the keyboard. The shell waits while the editor is active. Your job now is to know whether you are entering text, giving an instruction to the editor, or back at the shell.
+
+\begin{objectives}
+\item Inspect a plain-text file without starting an editor.
+\item Make, save, and verify a small edit with \texttt{vi} or, if available, \texttt{nano}.
+\item Leave without saving when a practice change is unwanted.
+\item Distinguish a file on disk from an editor's working buffer.
+\end{objectives}
+
+\input{figures/chapter-11/editing.tikz}
+\section{Make one ordinary text file}
+Use a spare local \cmd|/bin/sh| shell. Choose a writable parent directory and check it with \cmd|pwd|. Type the lines separately; stop if you can't create or enter the new directory. If you need to pick a different practice directory name, use that name consistently. Confirm \cmd|pwd| ends in the fresh directory before writing any fixture. The example uses ordinary ASCII letters, punctuation and line breaks so differing character encodings won't get in the way of this first session.
+
+\begin{terminal}
+mkdir ./utp-11-errands
+cd ./utp-11-errands
+pwd
+printf '%s\n' 'Buy oats' 'Return library book' > ./errands.txt
+cp -i ./errands.txt ./errands-original.txt
+cat ./errands.txt
+\end{terminal}
+
+As before, the greater-than sign writes to the specified path, so use the exact fixture name in the new directory. Here, \cmd|printf| uses the same string-and-line-break format for both text operands. \cmd|cp -i| creates a copy to return to if the edit goes wrong; don't confirm an unexpected overwrite. \IndexCommand{cat} The \cmd|cat| command reads the named file and writes its bytes to your terminal. It is suitable for these two short text lines, not for dumping arbitrary or binary files to the screen. The displayed text is file content, not more commands to run.
+
+\begin{terminaloutput}
+Buy oats
+Return library book
+\end{terminaloutput}
+
+A plain text file records characters in some encoding, along with details such as line breaks. A typical word-processing document can also carry style, pictures, and other structure that a plain-text editor does not interpret as a document. Renaming such a document to end in \cmd|.txt| won't convert it. This distinction is why the filename suffix, the probable type reported by \cmd|file|, and the tool you choose to edit the content are separate decisions.
+
+\begin{terminal}
+file ./errands.txt
+\end{terminal}
+
+For this fixture, expect a description of text, often ``ASCII text.'' Other systems may use different wording. This tells you which program is a plausible next step; it does not check that every item on the list is correct.
+
+\section{The editor has a working copy}
+\IndexTerm{editor buffer}
+An editor generally reads the disk file into a \FirstUse{buffer}: the text you see and change in the editor. Changes can remain in that buffer before a save. A write updates the disk file; mere cursor movement or typing into a modified buffer need not do so. On reopening, you usually see whatever was last written. Figure~\ref{fig:11-buffer} shows the direction of each operation. It deliberately leaves out optional recovery files, editor backups, and external modifications. None is a reason to assume a lost change can always be recovered.
+
+\begin{figure}[htbp]
+\centering\UTPElevenBuffer
+\caption{Reading loads the buffer; saving writes a file.}
+\label{fig:11-buffer}
+\VisualDescription{An arrow from disk to the buffer means open; the arrow back means save. Editing stays inside the buffer until a write.}
+\end{figure}
+
+Check which editors your current shell can resolve. This is the short form of the command-identity check in Chapter~\ref{ch:10}; \cmd|-v| reports a name or resolution in a compact form. A missing \cmd|nano| does not mean you did anything wrong.
+
+\begin{terminal}
+command -v vi
+command -v nano
+\end{terminal}
+
+Use the editor available to you. \cmd|vi| is the standardized screen editor interface, but the name can lead to an implementation such as Vim or nvi. \cmd|nano| is an optional program, with a comparatively explicit shortcut display in its usual configuration. It may be missing or packaged separately on Linux, macOS, FreeBSD, OpenBSD, and NetBSD. Don't assume availability based on the OS name alone, and don't install an editor just to complete the exercises when the other one is present. These instructions use default or conventional key bindings; if an editor reacts in a surprising way, keep the practice original and check the documentation instead of experimenting on a real file.
+
+\section{One controlled edit in vi}
+\IndexCommand{vi}
+Open the practice file. This shell command is the only line in this example to type at a shell prompt:
+
+\begin{terminal}
+vi ./errands.txt
+\end{terminal}
+
+In \cmd|vi|, different modes assign different meanings to ordinary keys. The editor normally starts in command mode, called Normal mode in Vim. The steps below deliberately return to command mode with \Key{Esc} before asking the editor to save or quit. You need only three ordinary editing actions for this exercise:
+
+\begin{steps}
+\item Press \Key{G} (capital G) to go to the last line. This is a command-mode movement; don't type the word ``capital.''
+\item Press \Key{o} (lowercase) to open a new line below the cursor and enter insert mode. Don't press \EnterKey afterward just to submit it; this key is already a complete command.
+\item Type \cmd|Pick up stamps| as the content of the new line. Press \Key{Esc} once to stop inserting text.
+\end{steps}
+
+To save and leave, type \cmd|:wq| while in command mode, then press \EnterKey. The colon opens the editor's command-line area, \cmd|w| means write and \cmd|q| means quit. This is an instruction inside the editor, not a shell command and not text to put in the file. If writing fails, read the message rather than trying an override. Check that you opened the disposable working file and that its directory can be used. Your buffer might still hold the changes even if nothing new went to disk.
+
+\begin{figure}[htbp]
+\centering\UTPElevenVi
+\caption{When vi inserts words, use Escape to return to command mode.}
+\label{fig:11-vi}
+\VisualDescription{The o key goes from command mode to insertion on a new line. Escape returns to command mode, which accepts colon commands.}
+\end{figure}
+
+Figure~\ref{fig:11-vi} is useful if you see literal \cmd|:wq| in the body of the file. You were still inserting text. In this disposable exercise the simplest repair is to press \Key{Esc}, type \cmd|:q!|, and press \EnterKey. That quits without saving the current buffer changes, so only use it when you mean to discard them. Reopen the file and try the operation again. If you already saved a mistake, quitting without saving now won't roll back that earlier write; inspect and repair the working copy or start from the separate original.
+
+Back at the shell, verify the edit with a read:
+
+\begin{terminal}
+cat ./errands.txt
+cmp ./errands-original.txt ./errands.txt
+\end{terminal}
+
+Expect the three lines, then a difference report from \cmd|cmp|. The report may refer to the shorter file ending first because the original's bytes are the prefix of the longer file. The result is intentional: the original stayed put, and the edited copy now contains the new errand.
+
+\section{The same decision with nano}
+\IndexCommand{nano}
+Use a fresh copy so that the exercise works whether or not you tried \cmd|vi|. If the destination already exists, stop rather than overwriting it. Run the editor only if it was found earlier.
+
+\begin{terminal}
+cp -i ./errands-original.txt ./errands-nano.txt
+nano ./errands-nano.txt
+\end{terminal}
+
+In ordinary \cmd|nano| editing, typing letters enters text and the arrow keys move the cursor. Move to the very start of the first line using \Key{Home} or left arrows as appropriate; for these instructions, verify visually that the cursor is before the B in ``Buy.'' Type \cmd|Pick up stamps| and press \EnterKey. Now the new errand is on the first line. As in the other editor, changes can be present in the buffer and not yet in the disk file.
+
+In the default shortcut display, a caret beside a letter means hold \Key{Ctrl} while pressing the indicated letter, not type a caret into the file. Use \KeyChord{Ctrl}{O} (letter O) for Write Out. Check the proposed filename and press \EnterKey to accept the current working file name. Then use \KeyChord{Ctrl}{X} to exit. Bindings or prompt wording can vary with version or configuration; read the actions shown by your editor. If it unexpectedly asks about a different file, don't approve the write just to get back to the prompt.
+
+\begin{figure}[htbp]
+\centering\UTPElevenNano
+\caption{Nano separates editing text, accepting a write destination, and exiting.}
+\label{fig:11-nano}
+\VisualDescription{The editing buffer leads to a filename prompt using Write Out. Enter accepts the filename. Exit returns to the shell.}
+\end{figure}
+
+Figure~\ref{fig:11-nano} shows why a filename prompt can appear even though you already opened a named file: the prompt allows you to confirm the destination. Back in the shell, read the copy to verify that the first line is the new entry and the following lines are intact. If quitting asks whether to save a modified buffer and the whole change was just an unwanted practice experiment, choose the displayed No action instead. That leaves the last written contents alone.
+
+\begin{terminal}
+cat ./errands-nano.txt
+\end{terminal}
+
+\begin{quicktable}{Y Y Y}
+\toprule
+Task & vi convention & Default nano convention\\
+\midrule
+Enter text & Use an insertion command such as \texttt{o}. & Type directly at the cursor.\\
+Stop entering text & Escape to command mode. & Use control shortcuts for actions.\\
+Save ordinary practice edit & In command mode use \texttt{:w} then Enter. & Ctrl+O, inspect filename, then Enter.\\
+Quit without unsaved changes & In command mode use \texttt{:q} then Enter. & Ctrl+X.\\
+Discard unsaved changes & In command mode use \texttt{:q!} then Enter. & Ctrl+X and choose No when prompted.\\
+\bottomrule
+\end{quicktable}
+
+\section{Trust the file you reopen}
+The two routes edit different copies on purpose. The proof that a save worked is reading the intended path after you leave. The name you choose on write matters just as much as the one you typed to start the program. A related risk is accidentally editing a file while another application is editing the same path. If the editor warns that the file changed since it was opened, pause and protect both versions. A fresh name, if you can choose one safely, is preferable to replacing unknown changes. Chapter~\ref{ch:22} later provides a way to compare lines across versions.
+
+\begin{quicktable}{Y Y}
+\toprule
+What you observe & What to verify next\\
+\midrule
+Expected command letters appear in the text. & You're typing into a buffer; use the editor's instructions to return to its command controls.\\
+The editor warns about unsaved changes. & Decide whether to write or discard; don't infer that the file already includes those changes.\\
+A save says it failed. & Keep the buffer if you need the text. Check the destination and avoid overrides.\\
+The shell read shows an old version. & Check the path, whether the write succeeded, and whether you chose a different destination.\\
+\bottomrule
+\end{quicktable}
+
+For a short status check, compare the preserved original to a working copy you haven't modified. Make this extra copy only if its path is new:
+
+\begin{terminal}
+cp -i ./errands-original.txt ./errands-test.txt
+cmp ./errands-original.txt ./errands-test.txt
+\end{terminal}
+
+The comparison should be quiet. This gives you a controlled starting point for trying discard, independent of any previous edit.
+
+\section{Decide where an edit belongs}
+For the errands list, it doesn't matter whether you insert above or below the existing tasks as long as each goes on its own line. Other text files are less forgiving: moving a comma in a data file or deleting an empty line in a structured document can change the meaning. Start by recognising which sort of text you're editing. If someone told you a document is ``just text,'' that only tells you how it is stored; it doesn't tell you whether punctuation and layout are arbitrary. Read the file with a suitable viewer, decide on the smallest meaningful change, and keep a way to compare it with the original.
+
+It is also possible for a small textual change to result in other byte changes. An editor might add a missing final newline, preserve or change a line-ending convention, or write a different encoding if configured to do so. The controlled examples avoid those complications on purpose. If a reader displays exactly the words you expected but \cmd|cmp| says identical-looking files differ, don't assume the comparison is wrong. It compares stored bytes, not rendered words. If the file is meant for another program, find out what that program expects before changing editor settings or converting the whole file.
+
+Consider the intended handoff. If a roommate wants the errands as a message, the important check may be that every task appears on its own line. If a colleague needs the exact text in an existing file, compare against the approved version before sending. If you only wanted to jot a note without modifying the shared file, start with a separate working path rather than rely on quitting without saving. Those three goals might look identical in a buffer, but they call for different decisions at the write prompt.
+
+One practical option when your focus is unclear is to pause instead of pressing random keys. First ask which program owns the keyboard. Then use the vocabulary of that program: in vi determine whether you're inserting or giving commands, in nano read the action prompts. If you have put an unexpected line into a buffer but haven't saved, the verified original gives you a low-cost way to start over. If the changes are valuable and a save failed, keep the buffer open. You can check the path without approving an overwrite, and use a fresh filename if the editor allows it.
+
+For terminal accessibility, a shortcut display is a hint, not the sole source of feedback. If the editor is difficult to follow with your display or assistive technology, use the one you can control and use an independent reader afterward to verify the disk file. A terminal editor is an option for the task, not a requirement to give up a text editor you already use well.
+
+\begin{dialoguebox}{Which copy has the new words?}
+\Brian{I can see the new line. Doesn't that mean it is already in the file?}
+\Stephen{It's in the editor's working buffer. The file changes when a write succeeds.}
+\Brian{Then if I quit without saving, the original must come back.}
+\Stephen{Only the last written contents remain. If you wrote over the original earlier, quitting won't undo that.}
+\Brian{So I need a separate original, and I should read the working path after saving.}
+\Stephen{Yes. Seeing your edit and verifying the saved file are different checks.}
+\DialogueConclusion{Verify the saved path, not just the buffer.}
+\end{dialoguebox}
+
+\section{Practice and clean up}
+Make sure you have exited the editor and confirmed the practice directory with \cmd|pwd|. Use \cmd|ls -a| to see which optional practice copies you created. At the end, you may leave them for further practice or remove the specific files you made using interactive \cmd|rm -i| on each exact path. This permanently removes those names. If there are other entries, such as editor recovery files, don't remove unexpected names by pattern; leave the directory until you identify them. When empty, leave with \cmd|cd ..| and use \cmd|rmdir| with the exact practice root name.
+
+\begin{exercise}{Discard a line}
+\label{ex:11-discard}
+Open \texttt{./errands-test.txt} in your available editor. Add a throwaway line, then explicitly exit without saving. Compare with the original. Use the same test copy in the next activity.
+\end{exercise}
+\begin{solution}
+Use the insertion action for your editor and type ``This line is temporary.'' In vi, press Escape and use \texttt{:q!}; in nano, exit and choose No. Back in the shell:
+\begin{terminal}
+cmp ./errands-original.txt ./errands-test.txt
+\end{terminal}
+Expect no output and status zero. No extra file needs removal.
+\end{solution}
+
+\begin{exercise}{Make a visible difference}
+\label{ex:11-visible}
+Add a line to \texttt{./errands-test.txt}, save, and verify the literal words from the shell. Then compare against the original. Leave the test copy until the next activity.
+\end{exercise}
+\begin{solution}
+Add ``Bring a bag'' on its own line. Use the write and quit actions for your editor. In the shell:
+\begin{terminal}
+cat ./errands-test.txt
+cmp ./errands-original.txt ./errands-test.txt
+\end{terminal}
+The new line is readable in the first output. The second command reports a difference if you chose the correct path.
+\end{solution}
+
+\begin{exercise}{Start over without losing either version}
+\label{ex:11-start-again}
+Make a fresh copy from the original while keeping your edited test copy. Verify the new copy, then remove it and, if no longer needed, the edited test copy individually.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+cp -i ./errands-original.txt ./errands-restart.txt
+cmp ./errands-original.txt ./errands-restart.txt
+rm -i ./errands-restart.txt
+\end{terminal}
+Comparison is silent. If you still have \texttt{./errands-test.txt} and are finished with it, remove that exact name interactively as a separate decision.
+\end{solution}
+
+\begin{takeaways}
+\item Know which program currently receives the keys.
+\item Check the write destination and read the saved contents afterward.
+\item Discarding a buffer does not undo a write that already happened.
+\end{takeaways}
+
+\begin{furtherreading}
+\ReadingItem{POSIX vi}{The standardized editor modes and editing commands}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/vi.html}
+\ReadingItem{GNU nano manual}{The upstream guide to commands and typical shortcut notation}{https://www.nano-editor.org/dist/latest/nano.html}
+\ReadingItem{OpenBSD vi(1)}{An implementation-specific guide to vi and its modes}{https://man.openbsd.org/vi.1}
+\end{furtherreading}

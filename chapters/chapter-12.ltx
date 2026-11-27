@@ -1,0 +1,247 @@
+You have finished a trip plan and want to clear away drafts. A list of four similarly named files appears in the terminal, and one of them is not a draft at all. This is a good moment to step back. If the operation is hard to reverse, test the ingredients somewhere you can afford to make a mistake. Then bring back the method, not the sample filenames.
+
+\begin{objectives}
+\item Make and identify an isolated temporary practice directory.
+\item Predict and verify one permanent removal, without wildcards or recursion.
+\item Prefer a reversible hold when a file might matter later.
+\item Distinguish prevention, recovery, and verified cleanup.
+\end{objectives}
+
+\input{figures/chapter-12/safety.tikz}
+\section{Give the practice a boundary}
+\IndexCommand{mktemp}
+\IndexTerm{practice directory}
+A folder made for practice is not a special kind of filesystem. It is an ordinary directory with three advantages: the contents are known, the paths are explicit, and none of the sample data matters. A temporary directory also is not a secure sandbox. Commands can still reach outside it if you give them other paths. Always check the working directory and use exact names you meant to make there.
+
+Use a spare local \cmd|/bin/sh| shell and request a fresh directory. Run the first line alone. If it prints an error, stop and don't try the \cmd|cd| line. Run the next line to see the result: it must be a nonempty absolute path, beginning with \cmd|/|, with a final name beginning \cmd|utp-12.|. If it isn't, stop and use the plain \cmd|mkdir| alternative below. \cmd|mktemp| and its \cmd|-d| form are common on GNU/Linux and contemporary macOS and BSD, not a POSIX utility requirement. If it isn't available, that is another reason to use the fallback.
+
+\begin{terminal}
+practice=$(mktemp -d "${TMPDIR:-/tmp}/utp-12.XXXXXXXX")
+printf '%s\n' "$practice"
+cd "$practice"
+pwd
+ls -a .
+\end{terminal}
+
+\cmd|$(...)| runs the nested command and takes its output; the assignment keeps the resulting path under the name \cmd|practice| in this shell. \cmd|${TMPDIR:-/tmp}| uses the setting \cmd|TMPDIR| when it is nonempty and otherwise uses \cmd|/tmp|. Use a trusted, absolute temporary base; don't set \cmd|TMPDIR| to a shared project location just to follow along. The \cmd|-d| option asks for a directory, and the ending \cmd|XXXXXXXX| is a template for a unique suffix. \cmd|"$practice"| supplies the whole saved pathname as one argument, even if a directory along the way has spaces. These are recipes for this job; Chapters~\ref{ch:25}--\ref{ch:27} explain the shell syntax further.
+
+If changing directory fails, stop. Check that \cmd|pwd| identifies the newly created practice directory, and that the listing has only the dot and parent entries. One system may show a resolved spelling of the temporary base with \cmd|pwd| rather than the familiar shorthand; proceed only if you can establish that you entered the fresh directory. Write down its path separately. The saved variable belongs to this shell and won't automatically be present if you close the window and start over. Temporary directories may be cleaned automatically; never use this one to store anything valuable.
+
+For a fallback, choose a writable working directory, check \cmd|pwd|, and use plain \cmd|mkdir|. If it fails, do not enter a directory of that name; pick a new name. After \cmd|cd|, record the path from \cmd|pwd| for later cleanup. Use this only if you did not enter a temporary practice directory above.
+
+\begin{terminal}
+mkdir ./utp-12-travel
+cd ./utp-12-travel
+pwd
+ls -a .
+\end{terminal}
+
+\section{Separate a decision from its consequences}
+\label{sec:12-review}
+Set up a real plan, a scratch file, and an independent reference in the practice directory just verified. These are simple text fixtures; the greater-than signs target only new files. If an existing name is listed before you start, stop and check your directory instead.
+
+\begin{terminal}
+printf '%s\n' 'Train leaves at 08:12' > ./plan.txt
+printf '%s\n' 'Possible earlier train' > ./scratch.txt
+cp -i ./plan.txt ./reference.txt
+ls -a .
+\end{terminal}
+
+There are now three copies of information in the everyday sense, but not three copies of the same file: \cmd|scratch.txt| is a different line, while \cmd|plan.txt| and \cmd|reference.txt| match. Check that distinction with the read tools you've already learned:
+
+\begin{terminal}
+cat ./scratch.txt
+cmp ./plan.txt ./reference.txt
+printf '%s\n' "$?"
+\end{terminal}
+
+Use Figure~\ref{fig:12-separate} as a habit: list, inspect an exact target, make one decision, then verify what remained. No part of this diagram calls for running the fourth step automatically after the third. If anything unexpected happens, pause and inspect. Think of the sequence as a procedure you can stop at any stage, not as a long line to paste. A true backup is particularly important if it would be expensive to reconstruct the contents. A second copy in the same folder can help with a mistaken edit or single-file removal, but not with losing the whole folder or device.
+
+\begin{figure}[htbp]
+\centering\UTPTwelveSeparate
+\caption{Inspection and verification are separate actions on either side of the change.}
+\label{fig:12-separate}
+\VisualDescription{Four successive boxes show confirm the location, inspect the target, act once, and verify the remaining files.}
+\end{figure}
+
+\section{Choose a reversible step first}
+A holding directory separates ``not needed in the present view'' from ``never need it again.'' Create one in this practice root and move only the known scratch file. Check for an unexpected existing path before agreeing to any prompt.
+
+\begin{terminal}
+mkdir ./hold
+mv -i ./scratch.txt ./hold/scratch.txt
+ls -a .
+ls -a ./hold
+\end{terminal}
+
+The scratch name is gone from the practice root but the contents are available in \cmd|hold|. If you change your mind, bring it back to a verified fresh path. Confirm that \cmd|./scratch.txt| is not in the root listing first. If a question appears, decline it; a new file may have taken the old name.
+
+\begin{terminal}
+mv -i ./hold/scratch.txt ./scratch.txt
+cat ./scratch.txt
+ls -a ./hold
+\end{terminal}
+
+This is a reversible practice move, not a guarantee against accidental damage. An equivalent operation on a shared directory could change what colleagues or applications can access. Holding the file also uses storage and may not satisfy a requirement to dispose of sensitive material. Those decisions are separate from keeping a work area tidy. For a personal collection, a dated holding folder with a deliberate review date is often safer than removing files the moment you see a familiar suffix.
+
+\begin{figure}[htbp]
+\centering\UTPTwelveHold
+\caption{A verified hold keeps an obvious route back; removal does not.}
+\label{fig:12-hold}
+\VisualDescription{The active and holding names have a two-way route between them. A separate one-way route leads from the active name to a removed directory entry.}
+\end{figure}
+
+As Figure~\ref{fig:12-hold} suggests, ``can I find it in the old place?'' is not the same question as ``do I still have the contents?'' If you only want to avoid confusion with current files, moving the candidate out of the working set may be enough.
+
+\begin{quicktable}{M{1.22in}Y Y}
+\toprule
+\textnormal{Choice} & Good reason to choose it & Boundary\\
+\midrule
+Inspect only & Uncertain path, type, or importance. & No file change; don't confuse inspecting with correcting.\\
+mv -i to hold & Candidate might be needed again. & Check both paths and don't approve collisions.\\
+rm -i one file & Exact regular-file name has been checked and the data can be lost. & Not a desktop Trash operation or an undoable move.\\
+rmdir one folder & You intend to remove only an empty directory. & Refuses a nonempty directory.\\
+\bottomrule
+\end{quicktable}
+
+\section{Remove one known name}
+\IndexCommand{rm}
+The standard \cmd|rm| utility removes names. It does not put files in a desktop Trash or Recycle Bin by default. The \cmd|-i| option asks before removal; don't assume a plain \cmd|rm| will challenge you. In a protected shared location the system may refuse your request; don't look for a way to make it stronger. This demonstration uses a single literal path in a freshly created private or personal practice directory. Do not use a wildcard or any recursive or force option. Inspect the listed name first and remove it only if it is the scratch sample you just read.
+
+\begin{terminal}
+pwd
+ls -l ./scratch.txt
+rm -i ./scratch.txt
+ls -a .
+cmp ./plan.txt ./reference.txt
+\end{terminal}
+
+Read the prompt. If it names the intended fixture and you wish to complete the exercise, give the locally appropriate affirmative response; use no or \KeyChord{Ctrl}{C} if you are uncertain. If you decline, the scratch name should still be listed. If you accept, it should disappear. In either case, \cmd|plan.txt| and \cmd|reference.txt| should stay and still compare equal. Notice how the verification checks both what changed and what was supposed to remain. If \cmd|rm -i| asks nothing despite a present file, stop and investigate whether the command was standard or whether aliases or shell functions affected the invocation.
+
+\section{Recover by protecting what remains}
+Deleting a hard-linked filename doesn't necessarily remove other names for the same file, as Chapter~\ref{ch:8} showed. Conversely, assume that the last ordinary name for a removed file is not yours to restore without a verified copy, version history, or another independent archive. Don't plan on a terminal-wide Undo key. Some filesystems and devices can make post-removal recovery difficult or impossible. Ordinary removal is also not proof that the underlying bytes have been erased securely.
+
+If you remove or overwrite a valuable file accidentally, stop writing to the affected storage where practical and avoid installing recovery tools onto it. Look for an independently stored copy, version history, or snapshot using the relevant application or backup tool. Restore to a separate destination if that is available; verify the restored content before you replace any other version. Escalate to a trusted support professional if the file is important and you don't know how to proceed. No command in this chapter tries to recover disk blocks.
+
+\begin{figure}[htbp]
+\centering\UTPTwelveRestore
+\caption{Restore to a fresh destination before deciding what to do with other copies.}
+\label{fig:12-restore}
+\VisualDescription{A reference copy leads to a separate restored file. A comparison checks the two paths before anyone uses the restored version.}
+\end{figure}
+
+Try the small restore in Figure~\ref{fig:12-restore}. Here our reference is separate from the active file, but still in the same practice root, so it is not a device-loss backup. Use a fresh destination:
+
+\begin{terminal}
+cp -i ./reference.txt ./restored-plan.txt
+cat ./restored-plan.txt
+cmp ./reference.txt ./restored-plan.txt
+\end{terminal}
+
+The expected line is \cmd|Train leaves at 08:12|. A silent comparison verifies byte equality. In this fixture you can also inspect the meaningful text without guessing at the format, which makes the restore useful rather than merely reassuring. For more substantial backups, Chapter~\ref{ch:41} works through a separate restore drill.
+
+\section{Make a stop rule before you need it}
+Practice is most valuable when it includes a refusal. Decide before running a command which sign makes you stop. For a move, it might be a question about replacing an existing path. For the removal exercise, it could be a prompt naming anything other than \cmd|./scratch.txt|. For directory cleanup, a nonempty-directory refusal means you haven't yet accounted for the contents. Having these rules in advance means you don't have to invent policy after the computer has started asking for input. A refusal is often the protection working as intended, not a problem to bypass.
+
+The rule applies even if the previous command went well. Imagine you confirmed the working directory first thing this morning. You then came back from lunch and another project is open in a different terminal tab. A familiar prompt can conceal that difference. Before doing anything irreversible, run \cmd|pwd| again and check the target at the time of use. If you have already composed a dangerous line but have not submitted it, cancel the line and recover your context; there is no value in editing it into a different dangerous line while you are uncertain.
+
+Be suspicious of a cleanup that is specified only by appearance. ``All the old files'' might mean the former travel drafts, everything with an old timestamp, or a set of selected items that excludes the active plan. Those sets aren't necessarily the same. Write the inclusion rule in words, choose the smallest set of paths, and inspect them. If the set is too large to review at the terminal, start with a list or a fresh holding folder rather than making selection and permanent removal a single operation. That distinction will matter more when the next part introduces patterns and pipelines.
+
+Keep a second expectation for what must \emph{not} change. In this fixture we checked the reference and plan after the scratch removal. In everyday work the equivalent might be to reopen the approved document or confirm that a different week's folder is still present. Checking only that the intended target is gone tells you very little about what else happened. A short list of expected survivors makes verification concrete.
+
+Finally, distinguish ``recoverable in principle'' from ``I can restore it now.'' A backup application might report a successful run without including the folder you assumed it covered. A holding folder only helps if you can find it and the file is still there. A small sample restoration, to a separate name, tests both your assumptions and your access. If the only copy of a valuable item doesn't have such a route back, preservation is the next step, not cleanup.
+
+\begin{quicktable}{Y Y}
+\toprule
+Notice this & Do this before another change\\
+\midrule
+A name you did not expect to see. & Check the working directory and who or what made it; leave it alone meanwhile.\\
+The wrong file has disappeared. & Stop, keep the surviving copies intact, and check trusted restore sources.\\
+The restored copy looks plausible. & Read or compare it and preserve any other version before replacing anything.\\
+\texttt{rmdir} refuses the cleanup. & Check for hidden entries or a different error; don't switch to broader removal.\\
+\bottomrule
+\end{quicktable}
+
+\begin{dialoguebox}{A question is not an undo button}
+\Brian{If I always use \texttt{rm -i}, is removal safe?}
+\Stephen{It gives you a chance to catch a bad target.}
+\Brian{But I might read the name badly twice, first when I type it and again at the prompt.}
+\Stephen{True. Inspect the path beforehand, and keep a way back when the file matters.}
+\Brian{A verified copy or a move into a holding folder, depending on the job?}
+\Stephen{Yes. A confirmation controls when you act; it doesn't give you a restore.}
+\DialogueConclusion{A confirmation is not a recovery plan.}
+\end{dialoguebox}
+
+\section{Practice and clean up}
+\begin{exercise}{Preview a candidate}
+\label{ex:12-preview}
+Make a fresh \texttt{review-note.txt} containing one line. Read the exact path, decline its first interactive removal, and check that it survived. Then remove just that fixture and confirm it is absent.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+printf '%s\n' 'For review' > ./review-note.txt
+ls -l ./review-note.txt
+cat ./review-note.txt
+rm -i ./review-note.txt
+ls -a .
+rm -i ./review-note.txt
+ls -a .
+\end{terminal}
+Answer no the first time and yes the second time only for this fixture. The name is present in the first listing and absent in the second. No other removal is needed.
+\end{solution}
+
+\begin{exercise}{Put a version on hold}
+\label{ex:12-hold}
+Without changing \texttt{plan.txt}, move the restored practice copy into the holding directory. Verify the two locations and compare the moved copy to the reference. Then return it to its prior path.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+mv -i ./restored-plan.txt ./hold/restored-plan.txt
+ls -a .
+ls -a ./hold
+cmp ./reference.txt ./hold/restored-plan.txt
+mv -i ./hold/restored-plan.txt ./restored-plan.txt
+\end{terminal}
+The first move should leave one name in the holding folder and none at the prior path. If the return is blocked by a collision, leave both files alone and find out why.
+\end{solution}
+
+\begin{exercise}{The folder that refuses}
+\label{ex:12-refusal}
+Create a new directory called \texttt{try-empty}, add a hidden empty file named \texttt{.marker}, and observe why empty-directory removal refuses it. Inspect with a listing that includes hidden entries. Remove the marker interactively, then remove only this empty directory.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+mkdir ./try-empty
+touch ./try-empty/.marker
+rmdir ./try-empty
+ls -a ./try-empty
+rm -i ./try-empty/.marker
+rmdir ./try-empty
+\end{terminal}
+The first \texttt{rmdir} should fail. Once the known marker is removed the directory should be empty and the same operation should succeed.
+\end{solution}
+
+Check \cmd|pwd| and \cmd|ls -a|. Use interactive removal one file at a time for the exact fixture names still present: \cmd|./plan.txt|, \cmd|./reference.txt|, \cmd|./restored-plan.txt|, and perhaps \cmd|./scratch.txt|. Inspect \cmd|./hold| with \cmd|ls -a ./hold|. Remove it with \cmd|rmdir ./hold| only if empty. Stop if other entries remain. To clean up the empty practice root, leave it first. If you used the saved absolute path, the next snippet uses it \emph{only} with \cmd|rmdir|. Verify both printed paths and stop if they don't match the practice you recorded.
+
+\begin{terminal}
+pwd
+printf '%s\n' "$practice"
+cd ..
+rmdir "$practice"
+\end{terminal}
+
+If you used the fallback, after \cmd|cd ..| run \cmd|rmdir ./utp-12-travel| instead, substituting the exact empty directory name. Do not remove the parent. It is fine to stop after a refusal; nothing here needs a recursive cleanup.
+
+A final read of the parent can confirm that the practice entry is absent. Don't infer from that check that nothing else changed; your earlier checks established which known items stayed intact. If you leave this material for another session, keep a short note saying what it is and where you put it. Treat a forgotten directory with the same caution you would give an unexpected file: recognise it before deciding what to do with it.
+
+\begin{takeaways}
+\item Work with new and known fixtures before applying a destructive method elsewhere.
+\item Inspect the target, favor a reversible choice, and verify both changes and survivors.
+\item Restore from a known copy and test the result rather than planning on terminal undo.
+\end{takeaways}
+
+\begin{furtherreading}
+\ReadingItem{POSIX rm}{The standard interactive removal behavior and exit conditions}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/rm.html}
+\ReadingItem{GNU Coreutils mktemp}{The GNU options, template rules, and temporary-directory examples}{https://www.gnu.org/software/coreutils/manual/html_node/mktemp-invocation.html}
+\ReadingItem{NetBSD mktemp(1)}{A BSD manual for temporary file and directory creation}{https://man.netbsd.org/mktemp.1}
+\end{furtherreading}

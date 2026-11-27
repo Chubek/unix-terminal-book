@@ -1,0 +1,29 @@
+\newcommand{\UTPTenPager}{%
+\begin{tikzpicture}
+\node[utp node] (a) {shell prompt};
+\node[utp node,right=10mm of a] (b) {manual pager};
+\node[utp node,right=10mm of b] (c) {shell prompt};
+\draw[utp arrow] (a)--node[above,font=\small] {open}(b);
+\draw[utp arrow] (b)--node[above,font=\small] {quit}(c);
+\end{tikzpicture}}
+\newcommand{\UTPTenSection}{%
+\begin{tikzpicture}
+\node[utp node] (a) at (0,0) {\texttt{printf}};
+\node[utp node] (b) at (-3,-1.2) {section 1\\user command};
+\node[utp node] (c) at (0,-1.2) {section 3\\C function};
+\node[utp node] (d) at (3,-1.2) {shell manual\\builtin};
+\draw[utp arrow] (a)--(b);
+\draw[utp arrow] (a)--(c);
+\draw[utp arrow,dashed] (a)--(d);
+\end{tikzpicture}}
+\newcommand{\UTPTenDecision}{%
+\begin{tikzpicture}
+\node[utp node] (a) at (0,0) {identify command};
+\node[utp node] (b) at (-2.5,-1.2) {builtin manual};
+\node[utp node] (c) at (2.5,-1.2) {program manual};
+\node[utp node] (d) at (0,-2.4) {test with practice files};
+\draw[utp arrow] (a)--(b);
+\draw[utp arrow] (a)--(c);
+\draw[utp arrow] (b)--(d);
+\draw[utp arrow] (c)--(d);
+\end{tikzpicture}}

@@ -1,0 +1,28 @@
+\newcommand{\UTPTwelveSeparate}{%
+\begin{tikzpicture}
+\node[utp node] (a) {confirm\\location};
+\node[utp node,right=6mm of a] (b) {inspect\\target};
+\node[utp node,right=6mm of b] (c) {act\\once};
+\node[utp node,right=6mm of c] (d) {verify\\survivors};
+\draw[utp arrow] (a)--(b);
+\draw[utp arrow] (b)--(c);
+\draw[utp arrow] (c)--(d);
+\end{tikzpicture}}
+\newcommand{\UTPTwelveHold}{%
+\begin{tikzpicture}
+\node[utp node] (a) {active name};
+\node[utp node,right=18mm of a] (b) {holding name};
+\node[utp node,below=10mm of a] (c) {name removed};
+\draw[utp arrow] (a.north east) to[bend left=18] (b.north west);
+\draw[utp arrow] (b.south west) to[bend left=18] (a.south east);
+\draw[utp arrow,dashed] (a)--(c);
+\end{tikzpicture}}
+\newcommand{\UTPTwelveRestore}{%
+\begin{tikzpicture}
+\node[utp node] (a) at (-2.35,0) {verified reference};
+\node[utp node] (b) at (2.35,0) {fresh restore};
+\node[utp node] (c) at (0,-1.2) {compare both};
+\draw[utp arrow] (a)--node[above,font=\small] {copy}(b);
+\draw[utp arrow] (a)--(c);
+\draw[utp arrow] (b)--(c);
+\end{tikzpicture}}
