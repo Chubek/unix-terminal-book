@@ -11,9 +11,9 @@ on the screen.
 \item Recognize JSON objects, arrays and scalar types and inspect them with jq.
 \item Export selected data through a format-aware reader without altering its source.
 \end{objectives}
-\IndexTerm{CSV}
-\IndexTerm{JSON}
-\IndexCommand{jq}
+\index{CSV}
+\index{JSON}
+\index{jq@\texttt{jq}}
 
 \section{When a comma is part of a field}
 Use a new practice directory and a portable \cmd|sh| session.
@@ -269,15 +269,28 @@ Then write only to the unused practice filename shown.
 \begin{terminal}
 jq '[.[] | select(.share == true) | {id, caption}]' photos.json
 jq '[.[] | select(.share == true) | {id, caption}]' photos.json \
-  > review.json
-jq 'length' review.json
+  > review.json &&
+  jq -e -s '. == [[{"id":"001","caption":"Bridge, east side"}]]' \
+    review.json
 \end{terminal}
 
 The array should contain one object, with the Bridge
-caption and string ID \texttt{001}. The final command
-reports the array's length, which is 1. A parse error
-can still leave an empty or incomplete redirected file:
-check the writer's status before distributing its output.
+caption and string ID \texttt{001}. The final comparison
+should print \texttt{true}; it checks the whole fixture
+report rather than accepting any array with one item.
+\cmd|-s| gathers every JSON value found in the file into
+an outer array. The extra bracket pair on the right
+therefore means we expect exactly one JSON value: the
+one-item report array. An empty file gives an empty
+outer array, and an extra report would add another
+element; both comparisons are false. \cmd|-e| makes
+that false result a nonzero status.
+\cmd|&&| runs this check only if the writer succeeds.
+If you don't see \texttt{true} or the command reports
+an error, stop: the redirection may have left a partial
+or empty file behind. Do not distribute it. In the verified
+practice directory only, remove that failed copy or choose
+an unused filename before retrying from the preserved source.
 Do not type the same input and output path even when a
 recipe calls the result ``cleaned.'' You may need the
 full file to explain which records were withheld or to

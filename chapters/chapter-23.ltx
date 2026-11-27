@@ -10,10 +10,10 @@ packing, inspecting, restoring and comparing.
 \item Create, list and restore a small, trusted archive without overwriting existing files.
 \item Compare SHA-256 digests and explain what a match does and does not establish.
 \end{objectives}
-\IndexCommand{tar}
-\IndexCommand{gzip}
-\IndexTerm{archive}
-\IndexTerm{checksum}
+\index{tar@\texttt{tar}}
+\index{gzip@\texttt{gzip}}
+\index{archive}
+\index{checksum}
 
 \section{Pack named files together}
 Use a fresh directory for this exercise and a portable \cmd|sh|
@@ -140,23 +140,28 @@ leave an empty or partial output file even after failure.
 Then compare the uncompressed bytes to the original.
 
 \begin{terminal}
-gzip -dc handover.tar.gz > restored.tar
-cmp handover.tar restored.tar
-tar -tf restored.tar
+gzip -dc handover.tar.gz > restored.tar &&
+  cmp handover.tar restored.tar &&
+  tar -tf restored.tar
 \end{terminal}
 
-Expect the byte comparison to be silent (status 0) and the
-list to show the same members. This is a comparison of the
+Each \cmd|&&| runs what follows only if the preceding step
+succeeds. Expect the byte comparison to be silent (status 0)
+and the list to show the same three members: \texttt{handover/},
+\texttt{handover/rota.txt} and \texttt{handover/key-note.txt},
+in any order. If the comparison or listing fails, or the
+inventory disagrees in any respect, stop; do not run the
+extraction. This is a comparison of the
 exact plain archives, not a claim that creating a fresh tar
 at a different time will always produce identical bytes.
 Metadata, order and format choices can change even if
 the documents' text is unchanged.
 
 \begin{terminal}
-mkdir recovered
-tar -xf restored.tar -C recovered
-cmp handover/rota.txt recovered/handover/rota.txt
-cmp handover/key-note.txt recovered/handover/key-note.txt
+mkdir recovered &&
+  tar -xf restored.tar -C recovered &&
+  cmp handover/rota.txt recovered/handover/rota.txt &&
+  cmp handover/key-note.txt recovered/handover/key-note.txt
 \end{terminal}
 
 Stop if \cmd|mkdir| fails. \cmd|-x| extracts; \cmd|-C|

@@ -10,19 +10,39 @@ to show, leaving the original checkout sheet alone.
 \item Extract or combine columns with \texttt{cut} and \texttt{paste}.
 \item Use a small \texttt{awk} rule to select records by field and verify the result.
 \end{objectives}
-\IndexCommand{cut}
-\IndexCommand{paste}
-\IndexCommand{awk}
-\IndexTerm{tab-separated values}
+\index{cut@\texttt{cut}}
+\index{paste@\texttt{paste}}
+\index{awk@\texttt{awk}}
+\index{tab-separated values}
 
 \section{Find the field boundary}
 For this chapter, use a fresh temporary directory and a portable
 \cmd|sh| session. Run the first two commands separately. If
-either fails, stop; don't create these files anywhere else.
+either fails, stop before writing. \cmd|mktemp -d| is widely
+available but not a POSIX utility. If yours is absent or
+rejects the template, use an independently created empty
+directory: return to your writable home with \cmd|cd|,
+check with \cmd|pwd -L|, then run
+\cmd|mkdir ./utp21-practice-3189|. If the name already
+exists, stop and choose another unused name; do not reuse
+an existing directory. Set
+\cmd|practice="$(pwd -L)/utp21-practice-3189"|
+using the name you created, then run the \cmd|cd| line
+below and continue only if its \cmd|pwd -L| check shows
+that exact path. This fallback skips the \cmd|mktemp|
+line, not the working-directory check.
 
 \begin{terminal}
 practice=$(mktemp -d /tmp/utp21.XXXXXX)
 cd "$practice"
+pwd -L
+\end{terminal}
+
+Compare the printed line to \cmd+printf '%s\n' "$practice"+.
+An empty value, failed command or different path means stop.
+Only then create the practice fixture with the next block:
+
+\begin{terminal}
 printf '%s\t%s\t%s\n' \
   item shelf state \
   'Hand saw' A2 out \
@@ -462,6 +482,10 @@ This test creates no extra files.
 \end{solution}
 
 \paragraph{Cleanup.}
+The repository's \FilePath{listings/chapter-21/open-loans.sh}
+reuses the state-first filter above. It expects the checkout
+TSV on standard input and doesn't create or delete fixtures.
+For the interactive exercise,
 Verify with \cmd|pwd| that this is the disposable \texttt{utp21}
 directory named in \cmd|"$practice"|. Remove only the three
 files created here and decline unrecognized names. If you skipped
@@ -469,8 +493,7 @@ an example, a missing-file diagnostic is expected.
 
 \begin{terminal}
 rm -i ./loans.tsv ./items.txt ./states.txt
-cd /tmp
-rmdir "$practice"
+cd .. && rmdir "$practice"
 \end{terminal}
 
 If the directory is not empty, inspect the leftovers. Type

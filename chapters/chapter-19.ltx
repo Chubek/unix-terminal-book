@@ -10,28 +10,43 @@ selected files and shows the lines that say something about a gate.
       extended regular expression.
 \item Tell the difference between a match, an empty result and a failed search.
 \end{objectives}
-\IndexCommand{grep}
-\IndexTerm{regular expression}
+\index{grep@\texttt{grep}}
+\index{regular expression}
 
 \section{Start with the words you remember}
 \label{sec:19-literal}
-Use a disposable directory for all the examples. If you use Fish or
-the C shell family, enter \cmd|sh| before the setup; the listings use
-portable shell syntax. Keep this shell open until cleanup. Run the
-lines separately, and stop if the first or second line fails: none
-of the paths below should ever resolve inside a real notes folder.
-The first line stores the directory name returned by \cmd|mktemp|;
-\cmd|-d| asks for a directory rather than a file. The template's six
-Xs stand for a generated suffix.
+Use a disposable directory for all the examples. Start a separate
+\cmd|sh| session in a spare terminal tab, even if your usual shell
+already accepts this syntax: on a setup failure the code deliberately
+exits the practice shell. Keep it open until cleanup after a successful
+setup. The first line stores the path returned by \cmd|mktemp|;
+\cmd|-d| asks for a directory rather than a file. This utility
+is widely available on Linux, macOS and the BSDs, but it is not
+POSIX. If the command or template isn't supported, stop and read the
+local manual; do not run the fixture writes in your current directory.
+
+The six Xs stand for a generated suffix. The \cmd|case| check
+accepts just the expected path shape, with each question mark
+standing for one character. Then \cmd|cd| and the test in
+square brackets verify that \cmd|pwd -L| prints the captured
+logical path. The logical spelling matters because \texttt{/tmp}
+can itself be a symbolic link. \cmd+|| exit 1+ stops the practice
+shell if the command to its left fails. Nothing should be written
+until both the shape and location checks pass.
 
 \begin{terminal}
-practice=$(mktemp -d /tmp/utp19.XXXXXX)
-cd "$practice"
+practice=$(mktemp -d /tmp/utp19.XXXXXX) || exit 1
+case "$practice" in
+  /tmp/utp19.??????) ;;
+  *) printf '%s\n' 'Unexpected practice path.' >&2; exit 1 ;;
+esac
+cd "$practice" || exit 1
+[ "$(pwd -L)" = "$practice" ] || exit 1
 printf '%s\n' 'Gate opens at 9' 'Bring gloves' \
   'Update: north gate opens at 10' \
-  'Reminder: tea at 11' > meeting.txt
+  'Reminder: tea at 11' > meeting.txt || exit 1
 printf '%s\n' 'gate code changed' 'Bring tea bags' \
-  'Buy stakes [urgent]' 'Repaint gatepost' > errands.txt
+  'Buy stakes [urgent]' 'Repaint gatepost' > errands.txt || exit 1
 \end{terminal}
 
 The backslash at the end of a physical line makes it continue on
@@ -80,9 +95,9 @@ errands.txt:4:Repaint gatepost
 \begin{figure}[htbp]
 \centering
 \input{figures/chapter-19/search.tikz}
-\caption{Selecting a line is not the same as extracting the matching phrase.}
+\caption{With \texttt{-i}, both gate lines match regardless of case. Grep emits their intact text.}
 \label{fig:19-search}
-\VisualDescription{The pattern is compared with each input line; both matching lines leave the command intact, and the unselected line does not.}
+\VisualDescription{The case-insensitive comparison selects the uppercase and lowercase gate lines. Both matching input lines appear intact in the output; the unselected line does not appear.}
 \end{figure}
 
 The fourth result may look like a mistake if you meant the noun
@@ -434,16 +449,16 @@ would have to end the line; instead, there is a message after it.
 \end{solution}
 
 \paragraph{Cleanup.}
-Run \cmd|pwd| and compare it with \cmd+printf '%s\n' "$practice"+.
+Run \cmd|pwd -L| and compare it with \cmd+printf '%s\n' "$practice"+.
 Only if both name the chapter's disposable directory, remove the
 two practice files. \cmd|-i| asks before each removal; decline
 anything you do not recognize. An unexpected leftover makes
 \cmd|rmdir| fail harmlessly, so inspect it rather than switching
-to recursive removal. If you started a separate \cmd|sh|, type
-\cmd|exit| after cleanup to return to your usual shell.
+to recursive removal. If leaving the directory fails, stop; the
+\cmd|&&| also prevents an attempted directory removal in that
+case. Type \cmd|exit| after cleanup to return to your usual shell.
 
 \begin{terminal}
-rm -i ./meeting.txt ./errands.txt
-cd /tmp
-rmdir "$practice"
+rm -i ./meeting.txt ./errands.txt || exit 1
+cd /tmp && rmdir "$practice"
 \end{terminal}

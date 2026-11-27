@@ -3,6 +3,7 @@
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import tempfile
 
@@ -16,7 +17,8 @@ def run(code, cwd, status=0, args=(), stdin=None, env=None):
         cwd=cwd, text=True, input=stdin, env=env,
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False,
     )
-    assert result.returncode == status, (code, result)
+    statuses = status if isinstance(status, tuple) else (status,)
+    assert result.returncode in statuses, (code, result)
     return result.stdout
 
 
@@ -30,6 +32,55 @@ def cleanup(code, cwd, env):
         assert not result, result
     run(remaining.replace("cd /tmp", 'cd "$TMPDIR"'), cwd, env=env)
     assert not cwd.exists(), cwd
+
+
+def test_tally_failures(listing, cwd, env):
+    """A stage that writes partial stdout and then fails cannot leak a report."""
+    failure_shims = {
+        "first-sort": ("sort", 'if [ "$#" -gt 0 ]; then exit 91; fi'),
+        "uniq": ("uniq", ""),
+        "last-sort": ("sort", 'if [ "$#" -eq 0 ]; then exec "$UTP_REAL_SORT"; fi'),
+    }
+    real_sort = shutil.which("sort", path=env["PATH"])
+    assert real_sort
+    for stage, (command, stage_check) in failure_shims.items():
+        with tempfile.TemporaryDirectory(dir=cwd, prefix=f"{stage}-") as mock:
+            shim = Path(mock, command)
+            shim.write_text(f"#!/bin/sh\n{stage_check}\nprintf '%s\\n' incomplete\nexit 47\n")
+            shim.chmod(0o700)
+            mock_env = dict(env, PATH=f"{mock}:{env['PATH']}", UTP_REAL_SORT=real_sort)
+            out = run('"$1" "$2" < votes.txt', cwd, 47, args=(SHELL, listing), env=mock_env)
+            assert not out, (stage, out)
+            assert not list(Path(env["TMPDIR"]).glob("utp20-tally.*")), stage
+
+
+def test_restore_failure(code, cwd, env):
+    with tempfile.TemporaryDirectory(dir=cwd, prefix="bad-restore-") as mock:
+        bad = Path(mock)
+        shutil.copyfile(cwd / "handover.tar.gz", bad / "handover.tar.gz")
+        (bad / "handover.tar").write_text("not the original tar\n")
+        track = 'tar() { printf "%s\\n" attempted-listing; command tar "$@"; }\n'
+        out = run(track + code, bad, 1, env=env)
+        assert "attempted-listing" not in out and not (bad / "recovered").exists()
+
+
+def test_review_failures(code, cwd, env):
+    with tempfile.TemporaryDirectory(dir=cwd, prefix="bad-review-") as mock:
+        bad = Path(mock)
+        fixture = bad / "photos.json"
+        fixture.write_text("[broken\n")
+        track = 'jq() { if [ "$1" = -e ]; then printf "%s\\n" attempted-check; fi; command jq "$@"; }\n'
+        out = run(track + code, bad, (4, 5), env=env)
+        assert not out and (bad / "review.json").read_bytes() == b""
+        fixture.write_text("")
+        out = run(track + code, bad, 1, env=env)
+        assert out == "attempted-check\nfalse\n" and (bad / "review.json").read_bytes() == b""
+        fixture.write_text('[]\n')
+        out = run(code, bad, 1, env=env)
+        assert out == "false\n"
+        row = '[{"id":"001","caption":"Bridge, east side","share":true}]\n'
+        fixture.write_text(row * 2)
+        assert run(code, bad, 1, env=env) == "false\n"
 
 
 ANSWER_CASES = {
@@ -104,13 +155,44 @@ def verify(chapter, root):
     assert len(blocks) >= 11
     setup = blocks[0].splitlines(keepends=True)
     assert setup[0].startswith("practice=$(mktemp -d /tmp/utp")
-    assert setup[1] == 'cd "$practice"\n'
-    work = root / f"utp{chapter}.fixture"
-    work.mkdir()
-    env = dict(os.environ, TMPDIR=str(root), practice=str(work), LC_ALL="C")
-    run("".join(setup[2:]), work, env=env)
+    env = dict(os.environ, TMPDIR=str(root), LC_ALL="C")
+    first_example = 1
+    if chapter == 19:
+        setup_code = blocks[0].replace("/tmp/", '"$TMPDIR"/')
+        run('mktemp() { printf "%s\\n" unexpected; }\n' + setup_code,
+            root, 1, env=env)
+        assert not (root / "meeting.txt").exists()
+        run('pwd() { printf "%s\\n" wrong-location; }\n' + setup_code,
+            root, 1, env=env)
+        unverified, = root.glob("utp19.*")
+        assert not list(unverified.iterdir())
+        unverified.rmdir()
+        run(setup_code, root, env=env)
+        work, = root.glob("utp19.*")
+    elif chapter == 21:
+        run(blocks[0].replace("/tmp/", '"$TMPDIR"/'), root, env=env)
+        work, = root.glob("utp21.*")
+        run(blocks[1], work, env=env)
+        first_example = 2
+        with tempfile.TemporaryDirectory(dir=root, prefix="utp21-home-") as home:
+            fallback = dict(env, HOME=home)
+            out = run("""
+cd &&
+  mkdir ./utp21-practice-3189 &&
+  practice="$(pwd -L)/utp21-practice-3189" &&
+  cd "$practice" &&
+  [ "$(pwd -L)" = "$practice" ] &&
+  cd .. && rmdir "$practice"
+""", root, env=fallback)
+            assert not out and not list(Path(home).iterdir())
+    else:
+        assert setup[1] == 'cd "$practice"\n'
+        work = root / f"utp{chapter}.fixture"
+        work.mkdir()
+        run("".join(setup[2:]), work, env=env)
+    env["practice"] = str(work)
     matches = set()
-    for block in blocks[1:-1]:
+    for block in blocks[first_example:-1]:
         status = next((value for prefix, value in NONZERO.get(chapter, {}).items() if block.startswith(prefix)), 0)
         out = run(block, work, status, env=env)
         if chapter == 20:
@@ -124,6 +206,13 @@ def verify(chapter, root):
         if chapter == 23 and block.startswith("cp -i"):
             first, second = (line.split()[0] for line in out.splitlines())
             assert first == second and re.fullmatch(r"[0-9a-f]{64}", first), out
+        if chapter == 23 and block.startswith("gzip -dc"):
+            test_restore_failure(block, work, env)
+        if chapter == 20 and "sort -f -u" in block:
+            assert out in ("Chess\n", "chess\n")
+        if chapter == 24 and block.startswith("jq '[.[] | select(.share == true) | {id, caption}]' photos.json\n"):
+            assert out.endswith("true\n"), out
+            test_review_failures(block.split("\n", 1)[1], work, env)
         if chapter == 22 and block.startswith("sed 's/^Close: 5$/Close: 6/' sign.txt >"):
             assert "@@ -1,4 +1,4 @@" in out and "-Close: 5\n+Close: 6\n" in out, out
             assert " Accessible entrance\n" in out and out.endswith("status: 1\n"), out
@@ -136,6 +225,7 @@ def verify(chapter, root):
         out = run('"$1" "$2" "$3" "$4" "$5"', work, args=(SHELL, listing, *args), env=env)
     if chapter == 20:
         out = "".join(line.lstrip(" ") + "\n" for line in out.splitlines())
+        test_tally_failures(listing, work, env)
     if chapter == 23:
         assert set(out.splitlines()) == MEMBERS
         assert (work / "handover.tar").read_bytes() == (work / "restored.tar").read_bytes()
@@ -147,6 +237,10 @@ def verify(chapter, root):
         assert json.loads((work / "review.json").read_text()) == json.loads(out)
     else:
         assert out == expected, (name, repr(out), repr(expected))
+    if chapter == 19:
+        depart = next(line for line in blocks[-1].splitlines() if line.startswith("cd /tmp"))
+        track = 'cd() { return 1; }\nrmdir() { printf "%s\\n" attempted-removal; }\n'
+        assert not run(track + depart, work, 1, env=env)
     cleanup(blocks[-1], work, env)
     print(f"chapter {chapter}: {len(blocks)} terminal blocks, {len(matches)} exact transcript cases, listing and cleanup PASS")
 

@@ -10,9 +10,9 @@ order will make the result useful?
 \item Choose an explicit locale for reproducible output when appropriate.
 \item Check ties, malformed numbers and duplicates before trusting a tally.
 \end{objectives}
-\IndexCommand{sort}
-\IndexCommand{uniq}
-\IndexTerm{locale}
+\index{sort@\texttt{sort}}
+\index{uniq@\texttt{uniq}}
+\index{locale}
 
 \section{Bring equal lines together}
 \label{sec:20-adjacent}
@@ -233,8 +233,13 @@ first. For a list such as \texttt{10 Chess}, a key can pick
 out the activity and leave the number alone. \cmd|-k 2,2|
 starts at field 2 and stops at the end of field 2. In this
 simple list, fields are separated by blanks, and each activity
-name is one word. Leaving off the second \texttt{2} would let
-the key extend to the end of the line.
+name is one word. By default a blank-delimited key starts
+with the separator blanks preceding that field. This fixture
+has one space before each activity, so that prefix compares
+the same in all three rows. If the padding varies, use
+\cmd|sort -b -k 2,2|: \cmd|-b| ignores leading blanks for
+key comparison, not in the output. Leaving off the second
+\texttt{2} would let the key extend to the end of the line.
 
 \begin{terminal}
 printf '%s\n' '10 Maps' '2 Chess' '7 Knitting' |
@@ -337,12 +342,29 @@ Another tempting recipe is to sort while ignoring case and then
 use ordinary \cmd|uniq|. Those steps are asking different
 questions: the sort may place equivalent-looking labels close
 together, but the counter still checks their original text.
-Conversely, a case-ignoring \cmd|sort -u| might lose all but one
-such label and lose the number of votes entirely. A predictable
+The \cmd|-f| option compares without distinguishing lowercase
+from uppercase. Combine it with \cmd|-u| to see a different
+effect:
+
+\begin{terminal}
+printf '%s\n' Chess chess | LC_ALL=C sort -f -u
+\end{terminal}
+
+Expect one line in one of the original spellings. This
+comparison discards the extra entry rather than translating
+the spelling or keeping a count. A predictable
 pipeline has matching definitions of equality where each stage
 needs them. Here translating once gives both later stages the
 same data to compare, and the original spellings are still
 available in the source if they matter.
+
+The repository's \FilePath{listings/chapter-20/tally-suggestions.sh}
+is a staged equivalent of the ranking workflow. Run it
+with a known completed votes file as standard input. It
+checks each sorting and counting step before printing
+the finished table. It needs \cmd|mktemp| to create
+scratch space, and it cannot check the exit status of
+an unrelated command piped into its standard input.
 
 \subsection{Decide what to do with blank lines}
 An empty line isn't the same thing as the end of input.
