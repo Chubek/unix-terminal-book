@@ -45,6 +45,11 @@ pages in print/answers and 482 pages in screen/noanswers, both 504 × 720
 points. This was a proof from pre-revision branch snapshots, not a
 release test or final review disposition.
 
+The cover now contains an original TikZ terminal-to-files illustration.
+W0 inspected color and grayscale renderings at 7 × 10 inches and
+confirmed that the dedication, “Made Specially for M, R and H”, appears
+by itself immediately after the cover, before the copyright page.
+
 ## Verified at this checkpoint
 
 | Check | Environment | Result and scope |

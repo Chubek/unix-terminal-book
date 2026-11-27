@@ -1,0 +1,51 @@
+% Original vector cover illustration, using the book's existing palette.
+% Visual: a terminal lists three directories. Fine lines connect the
+% names to a folder and its two documents on the right.
+\begin{tikzpicture}[
+  x=1cm,y=1cm,
+  wire/.style={draw=UTPAccent,line width=.8pt,rounded corners=3pt},
+  panel/.style={draw=UTPInk,line width=.9pt,rounded corners=5pt},
+  listing/.style={anchor=west,font=\small\ttfamily,text=UTPInk},
+  page/.style={draw=UTPInk,fill=white,line width=.7pt,rounded corners=1pt}
+]
+  \path[use as bounding box] (0,0) rectangle (11.6,5.8);
+  \draw[fill=UTPSoft,draw=UTPRule,rounded corners=9pt]
+    (.05,.08) rectangle (11.55,5.72);
+
+  % Terminal window. Written labels, not color, carry the meaning.
+  \draw[panel,fill=white] (.65,.95) rectangle (6.85,5.02);
+  \begin{scope}
+    \clip[rounded corners=5pt] (.65,.95) rectangle (6.85,5.02);
+    \fill[UTPAccent] (.65,4.30) rectangle (6.85,5.02);
+  \end{scope}
+  \draw[panel] (.65,.95) rectangle (6.85,5.02);
+  \node[font=\small\sffamily\bfseries,text=white] at (3.75,4.66) {Terminal};
+  \foreach \x in {1.05,1.33,1.61}
+    \draw[white,line width=.6pt] (\x,4.65) circle (1.5pt);
+
+  \node[listing] at (1.10,3.82) {\$ pwd};
+  \node[listing] at (1.10,3.30) {/home/reader};
+  \node[listing] at (1.10,2.66) {\$ ls};
+  \node[listing] at (1.10,2.14) {documents\quad notes\quad photos};
+  \node[listing] at (1.10,1.56) {\$};
+  \draw[UTPAccent,line width=.95pt] (1.55,1.42) -- (1.55,1.71);
+
+  % A directory and two entries, drawn as paper rather than a screen.
+  \draw[wire,-{Stealth[length=2mm]}] (6.85,2.14) -- (7.48,2.14)
+    -- (7.48,3.69) -- (8.30,3.69);
+  \draw[page,fill=UTPSoft] (8.38,3.16) -- (8.38,4.42) -- (9.24,4.42)
+    -- (9.57,4.12) -- (10.75,4.12) -- (10.75,3.16) -- cycle;
+  \node[font=\small\sffamily\bfseries,text=UTPInk] at (9.56,3.59) {documents};
+  \draw[wire] (9.56,3.16) -- (9.56,2.74)
+    -- (8.72,2.74) -- (8.72,2.34)
+    (9.56,2.74) -- (10.39,2.74) -- (10.39,2.34);
+  \foreach \x in {8.72,10.39}{
+    \begin{scope}[shift={(\x,0)}]
+      \draw[page] (-.45,.95) -- (-.45,2.31) -- (.10,2.31)
+        -- (.45,1.98) -- (.45,.95) -- cycle;
+      \draw[UTPInk,line width=.6pt] (.10,2.31) -- (.10,1.98) -- (.45,1.98);
+      \foreach \y in {1.26,1.47,1.68}
+        \draw[UTPMuted,line width=.68pt] (-.26,\y) -- (.26,\y);
+    \end{scope}
+  }
+\end{tikzpicture}
