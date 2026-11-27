@@ -1,0 +1,7 @@
+\begin{tikzpicture}
+  \node[utp node] (parent) at (0,0) {Parent listens};
+  \node[utp node] (child) at (6,0) {Child listens};
+  \draw[utp arrow] (parent.east) -- node[above,font=\small\ttfamily]{/bin/sh} (child.west);
+  \draw[utp arrow] (child.south) -- ++(0,-.65) -| node[pos=.24,below,font=\small\ttfamily]{exit} (parent.south);
+  \node[font=\small\sffamily] at (3,.95) {While the child runs, the parent waits.};
+\end{tikzpicture}

@@ -1,0 +1,187 @@
+You open a fresh terminal after a colleague shows you a handy trick. Your window looks almost the same as theirs, but a command they called ``built in'' isn't recognized. Before changing settings or installing something, ask what is reading the line you type. The terminal is the interface; the shell decides how to interpret the line and where to find the command.
+
+\begin{objectives}
+\item Open and leave a temporary child shell without changing your login shell.
+\item Distinguish a command the shell implements from a program it launches.
+\item Identify a portable shell when following a written example.
+\end{objectives}
+
+\section{Borrow a shell for practice}
+\label{sec:3-borrow}
+\IndexCommand{sh}
+\IndexTerm{child shell}
+
+In a spare local terminal, at its regular prompt, enter:
+
+\begin{terminal}
+/bin/sh
+\end{terminal}
+
+This asks the system to run the program named \texttt{sh} in the directory \texttt{/bin}. The leading slash makes this an address that doesn't depend on the directory you're currently in. You'll learn how those addresses work in Chapter~\ref{ch:6}. This spelling is the usual system shell location on the operating systems covered by this book, though a deliberately minimal environment can omit it. If yours says it can't find or start the program, stop rather than trying to install system components. In a normal terminal the result is a new shell waiting for input. Its prompt may change, or it might look exactly as it did before.
+
+This is a \emph{child shell}: the shell you started it from (its \emph{parent}) ordinarily waits while it runs. A program's live running instance is called a process. The two shells are two separate processes, even when they happen to run the same kind of shell. They share the terminal for display but they don't both read your command line. The child is the one listening until it exits. The parent is still there to take over.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-3/nested.tikz}
+\caption{A child shell borrows the terminal until it exits.}\label{fig:3-nested}
+\VisualDescription{The parent shell initially listens. Starting slash bin slash sh creates a child and the parent waits; exiting the child returns input to the parent.}
+\end{figure}
+
+Ask the new shell to do something you already know:
+
+\begin{terminal}
+printf '%s\n' 'I can use this prompt'
+\end{terminal}
+
+It prints \texttt{I can use this prompt}. You may reasonably ask why launching a new shell was necessary if the old one could do the same thing. It wasn't necessary for this particular command. It's useful for the same reason that a recipe writer specifies whether an oven is set in Celsius or Fahrenheit: shared words and symbols are no guarantee that every instruction is interpreted alike. Start the shell the recipe is written for, then use features that it is supposed to understand.
+
+Here \texttt{sh} names a shell interface, not the name of a single implementation installed on every operating system. The same path may lead to different programs with different extra features. For a portable example, use the shared POSIX behavior, even if your local \texttt{sh} accepts more. Your interactive shell is whatever is taking input now; the \emph{login shell} in your account settings is separate information. Starting \texttt{/bin/sh} this way does not change the account setting and does not switch the meaning of commands in other windows.
+
+\begin{quicktable}{lY}
+\toprule
+Name you meet & What it means in practice \\
+\midrule
+\texttt{sh} & The portable shell interface when using POSIX syntax; implementations vary. \\
+Bash & A widely used shell with its own conveniences beyond POSIX. \\
+Zsh & An interactive shell with extensive completion and configuration; its native mode is not POSIX sh. \\
+Fish & An interactive shell with a distinct syntax; use Fish-specific instructions or enter sh for portable practice. \\
+Ksh & The Korn shell family; implementations and extensions can differ. \\
+Csh and Tcsh & A separate syntax family. Tcsh extends Csh, including interactive editing features. \\
+\bottomrule
+\end{quicktable}
+
+No one needs to switch their everyday shell to follow this book. Use your usual shell for work you understand. Use a fresh temporary shell for the exercises that specify one. Chapter~\ref{ch:29} compares the families in more detail, and Chapter~\ref{ch:4} returns to the editing conveniences you may miss when using a basic \texttt{sh}.
+
+\section{Ask the shell what it would run}
+\label{sec:3-lookup}
+\IndexTerm{builtin}
+\IndexCommand{command}
+\IndexCommand{cd}
+
+Run this in the child shell:
+
+\begin{terminal}
+command -v cd
+\end{terminal}
+
+\texttt{command} is itself a shell utility. It takes \texttt{-v} here to report how the current shell finds the name \texttt{cd}, without running \texttt{cd}. You will commonly see just \texttt{cd}. That's normal: \texttt{cd}, short for change directory, is a \emph{builtin}, a command the shell can perform itself. It needs to affect which directory the shell uses after the command finishes. If it merely ran a separate process that changed its own directory and then stopped, the original shell would still be in the same place. The distinction has a practical consequence, not just a different label in a glossary.
+
+\begin{terminal}
+command -v uname
+\end{terminal}
+
+This usually prints an absolute address for a program such as \texttt{/usr/bin/uname}. The location is not a guarantee across installations. A separate utility that the shell runs is an \emph{external} utility from the shell's point of view. The shell normally looks through a configured list of directories to find external commands invoked by a bare name. You do not have to know the list's contents to run them. Chapter~\ref{ch:28} explains the search setting, \texttt{PATH}, and what happens when more than one location has a matching name.
+
+\begin{terminal}
+command -v printf
+\end{terminal}
+
+You may see \texttt{printf} here, while a different shell might find an external program with that name. The command you type and the utility's visible result can be identical. A short answer that repeats the name does not alone distinguish every possible kind of command: for example, a shell function can be reported by name too. For a fuller description when you need one, use the capital \texttt{-V} option:
+
+\begin{terminal}
+command -V printf
+\end{terminal}
+
+The capital option requests a more descriptive explanation for people to read. In a typical \texttt{sh} with a built-in \texttt{printf}, expect a description mentioning ``shell builtin'' or similar. Don't expect the spelling of that description to be standardized. In particular, don't turn this readout into an instruction by typing a line of it back at the prompt.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-3/lookup.tikz}
+\caption{Looking up a name is not the same as running it.}\label{fig:3-lookup}
+\VisualDescription{Command minus v reports what the current shell associates with a name. Typing the command itself runs it and yields its own result.}
+\end{figure}
+
+An interactive shell can also recognize an \emph{alias}, a name expanded to other command text, or a \emph{function}, a named group of instructions the shell executes. These add possibilities between ``builtin'' and ``external utility.'' Your custom shell may report different results for the same name than a temporary shell reports. That doesn't make one report wrong: the question is ``what would this shell select?'' For day-to-day support, that question is often better than ``what is installed on my machine?''
+
+\begin{quicktable}{lY}
+\toprule
+To learn this & Use this approach \\
+\midrule
+What a name resolves to & Ask \texttt{command -v} with the name in POSIX sh. \\
+What kind of command it is & Ask \texttt{command -V}; read the explanation rather than assuming its wording. \\
+What an external program actually does & Read its current manual and run a safe, narrow example. \\
+Whether another shell will agree & Ask the other shell separately; don't assume the lookups are shared. \\
+\bottomrule
+\end{quicktable}
+
+\section{A separate shell has a separate starting point}
+\label{sec:3-place}
+
+We can show why a builtin matters by changing only the current child shell's directory. This is a read-only visit; don't create or change files there.
+
+\begin{terminal}
+pwd
+cd /
+pwd
+\end{terminal}
+
+Run each line separately. \texttt{cd} takes a directory to enter; \texttt{/} is the top directory. Successful \texttt{cd} usually makes no announcement. The final \texttt{pwd} should print \texttt{/}. If the first \texttt{pwd} already printed \texttt{/}, this particular trial won't show different answers, but the two shells still exist independently. The child inherited a starting directory from the parent. Changing the child's copy does not change the parent's.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-3/directory.tikz}
+\caption{The child changes its working directory, not its parent's.}\label{fig:3-directory}
+\VisualDescription{Both shells initially use the same example directory. When the child enters slash, the parent stays at its original directory.}
+\end{figure}
+
+\begin{dialoguebox}{Which shell moved?}
+\Brian{I changed directories and then exited; why did my old location return?}
+\Stephen{The terminal saved it while you were away.}
+\Brian{But we said the terminal only carries the conversation. Is it tracking directories too?}
+\Stephen{Not in this example. The parent shell kept its own directory while the child changed its copy. My first answer gave credit to the wrong program.}
+\Brian{So if I want the old shell somewhere new, I must change it after returning to it?}
+\Stephen{Yes. Or stay in the child if that's where you intend to work.}
+\Brian{Then we should say which shell changed, not which window moved.}
+\DialogueConclusion{A child can move without moving its parent.}
+\end{dialoguebox}
+
+When done, leave only the child:
+
+\begin{terminal}
+exit
+\end{terminal}
+
+At the returning prompt, run \texttt{pwd} in the original shell. It should report its earlier directory. Avoid typing several copies of \texttt{exit} in one paste: if the child is gone, the next copy can exit the parent too. You can close the spare practice window normally when you've checked the parent. No account setting or practice file needs to be restored.
+
+\begin{exercise}{Tell the two lookups apart}
+\label{ex:3-lookup}
+Enter \texttt{/bin/sh}. Compare the descriptions of \texttt{cd} and \texttt{uname} using the more descriptive form of the lookup command. Don't run the commands by accident. Exit the child when done.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+command -V cd
+command -V uname
+\end{terminal}
+In a usual uncustomized sh session, the first description says \texttt{cd} is built in; the second shows an external program address. Run \texttt{exit} to close the child. If your result differs, report what the lookup actually says rather than assuming the usual result.
+\end{solution}
+
+\begin{exercise}{Treat output as a clue}
+\label{ex:3-printf}
+In a temporary sh session, use both forms of the lookup for \texttt{printf} and then print a short line. Find which line came from the utility itself. Exit the child and leave the extra window or close it; no files were written.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+command -v printf
+command -V printf
+printf '%s\n' 'Only this is my message'
+\end{terminal}
+The third command prints your message. The other two describe which command the shell selected, not whether the message printed correctly.
+\end{solution}
+
+\begin{exercise}{Check both working directories}
+\label{ex:3-parents}
+Get a reading with \texttt{pwd} in the original shell. Start \texttt{/bin/sh}, change to \texttt{/} and check there. Exit once, then check again. No location needs cleanup; close the extra window when finished.
+\end{exercise}
+\begin{solution}
+The reading in the child after \texttt{cd /} is \texttt{/}; the final reading in the parent should match its first reading. If both began at \texttt{/}, the readings won't distinguish them, but the child still ended when you ran \texttt{exit}.
+\end{solution}
+
+\begin{takeaways}
+\item Entering \texttt{/bin/sh} from a terminal shell starts a temporary child, not a change to your account.
+\item Builtins act inside the current shell. External utilities are separate programs.
+\item Look up a command in the shell where you actually intend to run it.
+\end{takeaways}
+
+\begin{furtherreading}
+\ReadingItem{POSIX Shell Command Language}{Shell interpretation, command search, and execution.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/V3_chap02.html}
+\ReadingItem{POSIX command}{The two portable command lookup options.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/command.html}
+\ReadingItem{POSIX cd}{Why a change of directory applies to the current shell execution environment.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/cd.html}
+\end{furtherreading}

@@ -1,0 +1,214 @@
+You want to know which folder a set of instructions will use before you try them. You could click through your file manager to get there, but the instructions begin with a window full of text and a blinking cursor. What is that window waiting for? What happens if you guess wrong? This chapter makes those questions answerable without creating a file, installing anything, or making a network connection.
+
+\begin{objectives}
+\item Open a local terminal and recognize when its shell is ready.
+\item Enter a short command, distinguish input from output, and read an error without guessing.
+\item Leave a practice session and use the same conventions in the rest of the book.
+\end{objectives}
+
+\section{Open a window you can throw away}
+\label{sec:1-open}
+\IndexTerm{terminal}
+\IndexTerm{shell}
+
+Open an additional window or tab, not one you already use to run something important. On macOS, look for Terminal in Applications under Utilities, or use your usual application search. On a Linux desktop, look for an application named Terminal, Console, Konsole, or similar. FreeBSD, OpenBSD, and NetBSD desktops can have different terminal applications depending on what was installed; use the terminal in your desktop menu if there is one. If you already have a local text console rather than a desktop, an ordinary signed-in shell there is sufficient. On systems that display a login screen, use your own ordinary account. You do not need a privileged account for these exercises. Don't enter your password at a command prompt.
+
+The \emph{terminal} is the interface that displays text and passes along your keystrokes. The \emph{shell} is the program on the other side of that interface that interprets a line of commands. An application you launch from the shell can also use the terminal. Think of a terminal as a room with a microphone and a speaker. If someone else takes the microphone, the room is still the same; what you say and how it is understood may change. The terminal application often starts a shell for you, which makes the two seem like one thing. Figure~\ref{fig:1-layers} separates them.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-1/layers.tikz}
+\caption{Typing to the shell through a terminal.}\label{fig:1-layers}
+\VisualDescription{The reader sends keystrokes to the terminal, which passes input to the shell. Text from the shell or the utility it runs returns through the terminal to the reader.}
+\end{figure}
+
+Take a moment to look at the last line. There might be a short mark such as a percent sign, a dollar sign, or a greater-than sign. There might be several lines of decoration or a brief welcome message. The part printed by the shell to ask for your next command is the \emph{prompt}. A cursor marks where text will appear when you type; a prompt and a cursor are not the same thing. The cursor can also appear while another program is waiting for input. If you see a login request or a menu instead of a shell prompt, don't assume the examples below are appropriate there.
+
+\begin{quicktable}{lY}
+\toprule
+What you see & What to do \\
+\midrule
+Shell prompt & Type only the input shown in the example. \\
+Banner above the prompt & Read if useful, but do not copy it into a command. \\
+Login or unlock request & Verify this is your own local system using its ordinary sign-in procedure. \\
+Unexpected dialog & Cancel or close the new window and check which application you launched. \\
+\bottomrule
+\end{quicktable}
+
+You can run the first several examples in the shell you find there. The notation later in the book mostly follows a shared convention called POSIX shell syntax. If your shell doesn't understand a later example, that does not mean you picked the wrong terminal. Chapter~\ref{ch:3} shows how to open a temporary portable shell without changing your account settings.
+
+\section{Make a round trip}
+\label{sec:1-round-trip}
+\IndexCommand{printf}
+\IndexCommand{pwd}
+
+At a ready prompt, type the following line, then press \EnterKey. Use ordinary straight quote marks, not the curly ones a writing app may insert. Do not type any prompt symbol.
+
+\begin{terminal}
+printf '%s\n' 'Hello, terminal'
+\end{terminal}
+
+\begin{terminaloutput}
+Hello, terminal
+\end{terminaloutput}
+
+The \texttt{printf} utility prints text according to a pattern, called a format. Here \cmd|'%s\n'| is that format: \cmd|%s| means ``put the supplied text here,'' and \cmd|\n| ends the line. Quotes tell the shell to treat each quoted piece as a single item and keep the characters inside it literal. The shell removes the quote marks before passing those items to the utility. The text item here is \texttt{Hello, terminal}, not two words separated into two items and not a string that includes printed quote marks. These details explain why the input line doesn't look exactly like the output. Chapter~\ref{ch:25} returns to quoting when you need more than this one pattern.
+
+Predict the visible difference if you change only the message. Then try it:
+
+\begin{terminal}
+printf '%s\n' 'Read first, act second.'
+\end{terminal}
+
+You get one line saying \texttt{Read first, act second.} The previous line in your window does not change. You sent a new instruction; you did not edit what the old instruction printed. To supply two separate messages, use two pairs of quotes:
+
+\begin{terminal}
+printf '%s\n' 'First message' 'Second message'
+\end{terminal}
+
+This time \texttt{printf} applies the same format again for the second item, so you get two lines. Try the contrast:
+
+\begin{terminal}
+printf '%s\n' 'First message Second message'
+\end{terminal}
+
+The line contains four words on paper but the command receives one text item after its format. Spaces are meaningful in two different places here: outside quotes they separate the shell's items; inside these quotes they belong to the text. For your first session, keep the supplied format exactly as shown and experiment only with simple text inside the second pair of quotes. A message containing an apostrophe takes a different quoting technique.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-1/round-trip.tikz}
+\caption{A ready prompt, a submitted command, and an answer.}\label{fig:1-roundtrip}
+\VisualDescription{The prompt and typed command appear on the first line, output on the second, and a fresh prompt on the third. Only the command after the first prompt is keyboard input.}
+\end{figure}
+
+Now ask a question whose answer you don't supply yourself:
+
+\begin{terminal}
+pwd
+\end{terminal}
+
+\texttt{pwd} stands for ``print working directory.'' A directory is the terminal counterpart of a filesystem folder. The \emph{working directory} is the directory this shell uses as a starting point for interpreting names such as \texttt{notes.txt}. You need not understand the whole answer yet. It will normally be a single line with slash-separated pieces and a slash at the beginning. In Figure~\ref{fig:1-roundtrip}, the example answer is made up; your answer might contain your own account name. No need to share it. Chapter~\ref{ch:5} uses this same question to tell where you are before you do anything to a file.
+
+Try it twice, on separate lines:
+
+\begin{terminal}
+pwd
+pwd
+\end{terminal}
+
+You should see the same directory both times, with a fresh prompt after each answer. The first \texttt{pwd} asked where you were; it did not go anywhere. If the second invocation somehow differs, verify that both lines ran at the same shell prompt and not in different windows or tabs. Your file manager can also be in one directory while the terminal is in another. The window you last clicked does not automatically determine where commands run.
+
+\begin{notebox}[How to read examples]
+Input-only panels show what to type. Mixed transcripts show what a conversation with a shell can look like; they may include prompt symbols and results you must not type. Output-only panels are for comparison, not for input. Read the surrounding sentence before copying from any panel. If a block contains two lines of input, enter them one at a time and wait for the next prompt.
+\end{notebox}
+
+\section{A safe mistake, on purpose}
+\label{sec:1-mistake}
+
+If you aren't sure you've typed a command correctly, don't press \EnterKey{} to see what happens. A mistaken line can still be a valid instruction. For a deliberate failure, use a case where the request is already known to be read-only:
+
+\begin{terminal}
+pwd -Q
+\end{terminal}
+
+An \emph{option} changes how a command should work. Many short options are written as a hyphen and one letter. In ordinary implementations of \texttt{pwd}, \texttt{-Q} is not recognized. Expect a complaint about an invalid or unknown option, possibly with a line of usage guidance. Here is an illustrative diagnostic, not a literal prediction of your shell:
+
+\begin{erroroutput}
+pwd: invalid option: -Q
+\end{erroroutput}
+
+Notice how the error identifies \texttt{pwd} and the part of the request it objected to. That's enough to choose a smaller test: go back to plain \texttt{pwd}. You could read a manual to find the real options, but there's no need to read the entire manual to recover from this error. Chapter~\ref{ch:10} teaches that lookup separately. For now, use the exact line that worked before.
+
+\begin{terminal}
+pwd
+\end{terminal}
+
+The directory should be unchanged. The bad option didn't move it. Think of troubleshooting as a comparison between two attempts: the smallest known good request and the version that fails. If three things changed at once, you won't know which fixed the problem. Correct one difference, run the small test again, and stop once you can explain the difference in result.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-1/recovery.tikz}
+\caption{An error is a clue, not a cue to escalate.}\label{fig:1-recovery}
+\VisualDescription{After an error, read the message, compare with the previous working input, and retry the known-good instruction. Confirm the expected result before continuing.}
+\end{figure}
+
+\begin{quicktable}{lY}
+\toprule
+Response & First thing to check \\
+\midrule
+Expected text & Compare it with the task, not just with the presence of a prompt. \\
+Invalid option & Check the word beginning with a hyphen. Remove only the intentional test option. \\
+Different directory & Check whether you switched shells or tabs before repeating the test. \\
+No fresh prompt yet & Wait briefly. If typing a fresh command, first verify the shell is listening. \\
+\bottomrule
+\end{quicktable}
+
+\begin{dialoguebox}{Who said that?}
+\Brian{The terminal told me that option was wrong.}
+\Stephen{The terminal displayed the complaint, but the shell or utility supplied it.}
+\Brian{Then why does it matter which one said it? The same screen showed both.}
+\Stephen{Because fixing the display won't fix a spelling error in a command.}
+\Brian{And a correct command won't help if my keystrokes are going to another program.}
+\Stephen{Right. I should have asked who was listening before asking who complained.}
+\Brian{So we check the listener, then read the reply.}
+\DialogueConclusion{Check who is listening before you type.}
+\end{dialoguebox}
+
+\section{What it means to be done}
+
+A fresh prompt normally means the shell is ready to accept another command, not that the previous command succeeded. After an error, the prompt is often identical to the prompt after a good result. Some prompts add an indicator of success or failure, but do not depend on decoration you haven't learned to read. Some commands are designed to be quiet when their work succeeds. The test for a task is a relevant observation: did \texttt{pwd} show the expected place, did \texttt{printf} show the expected line, or did a later check confirm the file you meant to create? Here you don't need to create any files to practice that distinction.
+
+Ending a shell is also a command. Use it in the extra local window when you are ready to finish:
+
+\begin{terminal}
+exit
+\end{terminal}
+
+If it is the only shell in the window, the window may close, show that the session ended, or return to the local console sign-in screen. If the shell was launched from another shell, the first one can become active again instead. \texttt{exit} doesn't shut down the machine and doesn't erase history. A terminal or shell may retain scrollback or previously entered commands, even after this session closes. Stick to fake names and harmless sample text; this is a poor place to rehearse typing a real secret. If you do not see a shell prompt, don't pass \texttt{exit} to an unfamiliar program and hope it works there. Use that application's documented quit procedure instead.
+
+\begin{exercise}{Separate the lines}
+\label{ex:1-lines}
+In an extra local terminal, print the separate messages \texttt{Tea} and \texttt{Toast} with one invocation. Then print the two words on one line with another invocation. Verify there is no output quote mark in either result. Keep the tab for the next exercise or close it using \texttt{exit}.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+printf '%s\n' 'Tea' 'Toast'
+printf '%s\n' 'Tea Toast'
+\end{terminal}
+The first prints two lines. The second prints \texttt{Tea Toast} on one line. Neither creates a file.
+\end{solution}
+
+\begin{exercise}{Find one invariant}
+\label{ex:1-invariant}
+Take a reading with \texttt{pwd}, print a harmless message, then take another reading. Predict what should stay the same. Do not share the readings if they include a private account name. Close the extra tab if finished; there is no practice data to remove.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+pwd
+printf '%s\n' 'Checking my starting point'
+pwd
+\end{terminal}
+The two directory readings should match. The middle line prints a message and does not change which directory the shell uses.
+\end{solution}
+
+\begin{exercise}{Recover and leave}
+\label{ex:1-recover}
+At a ready prompt run the intentionally bad \texttt{pwd} example. Write down just the rejected option, not the entire transcript. Get a directory reading with a corrected command, then end only this spare session.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+pwd -Q
+pwd
+exit
+\end{terminal}
+The rejected option is \texttt{-Q}. The second command should print the directory; the last ends the active shell. Ordinary shell history may still be retained.
+\end{solution}
+
+\begin{takeaways}
+\item The terminal is the interface; the shell interprets the commands you submit at its prompt.
+\item Treat examples as marked input, output, or transcripts, not as interchangeable text.
+\item When an error appears, find one small change you can justify and verify the result.
+\end{takeaways}
+
+\begin{furtherreading}
+\ReadingItem{Apple Terminal User Guide}{Opening windows and understanding shell sessions on macOS.}{https://support.apple.com/guide/terminal/welcome/mac}
+\ReadingItem{POSIX printf}{The format and text operands used in the examples.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/printf.html}
+\ReadingItem{POSIX pwd}{The portable definition of the working-directory query.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/pwd.html}
+\end{furtherreading}

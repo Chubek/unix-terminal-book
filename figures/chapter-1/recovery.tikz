@@ -1,0 +1,9 @@
+\begin{tikzpicture}
+  \node[utp node] (error) {Read error};
+  \node[utp node,right=5mm of error] (compare) {Compare};
+  \node[utp node,right=5mm of compare] (retry) {Retry known input};
+  \node[utp node,below=5mm of retry] (verify) {Verify result};
+  \draw[utp arrow] (error) -- (compare);
+  \draw[utp arrow] (compare) -- (retry);
+  \draw[utp arrow] (retry) -- (verify);
+\end{tikzpicture}

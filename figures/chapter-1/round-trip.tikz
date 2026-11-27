@@ -1,0 +1,10 @@
+\begin{tikzpicture}[font=\small]
+  \node[utp node,anchor=north west,text width=4.1cm,align=left] (panel) at (0,0)
+    {\ttfamily \$ pwd\\ /home/reader\\ \$};
+  \node[anchor=west] (line1) at (5.5,-.25) {Prompt plus input};
+  \node[anchor=west] (line2) at (5.5,-.67) {Output};
+  \node[anchor=west] (line3) at (5.5,-1.09) {Fresh prompt};
+  \draw[utp arrow] (line1.west) -- (4.25,-.25);
+  \draw[utp arrow] (line2.west) -- (4.25,-.67);
+  \draw[utp arrow] (line3.west) -- (4.25,-1.09);
+\end{tikzpicture}
