@@ -1,0 +1,7 @@
+# Chapter 5 — working directory and look-versus-enter
+
+- Runtime: EndeavourOS Linux 6.18.52-1-lts, x86_64; GNU Coreutils 9.11, Bash 5.3.15 as `/bin/sh`, Zsh 5.9.2 with `--emulate sh`, `LC_ALL=C`. `listings/chapter-5/navigation.sh` passed in both shells with a disposable `HOME`.
+- Confirmed both branches, single-column sibling names, the separate `Plans` directories, `ls -d` naming rather than listing a directory, the empty listing, and a failed `cd` leaving the shell in `Holiday/Plans`. All exact empty-directory removals succeeded; the newly created practice tree was absent afterward.
+- Standards citations identify POSIX `cd`, `ls` and `rmdir`. GUI behavior varies and is not claimed as tested; filesystem case behavior, display formatting and BSD/macOS are not covered by this runtime.
+- Illustrations: `figures/chapter-5/{tabs,tree,look-or-enter}.tikz`. Key local labels: `sec:5-where`, `sec:5-practice`, `sec:5-look`, `sec:5-fail`, `sec:5-cleanup`, `fig:5-tabs`, `fig:5-tree`, `fig:5-look`, `ex:5-list`, `ex:5-other`, `ex:5-fail`.
+- Runtime recipe: `/bin/sh "$repo/listings/chapter-5/navigation.sh" "$fixture"` with `repo` pointing to the repository root and `fixture` a fresh disposable absolute directory. The script must never be pointed at a reader's real home.

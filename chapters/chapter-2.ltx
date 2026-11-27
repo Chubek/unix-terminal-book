@@ -62,7 +62,7 @@ Read one result at a time if you aren't sure what a combined output means. This 
 uname -s -r
 \end{terminal}
 
-It prints the system name followed by the release on one line, separated by a space. Compare with the individual probes rather than trying to deduce what the punctuation in a release string means. Notice that the two options have the same sort of spelling, a hyphen and a letter, but ask for independent fields.
+It prints the system name followed by the release on one line, separated by whitespace. Compare with the individual probes rather than trying to deduce what the punctuation in a release string means. Don't assume the fields themselves are always single words. Notice that the two options have the same sort of spelling, a hyphen and a letter, but ask for independent fields.
 
 \section{How the resemblance came about}
 \label{sec:2-family}
@@ -180,7 +180,7 @@ Use \texttt{ls -a}. If the long spelling works, the results should express the s
 Compare plain \texttt{uname} with \texttt{uname -s -r}. Locate the field in the second output that matches the first, then explain why these commands do not decide whether an \texttt{ls} option is accepted. Close the spare tab or keep it for Chapter~\ref{ch:3}; no practice files were written.
 \end{exercise}
 \begin{solution}
-The first field of \texttt{uname -s -r} should match plain \texttt{uname}. The release is the second field. Neither invocation identifies the implementation of \texttt{ls}, which is a separate utility.
+The first field of \texttt{uname -s -r} should match plain \texttt{uname}. The release is the second field. Use the separate probes to identify the fields if either contains spaces. Neither invocation identifies the implementation of \texttt{ls}, which is a separate utility.
 \end{solution}
 
 \begin{takeaways}

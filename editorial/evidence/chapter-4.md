@@ -1,0 +1,7 @@
+# Chapter 4 — interactive editing and interruption
+
+- Runtime: EndeavourOS Linux 6.18.52-1-lts, Bash 5.3.15, Expect 5.45.4. `listings/chapter-4/prompt-probe.exp` used a real pseudoterminal with a disposable `HOME`, no Bash startup files, `INPUTRC=/dev/null`, and a VT100 terminal type. Its explicit prompts make the test independent of account decoration.
+- The test observed correction with two left moves and an insertion, up-arrow recall and resubmission, interruption of an unclosed quote, completion of a quoted multiline input, and interruption of `sleep 8` before it could finish naturally. Bracketed paste was disabled in the disposable child session so raw output boundaries were straightforward to assert. The draft cancellation and interrupted wait did not create practice files.
+- Tab candidates, preference-dependent shortcuts, GUI resizing, screen readers, and alternate shells are not claimed as PTY-tested. Bash Readline and Zsh line-editor manuals document the configuration-specific nature of these features.
+- Illustrations: `figures/chapter-4/{states,editing,interrupt}.tikz`. Key local labels: `sec:4-status`, `sec:4-edit`, `sec:4-reuse`, `sec:4-continuation`, `sec:4-lines`, `sec:4-fallback`, `fig:4-states`, `fig:4-editing`, `fig:4-interrupt`, `ex:4-letter`, `ex:4-history`, `ex:4-stops`.
+- Optional runtime recipe: from an empty disposable directory, run `expect "$repo/listings/chapter-4/prompt-probe.exp"` with `repo` pointing to the repository root. Requires Bash and Expect; neither is a reader requirement for the chapter.
