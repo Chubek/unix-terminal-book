@@ -1,0 +1,172 @@
+You are entering the name of a folder when the cursor jumps to a new line. You press the up arrow, and an old command reappears. Should you press Enter, or would that run it? The safe answer depends on when the shell has accepted a line, not on how many lines happen to be visible. This chapter gives you a way to identify that point and back out before it.
+
+\begin{objectives}
+\item Distinguish a ready prompt from a continuation prompt and a running utility.
+\item Edit, recall and complete text without accidentally submitting it.
+\item Cancel an unfinished line or interrupt a harmless foreground command.
+\end{objectives}
+
+\section{Start with a prompt you recognize}
+\label{sec:4-status}
+\IndexTerm{prompt}
+\IndexTerm{primary prompt}
+\IndexTerm{continuation prompt}
+
+Open a spare local terminal with your ordinary interactive shell. Don't start a child shell for these demonstrations: a minimal \texttt{sh} is useful for syntax, but may omit the editing and completion conveniences we want to try. The harmless command lines below work in the familiar interactive shell families discussed in Chapter~\ref{ch:3}. The keystrokes, prompt characters and history settings are local choices. Where an editing keystroke is unsupported, skip that demonstration instead of changing any configuration.
+
+The \emph{primary prompt} means the shell is ready for a new command. It may show an account name, machine name, current directory, time, or other signals from a configuration. A dollar sign or percent sign is a common ending, not a rule. A number sign can be associated with a privileged account, but configurable prompt symbols are not reliable evidence of privilege. These exercises need an ordinary account. A custom prompt may occupy two lines; a long typed command can also wrap visually without becoming two commands. What matters is whether you have submitted a complete instruction and whether the shell is listening.
+
+\begin{terminal}
+printf '%s\n' 'Known starting point'
+\end{terminal}
+
+Use the line printed above to collect a baseline: a known-ready prompt, a submitted line, an answer, and another prompt. Mark the ready prompt mentally, including its appearance just before you type. Its decoration isn't part of the command. Later, it will help you detect when the shell is still waiting for the rest of the command or when a different program is using the terminal. An unchanged prompt after a failure still means readiness, not success.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-4/states.tikz}
+\caption{Three states that can look alike on a busy screen.}\label{fig:4-states}
+\VisualDescription{The ready shell accepts a new line. An incomplete line asks for more input. After a complete line starts a foreground command, the prompt returns when the shell can read another line.}
+\end{figure}
+
+\begin{quicktable}{lY}
+\toprule
+State & Evidence to look for \\
+\midrule
+Ready & Your normal prompt is visible and you last finished or canceled a complete command. \\
+Editing & Typed text after that prompt is still only a draft. \\
+Incomplete & You pressed Enter, but a quote or other construction still needs closing. \\
+Running & You submitted a complete command and the expected ready prompt hasn't returned. \\
+\bottomrule
+\end{quicktable}
+
+\section{Edit a draft, not the transcript}
+\label{sec:4-edit}
+\IndexTerm{line editing}
+
+Type the following without pressing \EnterKey:
+
+\begin{terminal}
+printf '%s\n' 'Reservd'
+\end{terminal}
+
+The missing letter is deliberate. In a shell with usual arrow-key editing, press the left arrow twice to position the cursor just before the final \texttt{d}, then type a lowercase \texttt{e}. The draft should now read:
+
+\begin{terminal}
+printf '%s\n' 'Reserved'
+\end{terminal}
+
+If the arrow keys print unexpected characters or do not move the cursor as described, don't submit the draft. Use \KeyChord{Ctrl}{C} if it is available as the cancel key, and if not, close only this spare window. If the corrected line is as expected, press \EnterKey. It prints \texttt{Reserved}. Moving the cursor by itself didn't execute the line or change its earlier output. In a graphical terminal, selecting old text with the mouse normally selects it for copying; it is not a way to edit the previously executed command.
+
+Some editing modes bind \KeyChord{Ctrl}{A} to the start of the draft and \KeyChord{Ctrl}{E} to its end. That is a common Emacs-style choice in Bash and Zsh, not a universal binding. In vi-style editing, behavior depends on the current editing mode. Backspace usually deletes to the left of the cursor; a key labelled Delete can send a different action. A useful portable habit is to inspect the complete text, not to assume which editor-style keystrokes it took to produce it.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-4/editing.tikz}
+\caption{Editing changes the draft; submitting starts a command.}\label{fig:4-editing}
+\VisualDescription{Type a draft, inspect and revise it, and use Enter to submit. Cancel before submission if the draft isn't what you intended.}
+\end{figure}
+
+\section{Reuse a line deliberately}
+\label{sec:4-reuse}
+\IndexTerm{command history}
+\IndexTerm{completion}
+
+Try a neutral line that you can safely run twice:
+
+\begin{terminal}
+printf '%s\n' 'Delivery ready'
+\end{terminal}
+
+After the fresh prompt, press the up arrow once. In many interactive shells the previous command appears as a new draft. It should not produce another \texttt{Delivery ready} until you submit. Inspect the whole line; if it's the harmless line you expected, press \EnterKey{} once to see the same output. If the up arrow doesn't retrieve that command, don't press Enter. Shell history can be disabled or shared with other sessions, and is not guaranteed to reveal the exact line you just ran. Where supported, you can edit the draft instead of typing it again. Try recalling it and replacing the final word with \texttt{checked}, keeping the closing quote:
+
+\begin{terminal}
+printf '%s\n' 'Delivery checked'
+\end{terminal}
+
+Re-running a command doesn't merely redisplay old output. It repeats the request in the current context. A command recalled after a directory change may act on a different file with the same name. Recalling an old read-only \texttt{printf} line here is harmless; that fact doesn't extend to every line in your history. Don't enter secrets for practice. Clearing a screen or closing a window isn't a way to ensure a command has disappeared from saved history or scrollback.
+
+Completion is a suggestion about the unfinished line, not a decision about your intention. At a new prompt, type \texttt{prin} without Enter and press \TabKey. An interactive shell might add letters, list options, or do nothing. There might be several candidates because different programs and locally configured names have the same beginning. Cancel this draft instead of running it. Try again with the complete program name \texttt{printf} followed by a space. Pressing Tab there may suggest something different, because the cursor now occupies a possible operand position rather than a program-name position. Cancel this draft too. No data was written. The key skill is reading any suggestion before deciding whether to accept or submit it.
+
+\begin{quicktable}{lY}
+\toprule
+Convenience & Check before you submit \\
+\midrule
+Up arrow & Did the line come from the session and moment you meant? \\
+Tab & Is the suggested name the one you need, rather than simply the first match? \\
+Cursor movement & Did the edit leave both quote marks and the intended spaces? \\
+Re-running & Does the command do something you actually want to happen again? \\
+\bottomrule
+\end{quicktable}
+
+\section{When Enter doesn't finish the command}
+\label{sec:4-continuation}
+\IndexTerm{interrupt}
+\IndexCommand{sleep}
+
+In the spare shell, enter and submit this deliberately incomplete draft, with no closing quote:
+
+\begin{terminal}
+printf '%s\n' 'not finished
+\end{terminal}
+
+Rather than run \texttt{printf}, a shell may show another prompt, such as \texttt{>}, or an editing indicator and wait. That's a \emph{continuation prompt}: the shell received a line ending but its syntax requires more input. Other shells may reject incomplete input and return to the primary prompt. If a shell is waiting here, cancel with \KeyChord{Ctrl}{C}. In a conventional terminal that key discards the unfinished command and returns to the normal prompt; output need not include a literal \texttt{\^{}C}. If the shell has already rejected the line, you can simply start again at the primary prompt. If the key doesn't return you to a recognizable state, close only this practice window and reopen it. You haven't created any data.
+
+Now try a complete command that deliberately takes time:
+
+\begin{terminal}
+sleep 8
+\end{terminal}
+
+\texttt{sleep} waits, and its operand \texttt{8} is the number of seconds. It doesn't print a progress message or create a file. While waiting, use \KeyChord{Ctrl}{C} once. In an ordinary terminal the key sends an interrupt, a request the foreground program can respond to; \texttt{sleep} normally stops immediately. If you wait eight seconds, the utility simply finishes and the prompt returns anyway. Press the chord again only if you have reason to believe the same harmless command is still running. Never treat an interrupt as a general undo operation: a utility might have done part of its work or might handle interruption differently. Chapter~\ref{ch:31} discusses signals with that distinction in mind.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-4/interrupt.tikz}
+\caption{Cancel an incomplete line, or request interruption after submission.}\label{fig:4-interrupt}
+\VisualDescription{A cancel key at a continuation prompt discards the unsubmitted request. During a running sleep, the usual interrupt key stops the wait. Both routes can end at a ready prompt, but only one had a running utility.}
+\end{figure}
+
+\begin{dialoguebox}{One key, two effects}
+\Brian{Control-C is an undo button for the terminal, then?}
+\Stephen{It's a good way to back out of a draft or stop a simple wait.}
+\Brian{But a running command could have written something before I stopped it.}
+\Stephen{Yes. I mixed up discarding input with interrupting work already started.}
+\Brian{So the same fresh prompt cannot tell me whether a file changed.}
+\Stephen{Right; you'd need an appropriate check of the file. Neither key nor prompt proves a rollback.}
+\Brian{Let's call it stop, not undo.}
+\DialogueConclusion{Interruption is not undo.}
+\end{dialoguebox}
+
+\begin{exercise}{Repair one letter before submission}
+\label{ex:4-letter}
+Type a \texttt{printf} draft with the last argument \texttt{'Reaby'}. Without running the typo, make the result print \texttt{Ready}. If editing keys aren't available, cancel and retype the draft. Close the extra window when done or keep it for the other exercises; no files were written.
+\end{exercise}
+\begin{solution}
+Position the cursor on or just after the incorrect \texttt{b}, remove it with the appropriate delete key, and insert \texttt{d}. Only submit when the last argument is \texttt{'Ready'}, with both quotes in place. The output is one line: \texttt{Ready}.
+\end{solution}
+
+\begin{exercise}{Recall without repeating}
+\label{ex:4-history}
+Print \texttt{One delivery}. Recall it into a draft, inspect it, then cancel instead of submitting it again. Count result lines, not occurrences of the words in the draft. No file cleanup is needed.
+\end{exercise}
+\begin{solution}
+Use \texttt{printf} with the standard format, then use the up arrow if your shell supports it. At the recalled line press \KeyChord{Ctrl}{C}, not Enter. The shell should return to a ready prompt without printing the result a second time.
+\end{solution}
+
+\begin{exercise}{Compare two stops}
+\label{ex:4-stops}
+Cancel a deliberately unclosed quoted line. Then wait for \texttt{sleep 8} to finish without an interrupt. Which case started a utility? Recheck the ready prompt with \texttt{printf} and leave the spare session. No practice files exist.
+\end{exercise}
+\begin{solution}
+The unfinished line never started \texttt{printf}. The complete \texttt{sleep 8} starts a wait and returns normally after approximately eight seconds. A final successful printed message confirms that the shell is listening again.
+\end{solution}
+
+\begin{takeaways}
+\item A visible cursor is not proof that you are at a ready prompt.
+\item Recalled and completed text still needs inspection before submission.
+\item Canceling unfinished input is different from interrupting work in progress.
+\end{takeaways}
+
+\begin{furtherreading}
+\ReadingItem{GNU Bash: Command Line Editing}{Readline-based editing, history and completion in Bash.}{https://www.gnu.org/software/bash/manual/html_node/Command-Line-Editing.html}
+\ReadingItem{Zsh: Line Editor}{Zsh keymaps and modes.}{https://zsh.sourceforge.io/Doc/Release/Zsh-Line-Editor.html}
+\ReadingItem{POSIX sleep}{The wait operand and completion behavior.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/sleep.html}
+\end{furtherreading}

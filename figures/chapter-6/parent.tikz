@@ -1,0 +1,7 @@
+\begin{tikzpicture}
+  \node[utp node] (r) at (0,0) {Practice directory};
+  \node[utp node] (a) at (-2.35,-1.6) {albums};
+  \node[utp node] (s) at (2.35,-1.6) {shared};
+  \draw[utp arrow] (a.north east) -- node[above,sloped,font=\small\ttfamily]{..} (r.south west);
+  \draw[utp arrow] (r.south east) -- node[above,sloped,font=\small\ttfamily]{shared} (s.north west);
+\end{tikzpicture}

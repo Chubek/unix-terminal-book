@@ -1,0 +1,229 @@
+You have a folder called \texttt{April photos}. A relative tells you to open it ``inside albums,'' but their albums folder is on a different machine. Saying ``the same folder'' isn't enough. You need to know the starting place, the names along the route, and which spaces actually belong to a name. Paths let you make those details explicit.
+
+\begin{objectives}
+\item Recognize an absolute or relative path from its first character.
+\item Use the filesystem root, home, dot and dot-dot without confusing their meanings.
+\item Pass a name containing a space as one operand and verify that two routes reach one directory.
+\end{objectives}
+
+\section{Read a path as a route}
+\label{sec:6-address}
+\IndexTerm{absolute path}
+\IndexTerm{relative path}
+\IndexTerm{filesystem root}
+
+The answer from \texttt{pwd} is a \emph{path}, an address in the filesystem. Run it in a spare local shell:
+
+\begin{terminal}
+pwd
+\end{terminal}
+
+Imagine it reports \texttt{/home/reader}. That address begins at \texttt{/}, the filesystem \emph{root}, and proceeds through two names. The first slash means begin at the top. Each later slash is a separator between components. A component is one name in the route. The root is not the same as your home, and it isn't the \texttt{root} account, the name conventionally used for the administrator. Visiting the root does not change your account or give you any new rights.
+
+An \emph{absolute path} begins with a slash, so the resolution starts at the root, regardless of the shell's working directory. A \emph{relative path} does not begin with a slash; ordinary file operands of that form are resolved from the working directory. An address such as \texttt{albums/April} can make sense in one shell and fail in another. Don't trust it just because the last component sounds familiar. Neither kind of path is automatically checked for existence by its spelling.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-6/starts.tikz}
+\caption{The leading slash decides where this route begins.}\label{fig:6-starts}
+\VisualDescription{An absolute path starts at slash, the filesystem root. The relative albums slash April starts at the shell's working directory, then follows names below it.}
+\end{figure}
+
+Absolute paths are useful when you need a destination independent of your current directory on a particular system. Relative paths are useful when the whole surrounding directory tree might be moved to a different parent. For instance, if you copied a practice tree somewhere else, the path from its album folder up to a neighboring folder could remain the same even though its full address changed. Neither style is universally superior. Ask what is fixed: the destination's address on this system, or the relationship between two places inside a tree?
+
+\begin{quicktable}{M{1.35in}Y}
+\toprule
+Spelling & How to read it \\
+\midrule
+/ & Start and stop at the root directory. \\
+/home/reader & Start at root, then follow home and reader; an illustrative address. \\
+albums/April & Start at the working directory; look for albums and then April. \\
+./albums/April & The same relative route, explicitly beginning with the current directory. \\
+../shared & Start from the parent of the current directory and look for shared. \\
+\bottomrule
+\end{quicktable}
+
+\section{Make an address worth checking}
+\label{sec:6-practice}
+
+Start \texttt{/bin/sh} in a spare local terminal. Return home and confirm it:
+
+\begin{terminal}
+cd
+pwd
+\end{terminal}
+
+Use a new directory named \texttt{utp-path-6-8562}. If a command unexpectedly fails, stop before entering or writing to a directory. In particular, if the first \texttt{mkdir} says the name exists, don't reuse it: choose a different unused suffix and substitute the new name consistently, including in cleanup. Here every practice directory must be empty and newly created by you.
+
+\begin{terminal}
+mkdir ./utp-path-6-8562
+cd ./utp-path-6-8562
+pwd
+\end{terminal}
+
+The last result should be your home path followed by \texttt{/utp-path-6-8562}. Only from that verified directory make the two immediate children and the album folder. Enter each line separately and confirm the previous step before continuing:
+
+\begin{terminal}
+mkdir ./albums ./shared
+mkdir './albums/April photos'
+\end{terminal}
+
+The operand on the second line is one path. Its final component, \texttt{April photos}, includes the space. Single quotes tell the shell to preserve that space as part of one item and then remove the quote marks themselves. A slash inside the quotes is still a path separator when \texttt{mkdir} uses the operand. Quoting changes what the shell passes; it doesn't change what a slash means in an address. Without the quotes, the shell would pass two operands and \texttt{mkdir} could create two different directories. Do not try that mistake with directory creation; practice the same idea with printing instead:
+
+\begin{terminal}
+printf '%s\n' './albums/April photos'
+printf '%s\n' ./albums/April photos
+\end{terminal}
+
+The first invocation prints one line containing the path. The second prints two lines, one for each operand after the format. This printing check doesn't look up either name. A correctly quoted path can still be wrong if the named directory doesn't exist. The printing check answers only where the shell divided the line.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-6/space.tikz}
+\caption{One path operand or two text items?}\label{fig:6-space}
+\VisualDescription{With quotes, April photos remains part of one operand. Without quotes, the shell separates photos into a second operand.}
+\end{figure}
+
+\section{Find the same place from two starts}
+\label{sec:6-two-starts}
+\IndexTerm{dot path component}
+\IndexTerm{dot-dot path component}
+
+Enter the album from the practice root:
+
+\begin{terminal}
+cd './albums/April photos'
+pwd
+\end{terminal}
+
+Record the result locally. The final component should read \texttt{April photos} with one space. The \texttt{.} at the beginning of this relative path stands for the current directory. Use it by itself:
+
+\begin{terminal}
+cd .
+pwd
+\end{terminal}
+
+The two readings should be the same. Now use \texttt{..}, which in this ordinary tree denotes the parent:
+
+\begin{terminal}
+cd ..
+pwd
+\end{terminal}
+
+The result now ends in \texttt{/utp-path-6-8562/albums}, or its renamed equivalent. From there a relative route to the sibling \texttt{shared} is:
+
+\begin{terminal}
+cd ../shared
+pwd
+\end{terminal}
+
+The first component leads up to the practice root, and the second descends into \texttt{shared}. It matters where you started. From inside \texttt{April photos}, the same address would try to find \texttt{shared} in \texttt{albums} instead, where you didn't make it. At the filesystem root there isn't a higher containing directory; ordinary slash-dot-dot resolves back to the root. Examples in this chapter use normal directories. Symbolic links can make the apparent route and the directory actually traversed differ; Chapter~\ref{ch:8} revisits navigation when links are involved. Don't guess a parent from a shortened prompt.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-6/parent.tikz}
+\caption{The relative route from albums to its sibling shared.}\label{fig:6-parent}
+\VisualDescription{From albums, dot-dot goes up to the practice directory. The shared component then goes down to shared. No step starts at the filesystem root.}
+\end{figure}
+
+Use the absolute reading you recorded earlier to enter the album from \texttt{shared}. In your local shell type \texttt{cd}, a space, then your own full recorded path in single quotes. For instance, this illustrates the spelling on an imaginary system; do not copy its invented address:
+
+\begin{session}
+$ cd '/home/reader/utp-path-6-8562/albums/April photos'
+$ pwd
+/home/reader/utp-path-6-8562/albums/April photos
+\end{session}
+
+Substitute your actual path, including your suffix if you chose a different one, and check with \texttt{pwd}. The displayed path should match the earlier one. Most home paths work with this single-quote recipe; if your address itself contains an apostrophe, don't paste it between single quotes. Use the relative path from the verified practice root instead, and see Chapter~\ref{ch:25} for quoting more complicated names. Likewise, instructions printed in a book cannot know which directory belongs to you; never assume that \texttt{/home/reader} or \texttt{/Users/reader} is actually yours.
+
+\section{Home is a useful starting place, not the root}
+\label{sec:6-home}
+\IndexTerm{home directory}
+\IndexTerm{tilde expansion}
+
+Go home with \texttt{cd} and verify it. Then try another spelling in POSIX sh:
+
+\begin{terminal}
+cd ~
+pwd
+\end{terminal}
+
+The bare \texttt{\textasciitilde} is a tilde. Unquoted at the beginning of an ordinary word like this, it is replaced by the shell with your home directory, assuming your environment provides the usual home setting. It isn't a special path component like dot. Quoting the tilde in \texttt{cd '\textasciitilde'} suppresses that replacement, so it would ask for a directory actually named \texttt{\textasciitilde}; there is no need to try that in your home. If you just want home, use the simpler no-operand \texttt{cd}. To use it as a known parent for another path, verify the home reading and enter the relative path from there.
+
+\begin{quicktable}{lY}
+\toprule
+Observation & Check before trying again \\
+\midrule
+No such directory & Confirm the starting directory and inspect one named component at a time. \\
+Too many operands & Look for a space in a name that needs to stay inside one quoted item. \\
+Access denied & An address does not grant access; ask the directory's owner rather than using extra privileges. \\
+Different directory than expected & Check the exact spelling and remember that each tab has its own starting point. \\
+\bottomrule
+\end{quicktable}
+
+\begin{dialoguebox}{The path that stopped working}
+\Brian{The path worked a minute ago. It must still name the same album.}
+\Stephen{Only if the route starts at the same directory, or starts with a slash.}
+\Brian{I added a dot to the front. Doesn't that pin it down?}
+\Stephen{It makes the starting point explicit, not fixed. Dot means wherever this shell is now.}
+\Brian{Then the dot path is transferable within my copied tree, if I start in the right place.}
+\Stephen{Yes. The full address is better when the starting directory can vary on the same system.}
+\Brian{We need the route and its starting point, not a favorite spelling.}
+\DialogueConclusion{Choose the address that fixes what matters.}
+\end{dialoguebox}
+
+\section{Remove the empty rehearsal}
+\label{sec:6-cleanup}
+
+Keep the tree until you've tried the exercises. For cleanup, use plain \texttt{cd}, then \texttt{pwd}, and confirm the same home directory as at setup. These \texttt{rmdir} commands are only for the new directories successfully created in this chapter. Substitute your own suffix if you used a different one:
+
+\begin{terminal}
+rmdir './utp-path-6-8562/albums/April photos'
+rmdir ./utp-path-6-8562/albums
+rmdir ./utp-path-6-8562/shared
+rmdir ./utp-path-6-8562
+\end{terminal}
+
+\texttt{rmdir} refuses nonempty directories. If it does, inspect the contents instead of removing more aggressively; maybe you've put something worth keeping inside. Successful completion leaves the practice pathname absent. Exit the child shell. You'll use the same ideas in Chapter~\ref{ch:7} when a command takes separate addresses for an original and a copy.
+
+\begin{exercise}{Predict two relative routes}
+\label{ex:6-route}
+From the verified practice root, enter \texttt{shared}. Find a relative route from there to \texttt{April photos}, then use it and check the ending of \texttt{pwd}. Return home and keep the tree for the next exercise, or clean it up as above.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+cd ./shared
+cd '../albums/April photos'
+pwd
+\end{terminal}
+The result ends in \texttt{/albums/April photos}. Dot-dot first returns to the practice root. The single quotes preserve the space in the last component.
+\end{solution}
+
+\begin{exercise}{Move without changing the destination}
+\label{ex:6-absolute}
+Record the full practice-root address from \texttt{pwd}. Change to \texttt{/}. How would you reach the practice root from there without depending on the current directory? Verify and use the empty-directory cleanup after the remaining exercise.
+\end{exercise}
+\begin{solution}
+Use \texttt{cd} with your recorded absolute path as one operand. If it contains simple spaces, put the entire path in single quotes. The result of \texttt{pwd} should match the recorded address even though you started from the filesystem root.
+\end{solution}
+
+\begin{exercise}{Check one item against two}
+\label{ex:6-space}
+With \texttt{printf} and the format \texttt{\%s\textbackslash n}, print the name \texttt{April photos} without a slash, first as one item then as two. What difference proves the shell split the second line? Clean up the practice tree only if you created it for this chapter.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+printf '%s\n' 'April photos'
+printf '%s\n' April photos
+\end{terminal}
+The first command prints a single line. The second prints \texttt{April} and \texttt{photos} on separate lines; neither tried to find a directory.
+\end{solution}
+
+\begin{takeaways}
+\item A leading slash fixes the start at the root; otherwise pay attention to the working directory.
+\item Dot and dot-dot are path components. Tilde is a shell shorthand that can expand to home.
+\item Quote a path with simple spaces so it arrives as one item, then verify where it actually leads.
+\end{takeaways}
+
+\begin{furtherreading}
+\ReadingItem{POSIX Pathname Resolution}{How names, components, root and the working directory fit together.}{https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/V1_chap04.html}
+\ReadingItem{POSIX Shell Command Language}{Single quoting and tilde expansion.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/V3_chap02.html}
+\ReadingItem{POSIX cd}{The logical and physical navigation modes and the home-directory default.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/cd.html}
+\end{furtherreading}

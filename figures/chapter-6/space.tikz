@@ -1,0 +1,10 @@
+\begin{tikzpicture}
+  \node[utp node] (quoted) at (0,0) {\ttfamily './albums/April photos'};
+  \node[utp node] (bare) at (0,-1.35) {\ttfamily ./albums/April photos};
+  \node[utp node] (one) at (5.8,0) {\ttfamily ./albums/April photos};
+  \node[utp node] (first) at (5.8,-1.35) {\ttfamily ./albums/April};
+  \node[utp node] (second) at (5.8,-2.45) {\ttfamily photos};
+  \draw[utp arrow] (quoted) -- (one);
+  \draw[utp arrow] (bare) -- (first);
+  \draw[utp arrow] (bare.south east) -- (second.west);
+\end{tikzpicture}
