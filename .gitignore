@@ -188,6 +188,7 @@ figure/
 *.pre
 *.prc
 *.exp
+!listings/chapter-4/prompt-probe.exp
 *.xasy
 *.gs
 *.m
