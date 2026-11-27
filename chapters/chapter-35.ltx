@@ -1,0 +1,500 @@
+A recipe for organizing photos starts with \cmd|jq|, but your
+shell says it cannot find the command. Another web page offers
+an installer, and a coworker says you already have it. Both
+assertions could be true on different machines or in different
+shells. Find out what you have before adding software. This
+chapter does not require installing anything or contacting
+a repository.
+
+\begin{objectives}
+\item Distinguish shell discovery, installed-package inventory, and repository search.
+\item Identify the supported package channel for the system you are using.
+\item Understand what to review before an install, upgrade, or removal.
+\end{objectives}
+
+\section{Look for the command where you intend to run it}
+\label{sec:35-discover}
+\index{command@\texttt{command}}
+\index{command lookup}
+Use an ordinary, unprivileged \cmd|sh| for the literal examples.
+Start with the tool name, not a guess about its package name:
+
+\begin{terminal}
+command -v jq
+printf 'lookup status: %s\n' "$?"
+\end{terminal}
+
+\cmd|command -v| asks what the current shell would use for a
+command name, without running it. If found, it prints an
+identification: typically a pathname for an external
+command, but it can report an alias or builtin, too.
+Read it before trusting it. A zero status is a successful
+lookup, not a guarantee that the program will run. Silence
+with a nonzero status usually means the name did not resolve.
+Do not replace the recipe's optional tool with an unrelated
+command of the same name.
+
+\begin{terminal}
+command -v sh
+printf '%s\n' "$PATH"
+\end{terminal}
+
+The first line provides a comparison lookup for a familiar
+shell name. The second shows the search path (Chapter~\ref{ch:28}):
+for ordinary \cmd|sh| usage, names of directories separated by
+colons. Order matters. A new install can be outside that path
+or a different copy can come earlier. The printed path might
+contain personal directory names, so inspect it locally rather
+than posting it. A session started by a graphical app and one
+started in a terminal might have different settings. Run the
+lookup in the context that actually failed, rather than assuming
+that a successful lookup somewhere else settles it.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-35/questions.tex}
+\caption{Three different sources answer three different questions
+about a tool.}
+\label{fig:35-questions}
+\VisualDescription{Three rows pair shell with lookup, local
+database with installed inventory, and catalog with availability.}
+\end{figure}
+
+\begin{quicktable}{M{1.08in}YY}
+\toprule
+Source & Can tell you & Cannot by itself tell you\\
+\midrule
+Current shell & What this name resolves to here. &
+Whether the chosen file is managed or up to date.\\
+Local inventory & What this package manager records as installed. &
+Whether the command can be invoked in this shell.\\
+Catalog or cache & What a configured source lists or listed. &
+Whether it is installed, runnable, or the latest upstream release.\\
+Local manual & Syntax documented by installed manual pages. &
+Whether the manual and selected executable came from the same installation.\\
+\bottomrule
+\end{quicktable}
+
+\begin{terminal}
+man 1 jq
+\end{terminal}
+
+The \cmd|1| asks for the user-command manual section. If a
+page opens, read the name and synopsis, then quit the pager
+with \Key{q} if the pager supports it. If no page is found,
+the executable can still exist; some packages separate
+documentation or install it outside the manual search path.
+Conversely, a page can remain after a program is moved. If you
+have identified and trust the installed program, the upstream
+\cmd|jq| manual documents this check:
+
+\begin{terminal}
+jq --version
+\end{terminal}
+
+Run that line only if the lookup found a trusted copy, and
+compare the version against the feature your recipe needs.
+\cmd|--version| is a documented \cmd|jq| option here, not a
+portable option promised by POSIX or by every command. Often
+the simplest answer is to do the one-off task with a tool
+you already know; use optional software when it adds enough
+value to justify taking care of it.
+
+\section{Find out which support channel applies}
+\label{sec:35-inventory}
+\index{package manager}
+\index{package repository}
+First ask which operating system is running:
+
+\begin{terminal}
+uname -s
+\end{terminal}
+
+This prints the system name, often \texttt{Linux},
+\texttt{Darwin}, \texttt{FreeBSD}, \texttt{OpenBSD}, or
+\texttt{NetBSD}. Darwin commonly indicates macOS in this
+book's context. Linux is only the kernel part of the answer:
+distributions select the rest of the software, including
+package managers. When \cmd|uname -s| says Linux, the file
+\cmd|/etc/os-release| can identify the distribution if
+present. Read it as text, without executing it.
+
+\begin{terminal}
+if [ -r /etc/os-release ]; then
+    grep -E '^(NAME|VERSION_ID)=' /etc/os-release
+fi
+\end{terminal}
+
+\cmd|[ -r ... ]| tests readability before \cmd|grep -E| looks
+for lines whose keys are \texttt{NAME} or \texttt{VERSION\_ID};
+the caret anchors the match at the start and the vertical bar
+separates alternatives within the parentheses. A missing
+field is possible. Ask your provider or consult the
+distribution's own documentation rather than choosing a
+different distribution by resemblance.
+
+\begin{quicktable}{M{1.12in}YY}
+\toprule
+System & Typical optional software channel & Local inspection if already available\\
+\midrule
+Debian or Ubuntu & APT and distribution repositories. &
+\texttt{apt-cache policy jq}\\
+Fedora & DNF and Fedora repositories; RPM records installs. &
+\texttt{rpm -q jq}\\
+Arch Linux & Pacman and the distribution's package repositories. &
+\texttt{pacman -Q jq}\\
+macOS & Homebrew is one independent, optional choice. &
+\texttt{brew list --versions jq}\\
+FreeBSD & \texttt{pkg} and its package repositories. &
+\texttt{pkg info jq}, only if the real manager is installed.\\
+OpenBSD & Packages built for the corresponding release or snapshot. &
+\texttt{pkg\_info}\\
+NetBSD & pkgsrc packages built for the applicable system and architecture. &
+\texttt{pkg\_info}\\
+\bottomrule
+\end{quicktable}
+
+Use only the example for the manager you have identified.
+Debian or Ubuntu readers can compare the view from the local
+APT cache with the shell lookup:
+
+\begin{terminal}
+apt-cache policy jq
+\end{terminal}
+
+The operand is a package name here. \cmd|policy| reports known
+versions, priorities and candidates without installing. If
+available, the ``Installed'' line describes the local record;
+``Candidate'' describes the version the cache and policy
+would select. A cache can be empty or out of date. Do not
+refresh the cache for this exercise; a refresh contacts
+repositories and changes package metadata. This observation
+also cannot tell which program your shell will use after
+you install anything.
+
+\begin{terminal}
+rpm -q jq
+\end{terminal}
+
+For a Fedora system, \cmd|rpm -q| queries its local installed
+package database, not a server. Expect an installed package
+identification or a not-installed message, depending on
+the machine. Fedora uses DNF for operations that need
+repository selection and dependency planning. Do not use
+RPM to bypass the package manager's dependency decisions.
+
+\begin{terminal}
+pacman -Q jq
+\end{terminal}
+
+On Arch Linux and compatible systems using Pacman, the capital
+\cmd|-Q| asks the installed-package database. It prints the
+package name and version if recorded locally. This is not
+the command for synchronizing with package repositories.
+Do not confuse it with the lower-case \cmd|-q| option,
+which has a different purpose in Pacman.
+
+\begin{terminal}
+brew list --versions jq
+\end{terminal}
+
+On macOS this is relevant only if Homebrew is already installed
+and you are allowed to use it. It lists the installed formula
+version where present, not whether your shell has the expected
+Homebrew prefix on \cmd|PATH|. Homebrew software is distinct
+from Apple-provided tools and system updates. It is fine to
+leave an unmanaged laptop as it is if you can complete the task
+without the extra tool.
+
+\begin{terminal}
+pkg -N
+\end{terminal}
+
+On FreeBSD, the base \cmd|pkg| can be a bootstrap utility
+instead of the full manager. \cmd|-N| checks for the installed
+manager without bootstrapping it. If this check says it is
+installed, use \cmd|pkg info jq| for the local record. If not,
+stop rather than running a normal package operation: that can
+offer to download and install the manager itself.
+
+\begin{terminal}
+pkg_info
+\end{terminal}
+
+On OpenBSD, this lists packages installed locally. On NetBSD it
+can do the same where the pkgsrc tools are available. These
+systems use separate package infrastructures even though they
+share this command name. An inventory line typically includes
+an identifier with a version and sometimes a short
+description. Inspect it locally; this no-operand form may
+show much more than the one tool you are asking about.
+
+\section{macOS: understand the Homebrew workflow}
+\label{sec:35-brew}
+\index{Homebrew}
+Homebrew is a separate package manager, not a part of macOS
+or a replacement for macOS Software Update. A Homebrew
+\FirstUse{formula} is a recipe for software usually used
+from the command line, such as \cmd|jq|. A
+\FirstUse{cask} is commonly used for distributing an app
+with its own upstream installer or application bundle.
+The distinction matters: a formula can provide a tool on
+\cmd|PATH|, but installing a cask for an application does
+not imply there will be a same-named terminal command.
+Check the app's publisher and any permissions it asks for
+as well as the Homebrew entry.
+
+The supported default prefix on Apple silicon is
+\texttt{/opt/homebrew}; on Intel macOS it is
+\texttt{/usr/local}. A prefix is the root of an installation's
+own tree. More than one installation may exist, especially
+on a machine that also runs Intel software under Rosetta.
+If \cmd|command -v brew| already locates a trusted copy, use
+\cmd|brew --prefix| to see which one you are about to use.
+Do not guess by architecture or assume results from both
+installations belong to one inventory.
+
+\begin{terminal}
+command -v brew
+brew --prefix
+\end{terminal}
+
+Run the second line only if the first identifies the
+expected trusted \cmd|brew|. If an installer has completed
+but the command is absent, inspect the setup instructions
+printed by the official installer. The shell has to know
+where to look, which does not depend merely on files
+existing under a prefix. For ordinary Homebrew
+installs, \cmd|brew shellenv| prints settings tailored
+to a shell, including a search path adjustment. Below
+is the inspection step for an existing default Apple
+silicon installation; on a default Intel installation
+the corresponding executable is
+\texttt{/usr/local/bin/brew}. Neither line installs Homebrew.
+
+\begin{terminal}
+/opt/homebrew/bin/brew shellenv zsh
+\end{terminal}
+
+Use the line only for a trusted install at that path,
+and do not paste its output from an unknown source. The
+argument selects Zsh syntax; the official installer tells
+you which initialization command and startup file are
+appropriate for your own shell and configuration. It may
+recommend evaluating the output of a fully qualified
+\cmd|brew shellenv| invocation. Evaluation runs the printed
+shell code; its safety depends on which program produced
+it. Before editing a startup file, keep a backup or note
+the exact line you added. Test a new terminal, keep the
+old session for recovery, and check \cmd|command -v brew|
+again. If the startup edit was wrong, restore the previous
+file or remove only the change you made. If a formula is
+``keg-only'', Homebrew is deliberately not linking it into
+the usual prefix search location; consult its caveats
+rather than forcing links over a system tool.
+
+\begin{quicktable}{M{1.19in}YY}
+\toprule
+Homebrew action & Command forms to recognize & What to check\\
+\midrule
+Discover & \texttt{brew search jq}; \texttt{brew info jq}. &
+Correct name, publisher, formula or cask, and caveats.
+These lookups can use network or cached catalog data.\\
+Add & \texttt{brew install jq}; \texttt{brew install --cask NAME}. &
+Sources, dependencies, available space, and approval. \texttt{NAME}
+stands for a verified cask name; do not type it literally.\\
+Refresh & \texttt{brew update}. &
+Refreshes Homebrew and package definitions, not a request to
+upgrade every installed package.\\
+Review/upgrade & \texttt{brew outdated}; \texttt{brew upgrade jq}. &
+Which installed tools are behind, then what a targeted upgrade
+can affect. Some operations may refresh metadata automatically.\\
+Remove & \texttt{brew uninstall jq}; \texttt{brew uninstall --cask NAME}. &
+Same manager and prefix, data saved, dependencies understood.\\
+\bottomrule
+\end{quicktable}
+
+These are reference forms, not a sequence to run; no install,
+update, upgrade, removal, or live lookup is part of the
+practice. If you decide later that you need Homebrew itself,
+start at the official installation documentation. Check your
+system meets the currently supported requirements, and
+review the install action expected for your machine. On a
+managed Mac, get approval before changing tools. Prefer the
+expected official tap (a source of Homebrew packages) over
+one you found in an old workaround. A package being listed
+does not by itself establish that it is the app or command you
+want.
+
+If a planned upgrade adds dependencies or removes previous
+versions, consider the effect on your work before consenting.
+Homebrew may clean up old package versions, so uninstalling
+and reinstalling is not necessarily a way back. Back up
+relevant configuration and user data, note the installed
+version and exact prefix first, and keep a known-good
+workflow if the software is important to you. For casks,
+avoid opt-in removal of user data when you only meant to
+remove an app. If a failure turns out to be a path issue,
+repair command selection rather than reinstalling software.
+After an authorized change, compare the local inventory
+and selected tool, then try a harmless known input.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-35/channels.tex}
+\caption{Base-system maintenance and optional software can use
+separate supported channels.}
+\label{fig:35-channels}
+\VisualDescription{System documentation branches to base
+maintenance and optional package maintenance.}
+\end{figure}
+
+\section{Read the plan before accepting it}
+\label{sec:35-maintain}
+Suppose you need to add a reader for many photo-catalog files.
+Start with the documentation for your exact system, release,
+and architecture. It tells you where trustworthy packages come
+from and how the manager checks repository metadata or package
+integrity. Prefer your operating system's supported repository
+or your organization's approved channel. A similarly named
+package on an unrelated download site is not a substitute.
+Do not turn off signature checks, add a repository copied from
+a forum, or pipe a downloaded installer into a shell.
+On a managed machine, ask whoever maintains it.
+
+A package is an installable bundle plus metadata such as version
+and dependencies. A dependency is other software the package
+needs. Adding one tool can therefore add several packages, and
+an upgrade or removal can affect other tools used on the same
+machine. Review the proposed changes in the manager's documented
+preview mode if available, or at the official confirmation
+step. Check the source, destination, downloads, disk cost, and
+any planned removals. Read local documentation before using a
+preview flag: the name and meaning vary, and a preview can
+still contact a repository. If you are unsure, decline.
+Never add a flag merely to answer Yes to everything.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-35/decision.tex}
+\caption{An unresolved command need not end in an installation.}
+\label{fig:35-decision}
+\VisualDescription{Lookup leads to reviewing a supported plan.
+Different arrows from that review lead to approval or to leaving
+the machine unchanged.}
+\end{figure}
+
+For an authorized change, back up relevant data and configuration
+first. Save a note of the manager, package and old version as
+appropriate, and make sure you have time to verify normal work
+afterward. Don't assume reinstalling a package restores its old
+version or its old data format. Removal may leave user settings,
+or remove dependencies no longer considered needed. It is not
+an undo button. If verification fails after an upgrade, preserve
+the old data and consult the supported recovery path rather
+than trying several installers in quick succession.
+
+\subsection{What if the wanted name is already present?}
+After an authorized install, check the location before
+checking the version. If the selected path still points to
+an older copy you intended to keep, don't overwrite it.
+Find out whether the package has a distinct command name
+or a documented full path; running that exact trusted
+tool on a disposable fixture is a useful comparison.
+Check executable selection in the application or script
+that needs the tool, not just in a new terminal. A graphical
+application might use a different initial search path, and an
+old shell might have remembered an earlier lookup. Opening
+a fresh shell from the original environment makes a helpful
+test, not a guarantee that all programs now use the new copy.
+
+If you can't use optional packages on a shared computer, say
+so at the beginning of a request for help. A recipe offering
+a built-in alternative might be quite adequate for ten files,
+even if it would be tiresome for ten thousand. Don't copy an
+executable from another machine to avoid review: two systems
+can use the same CPU but have different libraries, supported
+features, or trust policies. Likewise, ``base'' does not mean
+``universally the same.'' Linux distributions often package
+utilities that another Unix treats as part of a distinct
+base system; macOS and the BSDs have their own documented
+ways of updating that system. Keep system maintenance in
+its supported channel.
+
+\begin{dialoguebox}{Installed according to whom?}
+\Brian{The package list says it's installed. Why can't my shell find it?}
+\Stephen{The list describes files the manager put in a location.}
+\Brian{Then why doesn't the shell ask the manager where it put them?}
+\Stephen{It normally checks its own search path, not a package database.}
+\Brian{So a second copy could be found first?}
+\Stephen{Yes. Check which command this shell would use and then its version.}
+\Brian{And reinstall only if the evidence says an install is actually needed.}
+\Stephen{Right. A new install doesn't settle a path mismatch.}
+\DialogueConclusion{Installed is not the same as selected.}
+\end{dialoguebox}
+
+\begin{exercise}{Compare discoveries}
+\label{ex:35-lookup}
+Ask your \cmd|sh| what it uses for \cmd|sh| and for
+\cmd|jq|. Explain the difference between a path and a
+not-found status without installing anything.
+\end{exercise}
+\begin{solution}
+Use \cmd|command -v sh| and \cmd|command -v jq|. Print the
+status immediately after the second lookup with
+\cmd|printf '%s\n' "$?"|. Any positive lookup identifies
+what was found under that name; it doesn't identify who installed it.
+No change needs cleanup.
+\end{solution}
+
+\begin{exercise}{Identify one supported source}
+\label{ex:35-source}
+Identify your operating-system family and, for Linux, the
+distribution if possible. Name the supported optional
+package channel from local or official documentation.
+If that channel isn't available, do not install it.
+\end{exercise}
+\begin{solution}
+Use \cmd|uname -s| and, for Linux, the readable
+\cmd|/etc/os-release| lines above. Match the actual
+distribution rather than merely ``Linux.'' For example,
+Darwin on macOS does not mean a Homebrew install is present.
+Write down which documentation applies; no temporary files or
+package changes are required.
+\end{solution}
+
+\begin{exercise}{Audit an imaginary approval request}
+\label{ex:35-plan}
+A proposal adds a JSON reader, upgrades two dependencies,
+and removes a viewer you still use. The cache date is unknown
+and the signer is unfamiliar. Decide whether to approve.
+\end{exercise}
+\begin{solution}
+Decline. Find the supported repository and explain the
+removal with the package maintainer or administrator before
+retrying. The goal was to read JSON; the removal is an
+additional consequence, not a necessary cost established by
+this evidence. This is a paper exercise; nothing needs undoing.
+\end{solution}
+
+\begin{takeaways}
+\item Start with the command your actual shell selects, then
+compare it with a local inventory or manual.
+\item Use the package channel supported for your operating
+system and release.
+\item Review dependencies and removals; a package transaction is
+not a promise of easy rollback.
+\end{takeaways}
+
+\begin{furtherreading}
+\ReadingItem{Debian apt-cache(8)}{Read-only inspection of cached package information.}{https://manpages.debian.org/apt-cache}
+\ReadingItem{Homebrew manuals}{Installed formula and cask inventory commands.}{https://docs.brew.sh/Manpage}
+\ReadingItem{Homebrew installation}{Supported default prefixes, requirements, and initial setup.}{https://docs.brew.sh/Installation}
+\ReadingItem{Homebrew terminology}{Formula, cask, tap, prefix and keg.}{https://docs.brew.sh/Formula-Cookbook}
+\ReadingItem{The jq manual}{Documented command-line options, including version reporting.}{https://jqlang.org/manual/}
+\ReadingItem{Arch Linux pacman(8)}{Querying the local package database.}{https://man.archlinux.org/man/pacman.8}
+\ReadingItem{Fedora System Administrator's Guide}{Supported software management with DNF.}{https://docs.fedoraproject.org/en-US/fedora/latest/system-administrators-guide/package-management/DNF/}
+\ReadingItem{FreeBSD Handbook}{Base software, packages, and supported package management.}{https://docs.freebsd.org/en/books/handbook/ports/}
+\ReadingItem{OpenBSD packages FAQ}{Release matching, installed packages, and package sources.}{https://www.openbsd.org/faq/faq15.html}
+\ReadingItem{The pkgsrc Guide}{Binary packages and pkgsrc on NetBSD and other systems.}{https://www.netbsd.org/docs/pkgsrc/}
+\end{furtherreading}

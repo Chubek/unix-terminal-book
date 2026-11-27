@@ -1,0 +1,454 @@
+You followed a recipe for finding the line that mentions a meeting.
+At home the search worked. In another terminal the result was blank.
+Which fact will help someone solve the problem: that the machine
+is new, a screenshot of the whole terminal, or the exact status of
+one command run against one harmless line? This chapter turns
+``it didn't work'' into a report that someone else can check.
+
+\begin{objectives}
+\item Identify the system, current shell context, and selected tool
+without dumping a private environment.
+\item Build a minimal reproduction and distinguish normal empty
+results from errors.
+\item Write a useful report from selected facts, not a raw transcript.
+\end{objectives}
+
+\section{Write the symptom before changing anything}
+\label{sec:36-symptom}
+\index{diagnostics}
+Write down what you expected, what happened instead, and the
+last action before the difference appeared. ``Search gave no
+lines'' is an observation; ``the tool is broken'' is a guess.
+If any output files were involved, stop rerunning the command
+against them. A second attempt can replace the evidence and
+overwrite a useful draft. Work on copies, or better yet on
+fictional data with the same relevant shape. Read the command's
+documentation and check what its exit statuses mean
+(Chapter~\ref{ch:13}). Some nonzero statuses mean a real error;
+others describe a normal result without displaying one.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-36/layers.tex}
+\caption{Locate the first layer that differs before replacing tools
+or changing the machine.}
+\label{fig:36-layers}
+\VisualDescription{Working directory and shell lookup lead to
+selected tool and then to result; each is a separate checkpoint.}
+\end{figure}
+
+The context shown in Figure~\ref{fig:36-layers} is not just
+which computer you are using. Two tabs on one screen can have
+different working directories or search paths. Start with a
+few local observations. Use \cmd|sh| syntax for the fixture
+below; diagnose a real problem in the original shell as well.
+
+\begin{terminal}
+pwd
+uname -s
+uname -r
+uname -m
+\end{terminal}
+
+\cmd|pwd| locates your working directory. In \cmd|uname|,
+\cmd|-s| gives the system name, \cmd|-r| the system release
+as reported by the operating system, and \cmd|-m| the reported
+machine hardware name. On Linux \cmd|-r| is the kernel release,
+not the distribution release. On macOS it is the Darwin
+release, not the usual macOS product version. Do not include a
+hostname or an account path merely because you can print it.
+If folder names are not relevant to a report, say ``from the
+directory containing the example'' instead of pasting
+\cmd|pwd|'s output.
+
+\begin{terminal}
+printf 'configured shell hint: %s\n' "${SHELL:-not set}"
+ps -p "$$" -o comm
+command -v grep
+\end{terminal}
+
+\cmd|${SHELL:-not set}| expands to the variable if nonempty,
+otherwise to the fallback text. \cmd|SHELL| often reflects
+the login shell, not the interpreter currently taking input.
+In a regular interactive \cmd|sh|, \cmd|$$| identifies the
+shell process; \cmd|ps -p| selects it and \cmd|-o comm|
+shows command identity, though it may be only a short name.
+This does not identify every startup option. Check the
+interpreter used to run a script separately: a line starting
+\cmd|sh example.sh| asks \cmd|sh| to interpret that script,
+even when typed in a Bash or Zsh terminal. \cmd|command -v|
+asks which \cmd|grep| this shell would select. Include a
+version only after finding the documented way to get it for
+that particular tool; Apple or BSD tools may not support
+a GNU program's \cmd|--version| option.
+
+\begin{quicktable}{M{1.16in}YY}
+\toprule
+Question & Check locally & Share if relevant\\
+\midrule
+Where? & \texttt{pwd} and a small listing of the fixture. &
+Which relative path was right or wrong, not your home path.\\
+Which system? & \texttt{uname} with specific options;
+the OS's release tool. & System or product version, not
+a machine name.\\
+Which shell/tool? & Shell process, lookup, then local
+documentation. & Shell family and chosen implementation,
+with paths generalized if personal.\\
+What happened? & Output, standard error, and immediate exit
+status. & The relevant message reproduced with fictional data.\\
+\bottomrule
+\end{quicktable}
+
+\section{macOS: distinguish platform, shell, and tool}
+\label{sec:36-macos}
+\index{macOS!diagnostics}
+\index{Rosetta}
+Use this read-only example on macOS, not Linux or BSD. The
+operating system version people see in About This Mac is not
+the version printed by \cmd|uname -r|. Keep both only if the
+distinction is relevant.
+
+\begin{terminal}
+sw_vers -productVersion
+uname -r
+uname -m
+\end{terminal}
+
+\cmd|sw_vers -productVersion| requests just the macOS product
+version. On Apple silicon a process may run as native
+\texttt{arm64} or as translated Intel code under Rosetta.
+Different terminal sessions on one machine may therefore see
+different environments or software. An \texttt{x86\_64} result
+alone is not proof the hardware is Intel. If a trusted installed
+tool works in one session but fails in another, compare the
+shell and the command resolution in both before changing
+packages. Apple's documented translation check reads
+\texttt{sysctl.proc\_translated}; the read-only command below
+queries that key in the diagnostic process. A reported 1
+means translated, 0 means not translated where supported.
+If the key is unavailable, do not treat an error as a returned
+zero or as proof of the machine's architecture.
+
+\begin{terminal}
+sysctl -n sysctl.proc_translated
+\end{terminal}
+
+\cmd|-n| requests the value alone. The query describes the
+execution context of the command that reads it, not every
+application on the Mac. Architecture context, tool location,
+and the architecture a binary contains are three different
+facts. Do not reinstall tools or change Rosetta settings just
+to reproduce the check. Ask the local administrator if the
+machine has a managed setup.
+
+\begin{terminal}
+command -v grep
+ls -l /usr/bin/grep
+command -v brew
+\end{terminal}
+
+On a typical macOS installation \texttt{/usr/bin/grep} is
+Apple-provided. \cmd|ls -l| confirms what is at that
+pathname without running it. Homebrew can supply other
+implementations, sometimes with prefixed command names. Even
+if \cmd|brew| is available, it did not necessarily supply
+the selected \cmd|grep|. If trusted Homebrew is present,
+\cmd|brew --prefix| can report the configured prefix, and
+\cmd|brew list --versions grep| can check its installed
+formula inventory. Neither tells you which command the shell
+selected; sequence and package caveats matter
+(Chapter~\ref{ch:35}). Local \cmd|man| pages may also come
+from a different installation than the executable. Report
+``Apple-supplied grep on macOS'' or the exact alternate
+implementation you identified, rather than ``the Mac version.''
+On Linux, the distribution information can come from
+\texttt{/etc/os-release}, where present. On FreeBSD,
+OpenBSD, and NetBSD, use the relevant local system release
+manual and distinguish base utilities from optional packages.
+
+If the behavior depends on the session, collect the same
+observations in both sessions. Mark which one worked. For
+example, in one macOS tab you might select the base tool and
+in another a Homebrew tool with a different option vocabulary.
+On an Apple silicon machine, you might instead see the same
+package name in two different prefixes, each used in a
+different architecture context. Neither difference by itself
+shows that one tool is faulty. Reproduce the discrepancy with
+exactly the same minimal input and an option documented for
+both tools, or explain that the option belongs to only one.
+A fix can be as simple as using the syntax for the intended
+implementation. Keep a record of the working command before
+you modify an alias, an environment variable, or a startup file.
+
+If a line fails only when run from an editor, task launcher,
+or scheduler, run the diagnosis in that context if the tool
+supports a safe test. Report that context in plain language.
+``The search command fails in my editor's task window, but
+works in a shell started in the same directory'' narrows the
+investigation. A terminal window and an editor's display can
+look similar and use different command paths. This is one
+reason not to replace a working base tool while trying to
+correct a single app's configuration.
+
+\section{Reduce the problem until it fits on a card}
+\label{sec:36-reproduce}
+\index{minimal reproduction}
+Create a fresh private practice directory from a writable
+location. As in earlier chapters, the non-POSIX but commonly
+available \cmd|mktemp -d| creates a unique directory. Stop if
+the setup does not print its path. Do not use real notes
+or test with a real account name.
+
+\begin{terminal}
+room=$(mktemp -d ./utp-report.XXXXXX) && cd "$room" && pwd
+\end{terminal}
+
+\begin{terminal}
+printf '%s\n' 'Meeting: Tuesday' > ./sample.txt
+grep -F 'meeting' ./sample.txt
+printf 'status: %s\n' "$?"
+\end{terminal}
+
+\cmd|grep -F| treats its pattern as a fixed string. Without
+an ignore-case option, \texttt{meeting} does not match the
+capitalized \texttt{Meeting}, so this example should print
+only \texttt{status: 1}. The immediate status must belong
+to \cmd|grep|, not to a later \cmd|pwd| or \cmd|printf|.
+A missing file causes a different result:
+
+\begin{terminal}
+grep -F 'Meeting' ./not-created.txt
+printf 'status: %s\n' "$?"
+\end{terminal}
+
+No such file was created. Expect an error on standard error
+and a status greater than one, not a normal unsuccessful
+match. Use the error to direct the next check. If it says
+permission denied instead, don't try elevating privileges;
+check the pathname and access first. Compare the working
+case and a one-option variation:
+
+\begin{terminal}
+grep -F 'Meeting' ./sample.txt
+printf 'status: %s\n' "$?"
+grep -Fi 'meeting' ./sample.txt
+printf 'status: %s\n' "$?"
+\end{terminal}
+
+\cmd|-i| ignores differences in case. In these examples both
+searches print \texttt{Meeting: Tuesday} with status zero.
+When narrowing a real issue, change one feature at a time.
+Keep the exact behavior you are investigating when you simplify
+the data. If removing a tab, accent, embedded quote, or line
+ending makes the problem disappear, restore the relevant feature
+with fictional words. If the issue is specific to a locale,
+that setting may be relevant, but do not send a whole
+environment dump to communicate it.
+
+\subsection{Capture only the lines needed to explain an error}
+For an ordinary manual test you can usually read the screen.
+When standard output and standard error have been mixed by a
+wrapper, capture them separately in the practice directory.
+The names in the next example must be new. Run this only
+once in your fresh fixture; \cmd|>| and \cmd|2>| can
+truncate existing files. \cmd|>| directs standard output
+to its named destination, and \cmd|2>| does the same for
+standard error. Neither redirection captures the exit status.
+
+\begin{terminal}
+grep -F 'Meeting' ./not-created.txt > ./out.txt 2> ./err.txt
+result=$?
+wc -c < ./out.txt
+cat ./err.txt
+printf 'saved status: %s\n' "$result"
+unset result
+\end{terminal}
+
+Expect zero bytes of output, one file-related diagnostic,
+and a saved status greater than one. A diagnostic can differ
+with the implementation and locale. If a redirection itself
+failed, the shell can report an error before the search
+starts, so check the destination first. The file count and
+read above are subsequent commands; without the assignment
+they would overwrite the very status under investigation.
+Compare this with the no-match case, which has no missing-file
+diagnostic. Do not just concatenate the two captures into a
+report. Select the relevant excerpt, rewrite the case with
+fictional data if it isn't already fictional, and verify the
+same outcome from that case.
+
+If either file would contain private information on a real
+run, don't capture it unnecessarily. Terminal redirection
+creates files whose permission defaults depend on the
+environment, as Chapter~\ref{ch:33} explains. A transcript
+can also be backed up, synced, or retained by tooling. It is
+simpler to build the fictional case first and capture only
+that. In the practice directory, remove those two generated
+files when done. Confirm only the names just created.
+
+\begin{terminal}
+rm -i ./out.txt ./err.txt
+\end{terminal}
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-36/grep.tex}
+\caption{A match, no match, and an error are three different outcomes.}
+\label{fig:36-grep}
+\VisualDescription{Three columns describe status zero with a matching
+line, status one with no matching line, and status greater than one
+with an error.}
+\end{figure}
+
+\begin{quicktable}{M{1.14in}YY}
+\toprule
+Observation & First useful question & Unhelpful jump\\
+\midrule
+Status 1; no line & Does the pattern match the actual case
+or characters? & Reinstall the search utility.\\
+Error on stderr & Is the input path right and can it be read? &
+Change permissions on the entire tree.\\
+Works in one tab & Are the path, shell, lookup, and
+locale comparable? & Treat the machine as a single environment.\\
+Different installed versions & Which implementation produced
+each observation? & Declare both behaviors interchangeable.\\
+\bottomrule
+\end{quicktable}
+
+\section{Share a rebuilt report, not a dump}
+\label{sec:36-report}
+\index{diagnostics!redaction}
+A good report lets a person repeat the experiment without
+getting access to your files. Start with the fictional
+fixture and the exact command, then expected and observed
+results. Include the circumstances that change behavior.
+Say what you did not test. For example, ``This occurs when I
+use the lowercase pattern in this shell; I didn't test another
+implementation'' is more useful than ``every grep is broken.''
+If you tried an administrative action, say so: it might have
+changed the very conditions you are trying to reproduce.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-36/share.tex}
+\caption{Rebuild the shared report using selected, sanitized evidence.}
+\label{fig:36-share}
+\VisualDescription{Private notes are used to select facts, then a
+fictional reproduction becomes the report. No arrow bypasses selection.}
+\end{figure}
+
+Leave secrets out from the start. Environment dumps, shell
+history, process arguments, logs, package inventories, and
+screenshots can contain account names, internal network
+locations, document titles, tokens, and credentials. Even an
+image of one error can show another tab, a prompt, or a path.
+If you need to describe a private path, create another path
+with the same relevant features, such as a space, instead of
+trying to cover characters on a screenshot. Inspect the
+entire outgoing text, including quoted replies and any
+attachments, from the recipient's point of view. If a secret
+was accidentally disclosed, changing the post may not remove
+copies; use the account or service's revocation procedure and
+contact the responsible administrator if needed.
+
+\subsection{What makes a reproduction actionable?}
+Imagine a tool maintainer is reading the report at a different
+computer. They first need to know how to create the example,
+then exactly what to type, then what to look for. Include the
+setup command with its trailing newline if that matters;
+show the line count or byte count if the input shape is the
+problem. Don't include optional aliases or a long chain
+of steps if the failure also happens without them. If a step
+requires a particular shell, package implementation, or
+operating-system version, state that before the command.
+If the reader can run the whole example twice without
+losing data, you have made it much easier to test and discuss.
+
+Separate findings from possibilities. ``It failed for a
+path with a space. The same command worked after quoting the
+path'' is a useful pair of observations. ``It is definitely a
+shell bug'' is a diagnosis you have not established merely by
+seeing that difference. List a working comparison as well as
+the failure; this provides a check that the shared fixture
+is shaped correctly and that the recipient is testing the
+same thing. If you can't reduce the problem without private
+inputs, explain where you had to stop and ask for a safer
+way to provide evidence.
+
+\begin{dialoguebox}{Does more output make a better report?}
+\Brian{Wouldn't they fix this faster if I sent my whole terminal history?}
+\Stephen{They'd have to find the relevant lines first.}
+\Brian{But what if I accidentally omit the clue?}
+\Stephen{Keep notes locally and start with a repeatable example.}
+\Brian{And if they ask for a log that includes customer names?}
+\Stephen{Ask which fields matter and whether fictional data shows the same issue.}
+\Brian{So I can be precise without handing them my environment.}
+\Stephen{Yes. Precision is mainly about controlling the example.}
+\DialogueConclusion{Share the evidence, not the environment.}
+\end{dialoguebox}
+
+\begin{exercise}{Find the first difference}
+\label{ex:36-difference}
+Within the practice directory, compare a fixed-string
+search for \texttt{Meeting} against a fixed-string search
+for \texttt{meeting}. Keep everything else the same.
+\end{exercise}
+\begin{solution}
+Run \cmd|grep -F 'Meeting' ./sample.txt| and inspect the
+status immediately with \cmd|printf '%s\n' "$?"|. Repeat
+with the lowercase pattern. Expect a line and zero, then
+no line and one. No data was changed.
+\end{solution}
+
+\begin{exercise}{Distinguish silence from error}
+\label{ex:36-status}
+Recreate the missing-file error, then a no-match result.
+What fact distinguishes them when standard output is empty
+in both cases?
+\end{exercise}
+\begin{solution}
+Run \cmd|grep -F 'Meeting' ./not-created.txt| and immediately
+print \cmd|"$?"| with \cmd|printf|. Repeat for
+\cmd|grep -F 'Wednesday' ./sample.txt|. The first command
+normally has a diagnostic and status greater than one; the
+second has status one and no match. Neither creates files.
+\end{solution}
+
+\begin{exercise}{Write a report someone can try}
+\label{ex:36-redact}
+Write a four-line note containing a fictional input, exact
+command, expected result, and observation. If it matters,
+add the search utility identity without disclosing personal
+paths. Do not post the report.
+\end{exercise}
+\begin{solution}
+For example: ``One line: Meeting: Tuesday. Command:
+\texttt{grep -F 'meeting' ./sample.txt}. Expected the line.
+Observed no line and status 1.'' If you discovered that the
+command performs a case-sensitive search, add that
+\texttt{-i} changed the result. Review the note for real
+names or paths and keep or discard the note locally.
+\end{solution}
+
+Check \cmd|pwd| before removing the fictional input.
+\cmd|rm -i| asks for confirmation. The directory removal
+will refuse to delete any additional files you left there.
+
+\begin{terminal}
+rm -i ./sample.txt
+cd .. && rmdir "$room"
+unset room
+\end{terminal}
+
+\begin{takeaways}
+\item Record a symptom and the relevant context before changing the system.
+\item Use a fictional minimal reproduction and the command's exact status.
+\item Share just enough for another reader to repeat the test.
+\end{takeaways}
+
+\begin{furtherreading}
+\ReadingItem{POSIX uname}{Operating system and hardware identity fields.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/uname.html}
+\ReadingItem{POSIX grep}{Fixed strings, case handling, and distinct exit statuses.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/grep.html}
+\item \WebLink{https://developer.apple.com/documentation/apple-silicon/about-the-rosetta-translation-environment}{Apple: About the Rosetta translation environment}. Translation and the process translation indicator.
+\ReadingItem{Homebrew manuals}{Inspection of installation prefix and local inventory.}{https://docs.brew.sh/Manpage}
+\end{furtherreading}

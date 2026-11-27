@@ -1,0 +1,460 @@
+Your computer says it cannot save another video. The folder
+you're working in contains only a few files, so where did the
+space go? Maybe that folder sits on a different disk from the
+one you were checking. Maybe the destination is full even
+though your home directory has room. We will ask two different
+questions: how much room does the destination's filesystem
+report, and how much space do the reachable files account for?
+
+\begin{objectives}
+\item Identify the filesystem serving a destination by starting with its path.
+\item Compare filesystem totals, directory usage, and logical byte counts.
+\item Recognize when cleanup is premature or when ordinary counts omit something.
+\end{objectives}
+
+\section{Start where the save failed}
+\label{sec:34-df}
+\index{df@\texttt{df}}
+\index{filesystem}
+\index{mount point}
+The directory tree looks continuous, but it can contain several
+filesystems. A filesystem keeps track of names, data, metadata,
+and available space. A \FirstUse{mount point} is a directory
+where another filesystem's tree becomes accessible. An attached
+drive or a network share may each have its own mount point.
+An operating system may also split ordinary-looking locations
+across several filesystems without showing a drive letter at
+every boundary.
+
+\begin{terminal}
+pwd
+df -Pk .
+df -Pk "$HOME"
+\end{terminal}
+
+\cmd|df| reports a filesystem's accounting. \cmd|-P| requests
+its portable layout, and \cmd|-k| requests 1024-byte units.
+The operand \cmd|.| is the working directory; \cmd|"$HOME"|
+asks about the home directory instead. They may lead to the same
+filesystem. If a destination does not exist yet, ask about its
+nearest existing parent directory. If a removable drive was
+supposed to be mounted there, check the mount before retrying:
+otherwise a save directed at an ordinary directory can land on
+the wrong filesystem.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-34/mount.tex}
+\caption{The pathname crosses a mount point without changing
+the syntax used to address the destination.}
+\label{fig:34-mount}
+\VisualDescription{The root tree leads to a Projects directory
+on the main filesystem and Media on another filesystem. Media
+is drawn inside a dashed mount boundary.}
+\end{figure}
+
+Here is a rearranged short example of the fields, not output
+from your system:
+
+\begin{terminaloutput}
+Filesystem   1024-blocks   Used Available Capacity Mounted on
+/dev/example       12000   8000      3500      70% /media/demo
+\end{terminaloutput}
+
+The exact labels and source name vary. The \texttt{Filesystem}
+column might report a device, remote source, or a named virtual
+filesystem. The mount location is in the far-right column.
+``Available'' is generally more relevant for a save than peak
+capacity. Do not insist that total minus used must equal available.
+Some filesystems reserve space, account for areas differently, or
+make allocations conditional. In this illustration capacity is
+the rounded ratio of used space to the space used or available
+to ordinary users; reserved space is not part of that denominator.
+
+\begin{quicktable}{M{1in}YY}
+\toprule
+Question & Useful observation & Blind spot\\
+\midrule
+Can I save here? & \texttt{df -Pk} for the destination's parent. &
+Quota, file size limits, permissions, and application scratch needs.\\
+What takes space? & \texttt{du -sk} on a directory you can search. &
+Objects outside it or not available through its names.\\
+How many bytes can I read? & \texttt{wc -c} on a single ordinary file. &
+Allocation overhead and shared or sparse storage.\\
+Can I make new names? & Local inode or quota reporting where supported. &
+``Bytes free'' does not prove that another object can be created.\\
+\bottomrule
+\end{quicktable}
+
+An inode is a filesystem object record on filesystems that use
+that terminology. A filesystem can exhaust its supply of records
+even when it has room for some additional bytes. Many Linux,
+macOS, and BSD versions of \cmd|df| offer \cmd|-i| views; read
+the local \ManPage{df}{1} before relying on a field or writing a
+script. If the error mentions a quota, the filesystem as a whole
+may have space while your account or project has reached a limit.
+On a shared machine, ask the administrator; clearing other
+people's files is neither a test nor a fix.
+
+\section{Measure what you can name}
+\label{sec:34-du}
+\index{du@\texttt{du}}
+Use \cmd|sh| for the examples. Run the setup line separately
+from a writable directory, and proceed only if it prints the
+fresh practice location. \cmd|mktemp -d| creates a directory
+from the supplied template, replacing the Xs. It is widely
+available on our target families but is not POSIX.
+
+\begin{terminal}
+room=$(mktemp -d ./utp-space.XXXXXX) && cd "$room" && pwd
+\end{terminal}
+
+\begin{terminal}
+mkdir ./notes
+printf 'a short list\n' > ./notes/list.txt
+wc -c < ./notes/list.txt
+du -k ./notes/list.txt
+\end{terminal}
+
+The byte count is 13, including the ending newline. \cmd|du|
+asks how much storage is allocated to named items. Its
+\cmd|-k| selects the same unit size as \cmd|df -k|,
+not the same accounting question. A tiny text file often
+uses at least an allocation block, but allocation strategy is
+up to the filesystem. The number could vary with inline data,
+block sizes, compression, or how the system reports shared
+storage. Don't teach your future self to expect ``4'' just
+because a machine reports it today.
+
+\begin{terminal}
+du -sk ./notes
+du -sk .
+df -Pk .
+\end{terminal}
+
+\cmd|du -s| asks for a summary rather than a line for every
+subdirectory. The operand controls where it starts. The
+outer summary can include directories and their own allocation.
+The \cmd|df| view doesn't belong to this one directory; it
+reports the whole filesystem serving it. Running it on
+\cmd|./notes| should show the same filesystem as \cmd|.|
+unless something independent of the exercise changes the
+mount layout. The byte counts or available space of a live
+system may change while you are looking.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-34/scope.tex}
+\caption{\texttt{du} follows a branch of names; \texttt{df}
+asks the filesystem for a total.}
+\label{fig:34-scope}
+\VisualDescription{Inside a box labeled filesystem total there
+are notes and other branches. A smaller dashed boundary around
+notes shows the scope of a du summary started there.}
+\end{figure}
+
+\begin{terminal}
+printf 'hidden item\n' > ./.note
+du -sk .
+du -sk ./notes ./.note
+\end{terminal}
+
+The first summary starts at the entire directory, including
+hidden names it can reach; it isn't based on a shell glob.
+The second gives separate summaries for the two explicit
+operands and does not account for the outer directory itself.
+If you report only files selected by \cmd|*| you can miss
+hidden entries: the shell filters the names before \cmd|du|
+arrives. A disk-use scanner can also be slowed by a deep tree
+or a network share under it. Use a small specific path rather
+than scanning the whole system. Where documented, \cmd|du -x|
+stays on the device of the starting operand rather than
+descending to other mounted filesystems.
+
+\begin{terminal}
+ls -l ./notes/list.txt
+du -k ./notes/list.txt
+\end{terminal}
+
+The size in the long listing is the file's logical byte length.
+For a sparse file that length can exceed the stored data by a
+wide margin: the filesystem can represent ranges of zeros
+without allocating the corresponding data blocks. A backup
+tool that materializes those zeros during a copy could use
+much more space than the source appeared to use. This is
+one reason to check backups as actual, readable archives
+rather than only comparing the size numbers.
+
+\begin{quicktable}{M{1.25in}YY}
+\toprule
+Situation & What to inspect & What not to infer\\
+\midrule
+Directory summary small & Check mount, inaccessible subtrees,
+and whether the rest of the filesystem is outside your scope. &
+The disk report is necessarily wrong.\\
+Large byte size, low usage & Consider sparse allocation,
+compression, or sharing. & Every logical byte occupies a unique byte
+of storage.\\
+Space didn't return after removal & Consider open files,
+other links, snapshots, and unrelated new writes. &
+The only remedy is to remove more.\\
+Error with space available & Check quota, destination permissions,
+object limits, and scratch location. & Free bytes settle every
+``cannot save'' problem.\\
+\bottomrule
+\end{quicktable}
+
+\section{The invisible occupants}
+\label{sec:34-unlinked}
+\index{open file!after unlink}
+\index{snapshot}
+Removing a name is an operation on a directory, as
+Chapter~\ref{ch:33} explains. If the last hard link to an
+ordinary file is removed while a process still has the file
+open, its data remains accessible through that open handle.
+That data takes up storage until the last applicable reference
+closes. A walk that starts from names can no longer see the
+file, but the filesystem still accounts for it. Think of
+deleting a catalog entry while a borrower still holds the book.
+The analogy stops there: the name won't spring back when the
+borrower closes the file.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-34/unlinked.tex}
+\caption{Removing the last name does not close an already open file.}
+\label{fig:34-unlinked}
+\VisualDescription{A crossed-out arrow from the directory name
+and an intact arrow from an open process handle both point
+toward the file data.}
+\end{figure}
+
+On some systems an optional tool such as \ManPage{lsof}{8}
+or a local system tool can reveal such open objects, subject to
+visibility and permissions. Don't kill a process or restart a
+service to free space unless you are responsible for it and
+understand the consequences. If it is your app, try the app's
+normal close procedure and check again. If the deleted file
+contained your only copy, don't rely on open handles as a
+recovery technique; keep the app open while seeking appropriate
+help and use a tested backup if you have one. Chapter~\ref{ch:41}
+shows how to verify a restore before it is an emergency.
+
+\section{macOS: volumes, containers, and snapshots}
+\label{sec:34-apfs}
+\index{APFS}
+On macOS, an APFS container can supply space to several
+volumes. They are not several independent disks each with the
+full amount of space shown in its free-space column. Two
+volumes in one container can both report that pool of space;
+adding those readings counts capacity twice. A volume can also
+have a reserve or quota. A \FirstUse{snapshot} preserves the
+state of a volume at a point in time, so removing the visible
+name of an old version may not release all of the storage
+used by that version. Snapshots do not behave like ordinary
+directories under the location you scan with \cmd|du|.
+
+These are macOS-only, read-only commands. Run just the
+first pair if you are comparing such views for your own
+Mac. They are not instructions to erase, repair, or mount
+a disk.
+
+\begin{terminal}
+df -Pk "$HOME"
+diskutil info /
+\end{terminal}
+
+\cmd|diskutil info| shows information about the disk or
+volume identified here by the root mount path. Look for
+identifiers and filesystem information; field names vary
+with the system and storage. Root and your home directory
+are not necessarily on the same volume, especially on modern
+macOS systems that distinguish System and Data. For a
+removable drive, first confirm its exact path in Finder or
+Disk Utility; ask \cmd|df -Pk| about that path rather than
+assuming the drive shares the boot volume's available space.
+
+\begin{terminal}
+diskutil apfs list
+\end{terminal}
+
+Here \cmd|apfs| chooses a family of disk information and
+management commands; use only its \cmd|list| subcommand for
+this check. It shows the APFS containers and associated
+volumes that the tool can see. Try matching a device
+identifier from \cmd|df| or \cmd|diskutil info| with the
+identifiers it lists, noting that a mounted snapshot can
+show its own identifier. Don't rely on a volume name such
+as ``Data'' alone: names are not required to be unique.
+Keep serial numbers, identifiers, and personal volume
+names out of a public report unless there is a specific
+reason to share a redacted version.
+
+\begin{terminal}
+tmutil listlocalsnapshots /
+\end{terminal}
+
+\cmd|tmutil| is the Time Machine utility. The subcommand
+shown lists local Time Machine snapshots for the specified
+mount point where supported; it does not remove them and is
+not a complete inventory of every snapshot on every volume.
+The graphical Disk Utility can also show APFS snapshots
+for a selected volume via its View menu. A date in a name
+does not tell you how much space would be released or
+whether the snapshot is the recovery copy you need.
+Do not delete snapshots to make two totals match. If the
+session needs working space today, first confirm a usable
+backup and consider a known destination with room for
+both the new file and any temporary data the application
+uses. Use a restore drill before relying on a backup.
+
+On FreeBSD or Linux with ZFS, the local dataset and snapshot
+tools likewise answer questions a directory walk cannot.
+OpenBSD and NetBSD have their own supported filesystems and
+tools; use the local storage documentation rather than
+pasting APFS or ZFS commands into an unfamiliar system.
+GNU and many BSD/macOS tools offer human-readable reports
+such as \cmd|df -h|; that presentation is convenient to
+read, but rounding and unit conventions make it a poor
+interchange format.
+
+\section{Plan a copy that fits}
+\label{sec:34-copy}
+Put the two reports to work before moving a large collection.
+Suppose your original is on your computer and the intended
+copy is on a removable drive. Ask \cmd|df -Pk| about the
+drive's confirmed mount path and \cmd|du -sk| about the
+specific source directory. If \cmd|df| identifies the same
+filesystem for both paths when you expected different ones,
+stop before copying. You could otherwise fill the drive
+you were trying to unload. If a path is ambiguous, locate it
+in your file manager or find the correct mount in the
+operating system's disk tool. Do not create an alternate
+directory merely to silence a missing-path error.
+
+Suppose the expected filesystem has ample room. That still
+isn't permission to erase the original after the copy starts.
+Logical length, allocation, and transfer behavior can differ,
+especially with sparse or cloned files. The copying tool
+may need temporary space and the application's format may
+change the overall size if you export rather than copy.
+Some removable filesystems also limit the size of one file
+even when total capacity is fine. Treat the measured space as
+planning information and keep the original until you've
+verified the destination and checked that important files
+actually open. Avoid making a new backup on a nearly full
+drive that also contains your only older restore point.
+
+Consider the opposite case. The destination has no room, and
+a large directory appears at the top of your usage survey.
+That directory could contain source material, backups,
+or cache files with very different recovery costs. Its size
+does not tell you which it is. Use the application's own
+storage management for replaceable data where possible.
+Moving older files to a known good independent volume can
+be safer than deleting them, but check copy integrity
+before removing anything. Moving a directory elsewhere on
+the same filesystem usually just changes names and won't
+free space. Moving items to a trash folder on the same
+volume can likewise leave the storage allocated until
+the trash is emptied, at which point easy recovery may be
+gone.
+
+If the source directory includes an unreadable part,
+the usage estimate can be incomplete. A permission
+diagnostic is evidence to keep, not noise to hide. Use the
+access rules of Chapter~\ref{ch:33} on your own path and ask
+the owner about the rest. You can still report a useful
+conclusion: ``I confirmed the target volume, measured the
+part of the source I can read, and have not yet estimated
+the inaccessible part.'' Uncertainty, stated at the point
+it enters the measurement, is better than a confident
+but wrong estimate.
+
+\begin{dialoguebox}{Which number is wrong?}
+\Brian{My folders only add up to half of what the disk says is used.}
+\Stephen{You have measured the names you counted.}
+\Brian{I counted all the names I could see. Isn't that the whole disk?}
+\Stephen{There could be other branches, permissions, or data with no visible name.}
+\Brian{So nobody promised the two numbers had the same scope.}
+\Stephen{Correct. Check the destination's filesystem first, then investigate.}
+\Brian{And don't delete another folder just to make the numbers match.}
+\Stephen{Exactly. First decide what is safe and useful to remove.}
+\DialogueConclusion{Different scopes give different totals.}
+\end{dialoguebox}
+
+\begin{exercise}{Locate the destination before measuring it}
+\label{ex:34-mount}
+Ask which filesystem serves \texttt{notes} and compare the
+answer to the filesystem for the current directory. Use the
+mount location rather than only comparing available space.
+\end{exercise}
+\begin{solution}
+Run \cmd|df -Pk ./notes| and \cmd|df -Pk .|. Both paths
+should use the same filesystem and show the same mount
+location. Available space can shift during the comparison.
+No cleanup is needed for a report.
+\end{solution}
+
+\begin{exercise}{Count the bytes and allocated units}
+\label{ex:34-units}
+Create one tiny file with a known number of bytes and measure
+its length and disk usage separately. Explain why there is no
+required numeric match.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+printf 'three\n' > ./extra.txt
+wc -c < ./extra.txt
+du -k ./extra.txt
+rm -i ./extra.txt
+\end{terminal}
+The count is six; the disk usage describes allocation in
+1024-byte units. Confirm removal only for the new practice
+file.
+\end{solution}
+
+\begin{exercise}{Make the hidden operand visible}
+\label{ex:34-hidden}
+Compare the list of operands expanded from a star with the
+entries in a listing that includes hidden names. Ask
+\cmd|du| for the hidden name explicitly.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+printf '%s\n' ./*
+ls -a
+du -k ./.note
+\end{terminal}
+With the normal \cmd|sh| glob semantics the star omits
+\texttt{.note}. \cmd|ls -a| includes hidden entries, and
+\cmd|du| can report an explicitly named hidden file. This
+exercise does not add a file.
+\end{solution}
+
+After checking \cmd|pwd|, remove only the two original
+practice files. Confirm only those names at the prompts.
+The nonrecursive \cmd|rmdir| checks that no other material is
+left in each practice directory before removing it.
+
+\begin{terminal}
+rm -i ./notes/list.txt ./.note
+rmdir ./notes
+cd .. && rmdir "$room"
+unset room
+\end{terminal}
+
+\begin{takeaways}
+\item Ask \texttt{df} about an existing destination path and verify its mount.
+\item Ask \texttt{du} about the particular tree you can navigate.
+\item Logical length, allocated storage, free space, and account
+limits are different things.
+\end{takeaways}
+
+\begin{furtherreading}
+\ReadingItem{POSIX df}{Filesystem reports and the portable output format.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/df.html}
+\ReadingItem{POSIX du}{Directory traversal, units, and usage accounting.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/du.html}
+\ReadingItem{POSIX unlink}{The last link and the lifetime of an open file.}{https://pubs.opengroup.org/onlinepubs/9799919799/functions/unlink.html}
+\item \WebLink{https://support.apple.com/guide/disk-utility/add-delete-or-erase-apfs-volumes-dskua9e6a110/mac}{Apple: Add or delete APFS volumes}. Explains container space sharing, reserves, and quotas; no deletion is part of this chapter.
+\item \WebLink{https://support.apple.com/guide/disk-utility/view-apfs-snapshots-dskuf82354dc/mac}{Apple: View APFS snapshots in Disk Utility}. Graphical snapshot inventory by volume.
+\end{furtherreading}

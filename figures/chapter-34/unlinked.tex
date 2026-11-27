@@ -1,0 +1,7 @@
+\begin{tikzpicture}
+\node[utp node] (name) at (-2.7,1) {removed name};
+\node[utp node] (handle) at (-2.7,-.3) {open handle};
+\node[utp node] (data) at (2.5,.35) {file data};
+\draw[utp arrow,dashed] (name)-- node[midway,fill=white] {$\times$} (data);
+\draw[utp arrow] (handle)--(data);
+\end{tikzpicture}

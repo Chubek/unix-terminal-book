@@ -1,0 +1,9 @@
+\begin{tikzpicture}
+\node[utp node] (lookup) at (0,2.55) {lookup unresolved};
+\node[utp node] (plan) at (0,1.35) {review supported plan};
+\node[utp node] (apply) at (-2.2,0) {approve deliberately};
+\node[utp node] (stop) at (2.2,0) {leave unchanged};
+\draw[utp arrow] (lookup)--(plan);
+\draw[utp arrow] (plan)--(apply);
+\draw[utp arrow] (plan)--(stop);
+\end{tikzpicture}
