@@ -1,0 +1,15 @@
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[node distance=7mm and 8mm]
+\node[utp node] (archive) {Retrieved archive};
+\node[utp node,right=of archive] (acmp) {Compare bundle bytes};
+\node[utp node,below=of archive] (files) {Extracted files};
+\node[utp node,right=of files] (fcmp) {Check paths and bytes};
+\draw[utp arrow] (archive) -- (acmp);
+\draw[utp arrow] (files) -- (fcmp);
+\draw[utp arrow] (archive) -- (files);
+\end{tikzpicture}
+\caption{Verification covers the recovered bundle and then the restored files.}
+\label{fig:48-verify}
+\VisualDescription{Compare the retrieved bundle with the sent bundle. Once extraction succeeds, verify the expected file paths and their contents separately.}
+\end{figure}

@@ -1,0 +1,548 @@
+You type a command to sort a list for the neighborhood swap.
+At home the result looks the way you expect; the same command
+on a library computer puts capitals and lower-case letters in
+an order you did not anticipate. Neither line of input changed.
+One possible difference is the locale inherited by \texttt{sort}.
+An ordinary command receives more than its visible arguments:
+it can also receive a set of named settings.
+
+\begin{objectives}
+\item Predict which shell variables an external command can see.
+\item Change a locale setting for a single command without changing the session.
+\item Inspect command lookup without replacing or publishing your environment.
+\end{objectives}
+
+\section{Pass a setting down, not back up}
+\label{sec:28-export}
+\index{environment}
+\index{export@\texttt{export}}
+\index{env@\texttt{env}}
+
+In a fresh \texttt{sh} session, try the following using the made-up
+setting \texttt{SWAP\_LABEL}. The first line clears any previous
+value and export attribute for that name in the practice shell.
+The \texttt{-c} option of \texttt{sh} runs the following argument
+as shell source in a new shell. Here that argument is a fixed
+line you type yourself. Its single quotes keep the parent
+from substituting the value before the new shell starts.
+
+\begin{terminal}
+unset SWAP_LABEL
+SWAP_LABEL='Kitchen items'
+printf 'Parent: <%s>\n' "$SWAP_LABEL"
+sh -c 'printf "Child: <%s>\n" "${SWAP_LABEL-unset}"'
+export SWAP_LABEL
+sh -c 'printf "Child: <%s>\n" "${SWAP_LABEL-unset}"'
+\end{terminal}
+
+The parent prints \texttt{<Kitchen items>}. The first child
+prints \texttt{<unset>}; the second child prints
+\texttt{<Kitchen items>}. This is what the \emph{environment}
+is for: it carries named strings to a newly started program.
+A shell can use its own variables without putting them in the
+environment. \texttt{export} marks an ordinary shell variable
+for inclusion in the environment of subsequent external
+commands. It does not broadcast that label to programs that
+have already started.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-28/inherit.tikz}
+\caption{Only the exported setting crosses the process boundary in this example.}
+\label{fig:28-inherit}
+\VisualDescription{The parent holds a working note and an exported label. Only the exported label has an arrow to the child shell.}
+\end{figure}
+
+The receiving program decides what to do with a setting.
+A made-up name like \texttt{SWAP\_LABEL} is not a system
+instruction: it matters to the second shell only because
+we explicitly print it. Programs that agree on conventions
+such as \texttt{PATH} or \texttt{LC\_ALL} give those strings
+particular effects. Looking up the setting in the manual
+is better than guessing from its name.
+
+\begin{terminal}
+sh -c 'SWAP_LABEL=changed; printf "<%s>\n" "$SWAP_LABEL"'
+printf 'Parent: <%s>\n' "$SWAP_LABEL"
+\end{terminal}
+
+The child prints \texttt{<changed>}; the parent still prints
+\texttt{<Kitchen items>}. The semicolon in the child source
+separates two commands executed one after the other. The
+child has its own environment rather than a live reference to
+the parent's variables. A program can write a file that the
+parent later reads, but assigning a variable is not such a
+communication channel.
+
+\begin{dialoguebox}{Why didn't it stick?}
+\Brian{I set the label in the child, and it printed the new label. Why did the parent ignore the change?}
+\Stephen{The child got a copy. It can change that copy without anyone else's permission.}
+\Brian{But the shell has a builtin called export. Wouldn't exporting from the child send it back?}
+\Stephen{That makes the child's future commands inherit its new setting. It still doesn't send the setting to the parent.}
+\Brian{So to keep it for the next command I type, change it at this prompt?}
+\Stephen{Yes. Or give just that next command a temporary value if the others shouldn't get it.}
+\DialogueConclusion{Settings pass to newly started children.}
+\end{dialoguebox}
+
+\section{Borrow a value for one command}
+\label{sec:28-prefix}
+\index{locale!per-command setting}
+\index{sort@\texttt{sort}}
+
+Write an assignment directly before the name of an external
+command to give that command a value without changing the
+calling shell's variable. This chapter uses external commands
+for the technique: shell functions and some special builtins
+have additional rules. Run both these lines with the earlier
+label still exported:
+
+\begin{terminal}
+SWAP_LABEL='Outdoor items' sh -c 'printf "<%s>\n" "$SWAP_LABEL"'
+sh -c 'printf "<%s>\n" "$SWAP_LABEL"'
+\end{terminal}
+
+The first shows \texttt{<Outdoor items>}; the second still
+shows \texttt{<Kitchen items>}. Unlike the earlier assignment
+by itself, the prefix does not store the new label in the
+calling shell. The external command here is \texttt{sh}.
+Do not replace the fixed text after \texttt{-c} with a filename
+or a string someone else sent you; this option treats its
+argument as a shell command, not data to be printed.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-28/override.tikz}
+\caption{A prefix supplies an override for just one external command.}
+\label{fig:28-override}
+\VisualDescription{The parent stores Kitchen items. One call has an Outdoor items override and sees it. The next call has no override and sees Kitchen items.}
+\end{figure}
+
+Figure~\ref{fig:28-override} is useful for locale settings.
+The portable \texttt{C} locale is suitable for this ASCII
+comparison, where we deliberately want the uppercase
+\texttt{Apple} before lowercase \texttt{apple}:
+
+\begin{terminal}
+printf '%s\n' apple Apple Book | LC_ALL=C sort
+\end{terminal}
+
+Expect \texttt{Apple}, \texttt{Book}, \texttt{apple},
+one per line. The pipe connects the left command's standard
+output to \texttt{sort}; on the right side \texttt{LC\_ALL=C}
+sets the locale for \texttt{sort}. It does not change the
+locale of the left command or of your session. Without the
+override, the same order is possible, so observing that
+order by itself does not prove which locale was used.
+For names intended to be read in a person's language, the
+preferred locale may be their usual one rather than
+\texttt{C}. Reproducible order and familiar reading order
+are different goals.
+
+\begin{quicktable}{p{1.3in}YY}
+\toprule
+Form & Who sees the value & Typical use \\
+\midrule
+\texttt{name=value} alone & The current shell; future commands too if that variable was already exported & Store a value for subsequent shell expansion. \\
+\texttt{export name} & Subsequent external commands inherit the value, if set. & Set a session-wide agreement with tools you will run. \\
+\texttt{name=value command} & The external command and programs to which it passes the setting. & Override a tool's locale for one invocation. \\
+\texttt{unset name} & Removes the current value and its export attribute. & Clear a practice variable without editing startup files. \\
+\bottomrule
+\end{quicktable}
+
+There is a small trap when a command line both changes a setting
+and reads it back. In \cmd|SWAP_LABEL=new printf '%s\n' "$SWAP_LABEL"|
+the expansion in the argument is performed by the \emph{calling}
+shell, before the command receives the new setting. That makes
+it a bad test of inheritance even on a shell that supplies the
+prefix value to \texttt{printf}. Use the child-shell example
+instead, so the recipient actually looks up the value itself.
+
+\section{Look up the command before adjusting the search}
+\label{sec:28-path}
+\index{PATH}
+\index{command@\texttt{command}}
+
+\texttt{PATH} is the list of directories used when searching
+for an external command written without a slash. A colon
+separates directory names. The usual search tries the
+directories in order; different installations may have
+different directories and different versions of a utility.
+Builtins and shell functions can be found without that directory
+search; aliases can also change how a line is read. Begin with
+observation rather than editing \texttt{PATH}:
+
+\begin{terminal}
+command -v sort
+command -v cd
+command -v sh
+\end{terminal}
+
+\texttt{command -v} reports how the shell identifies a
+command. Typically the first and last lines are executable
+paths, whereas the middle line is \texttt{cd}, naming a
+builtin. The exact paths are local evidence, not values to
+copy from another computer's instructions. A command name
+typed with a slash, such as \texttt{./some-tool}, names
+a path rather than requesting a search through \texttt{PATH}.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-28/search.tikz}
+\caption{Directory order matters once an external command search begins.}
+\label{fig:28-search}
+\VisualDescription{A first directory lacks the command, so the search moves to the second. The second has the command; the third is not searched in this example.}
+\end{figure}
+
+If a different executable of the same name appears as you
+move from one computer to another, record what
+\texttt{command -v} reports on each computer and compare their
+manuals. Do not start by changing startup files to fix a
+single command. And avoid putting \texttt{.} or an empty
+component into \texttt{PATH}: the current working directory
+should not unexpectedly supply a program just because you
+navigated into a folder. This chapter makes no permanent
+changes to command lookup.
+
+\begin{quicktable}{YY}
+\toprule
+Clue & What you can safely check \\
+\midrule
+Tool is not found & Is it installed? Does \texttt{command -v} see it in this shell? \\
+Command runs but an option is rejected & Does the path point to the implementation whose manual you read? \\
+Order changes between computers & Does the sample give the same result with the same per-command locale? \\
+Works at the prompt but not in a child & Did the parent export the setting? Does the child use it? \\
+\bottomrule
+\end{quicktable}
+
+\section{Show only what someone needs to see}
+\label{sec:28-privacy}
+\index{privacy!environment}
+
+A plain \texttt{env} command lists environment entries.
+Do not include that dump in a bug report, in a public
+screenshot, or in a transcript you paste into a chat.
+An environment can hold private paths, account names and
+credentials. It is enough here to print an invented entry
+using an exact variable name. Passing secrets in command
+text is not a substitute: the command may appear in history,
+process diagnostics or logs. Consult the application's
+documented credential mechanism for a real tool.
+
+\begin{terminal}
+env SWAP_LABEL=Preview sh -c 'printf "<%s>\n" "$SWAP_LABEL"'
+\end{terminal}
+
+With a variable assignment and utility operands, \texttt{env}
+invokes the utility with that setting in its environment.
+Here the output is just \texttt{<Preview>}. The example is
+an alternative to shell prefix syntax, not a way to isolate
+a command from all other inherited settings. The POSIX
+\texttt{env -i} form starts the selected command with a
+cleared environment before adding any supplied settings;
+do not use that form on a real application without checking
+what configuration the application needs.
+
+\section{Reproduce a difference without showing your whole setup}
+\label{sec:28-reproduce}
+
+If you need to tell a colleague what the sort command did,
+send a tiny input you invented and the exact setting that
+matters. Run the following experiment in the fresh practice
+shell rather than showing the output of \texttt{env}.
+Use the C locale to produce a baseline on both systems.
+This toy list has no private names or attached information.
+
+\begin{terminal}
+printf '%s\n' chair Chair Book | LC_ALL=C sort
+printf '%s\n' chair Chair Book | sort
+\end{terminal}
+
+The first run should display \texttt{Book}, \texttt{Chair},
+\texttt{chair}; the second depends on the session. If both
+runs agree, you have not ruled out a locale difference for
+all inputs. You have learned that the chosen input does not
+distinguish the environments. If the baseline agrees but
+the unqualified runs differ, check the locale's
+collation setting, which governs ordering. Other locale
+categories govern other parts of interpretation. A single
+known setting, supported by a sample that reveals the
+difference, is better diagnostic evidence than a large dump.
+
+You can also see whether a value survives deliberate
+environment clearing without running a configurable
+application. In the following recipe both commands use an
+absolute interpreter path so their lookup does not rely on a
+cleared \texttt{PATH}. Run this only if \texttt{/bin/sh}
+exists; the example assumes its conventional location.
+
+\begin{terminal}
+env -i /bin/sh -c 'printf "<%s>\n" "${SWAP_LABEL-unset}"'
+env -i SWAP_LABEL=Travel /bin/sh -c 'printf "<%s>\n" "${SWAP_LABEL-unset}"'
+\end{terminal}
+
+Expect \texttt{<unset>} followed by \texttt{<Travel>},
+regardless of the parent value. This demonstrates named
+environment settings, not full isolation: the child can
+still start in the same working directory and run under
+your account. Some applications derive defaults even when
+the corresponding entries are missing. So do not treat
+\texttt{env -i} as a security boundary or expect a command
+to behave exactly as if it were on a different computer.
+
+When sharing your diagnostic, distinguish the lines you
+ran, the output you observed, and the result you expected.
+Report \texttt{LC\_ALL=C} as a choice in the first command,
+not as a new default for your computer. A lookup path
+under your home directory could disclose your account
+name; use an unmistakable placeholder in the report
+rather than deleting the fact that it came from your home.
+Retain the difference between a system executable and a
+user-installed executable if that difference is part of the
+problem. The point of redaction is to preserve the useful
+evidence while withholding the details unrelated to the
+question.
+
+\section{Choose where a setting should live}
+\label{sec:28-scope}
+
+When deciding how widely to set a value, imagine the
+next command you will run. If only one comparison needs
+the C locale, write it directly on that comparison.
+If several consecutive shell commands really do need
+the same setting, use a new practice shell, export the
+setting there, and exit when finished. Changing a startup
+file is a different decision: it could affect every
+future session that reads that file, including a session
+you open for an unrelated task. You do not need the
+largest scope to solve the smallest problem.
+
+Try it with a harmless recording convention. This
+pair of reads prints the parent value before and after
+running a group in parentheses. The shell runs that
+group in a subshell environment, so the change doesn't
+survive into the calling shell. The parentheses are
+shell syntax in this example, not punctuation in the
+label.
+
+\begin{terminal}
+SWAP_LABEL='Kitchen items'
+printf 'Before: <%s>\n' "$SWAP_LABEL"
+(
+    export SWAP_LABEL='Children'
+    sh -c 'printf "Inside: <%s>\n" "$SWAP_LABEL"'
+)
+printf 'After: <%s>\n' "$SWAP_LABEL"
+\end{terminal}
+
+Expect \texttt{Kitchen items}, \texttt{Children}, and
+\texttt{Kitchen items}. \texttt{export name=value} both
+assigns and marks the variable in one action. This time
+that action is inside the group; the inner \texttt{sh}
+gets the value that is current there. The finish of the
+group does not change the stored setting outside it.
+Like a single-command override, this is useful for a
+short-lived choice; unlike a prefix assignment, the
+group can include more than one command. Neither is
+needed simply to print the label in your current prompt:
+ordinary shell expansion already handles that.
+
+There is another distinction worth recording. If you
+want someone to select the file to print, an explicit
+argument makes the choice visible in the invocation.
+If the application needs to follow a general locale
+convention, it makes sense to inherit the setting.
+Where both are available, use the precedence documented
+by the application. The shell passes the arguments and
+environment along; it does not decide on behalf of the
+application which of them should win. This is why a
+successful child-shell test only establishes delivery
+to the environment, not that a completely different
+tool reads or interprets the setting as you expect.
+
+\section{Compare a shell setting with a command lookup}
+\label{sec:28-lookup}
+
+Suppose a teammate reports finding a different copy of a
+utility. You can use the same test case to distinguish
+two questions: ``What did this shell resolve?'' and
+``What would another shell resolve with the same
+environment?'' Try the following with \texttt{sort};
+it reads no input and starts no copy of \texttt{sort}.
+
+\begin{terminal}
+command -v sort
+sh -c 'command -v sort'
+\end{terminal}
+
+On a typical installation both identify the same
+external utility. They need not be identical if your
+current shell has a function or alias that changes
+the first lookup, or the new shell's startup
+configuration changes its environment. A match
+establishes that the same spelling was resolved in
+this test, not that every command in a more involved
+recipe has the same identity. Repeat the comparison
+on the first utility whose behavior actually differs.
+
+When reading \texttt{PATH}, it can be tempting to start
+with its entire printed value and search it by eye.
+But not every directory in the list has the utility,
+and ordinary command lookup can also remember a path
+from a former search. If you recently installed
+another version, a fresh shell is a useful independent
+check, provided you know which configuration it reads.
+Compare the paths it reports before considering a
+persistent change. If both report the intended path
+and the options still differ, the manuals or version
+details are the next place to look; adding directories
+will not turn one implementation's options into another's.
+
+For a documented repeatable task on one computer, an
+explicit executable path can settle which installed
+copy to use. It can also tie the recipe to that one
+computer. An executable in a user's private folder
+will not magically appear on a collaborator's system.
+If the recipe needs to travel, document which utility
+and features you require, let the reader locate their
+copy, and use examples small enough to compare. This
+is more useful than pasting a long \texttt{PATH} from
+one account into someone else's startup file.
+
+\section{Distinguish an empty entry from a missing entry}
+\label{sec:28-empty}
+
+The earlier child-shell tests distinguish a value that
+wasn't passed from one that was changed. A third case is
+worth knowing about when you read a program's setup
+instructions: the environment can pass a name with an
+empty value. The following test defines both cases
+explicitly, so it does not depend on a previous test.
+
+\begin{terminal}
+export SWAP_LABEL=''
+sh -c 'printf "<%s>\n" "${SWAP_LABEL-unset}"'
+unset SWAP_LABEL
+sh -c 'printf "<%s>\n" "${SWAP_LABEL-unset}"'
+\end{terminal}
+
+The child prints \texttt{<>} first and
+\texttt{<unset>} second. The command uses the
+no-colon form from Chapter~\ref{ch:27}, so it substitutes
+the marker only when no value is assigned. The
+environment export made the intentional blank visible
+to the first child. Unsetting the name removed it
+for the second child. Those are distinct requests to
+an application that distinguishes ``set but blank''
+from ``not set.'' Some applications treat both as
+the default; others give them different meanings.
+Check the intended tool rather than assuming the shell
+test defines an application's policy.
+
+The same reasoning explains why replacing a lookup
+path with an empty string is not a safe way to
+test an unset path. Some path-search rules give an
+empty component the meaning of the current directory;
+the default handling of a missing setting is a
+separate issue. An empty string is not the way to
+ask a command to ignore everything in its environment.
+For the invented label, the cleared environment
+example above was both clearer and safer. For lookup
+questions, keep the existing setting and use a known
+absolute command path or \texttt{command -v} as
+appropriate. There is rarely a reason to alter the
+normal search path just to diagnose one invocation.
+
+When you inherit an environment, you don't have to
+inherit the previous person's explanation of it.
+Record which exact command uses the setting, what
+its documentation says about absent and empty
+values, and what the smallest test actually showed.
+If a colleague reports that a locale override did
+not stick, ask whether they wanted a change for one
+program or a persistent change for every application
+in their desktop session. Exporting at one prompt
+does not accomplish the latter: applications already
+running and programs started elsewhere do not receive
+that export. Choose the smallest temporary scope that
+matches your goal, and treat any broader configuration
+change as a separate task with its own rollback.
+
+As a final check, distinguish a report about one program
+from a report about a session. Suppose two commands both
+seem to use an inherited setting, but one has an explicit
+override in its invocation. Showing only the values
+both programs printed would hide the difference. Include
+the command line you used, with invented values, and
+say what you observed on the next invocation without the
+override. That pair demonstrates lifetime: it tells a
+reader whether a setting stuck, rather than only whether
+one program saw it once.
+
+\section{Exercises and cleanup}
+
+\begin{exercise}{Distinguish a local variable from an export}
+\label{ex:28-export}
+Store \texttt{Swap this Saturday} under the invented name
+\texttt{SWAP\_NOTICE}. Ask a new shell to print it before and
+after you export it. Work in the fresh practice shell.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+unset SWAP_NOTICE
+SWAP_NOTICE='Swap this Saturday'
+sh -c 'printf "<%s>\n" "${SWAP_NOTICE-unset}"'
+export SWAP_NOTICE
+sh -c 'printf "<%s>\n" "${SWAP_NOTICE-unset}"'
+unset SWAP_NOTICE
+\end{terminal}
+Expect \texttt{<unset>} then \texttt{<Swap this Saturday>}.
+The last line removes the practice value.
+\end{solution}
+
+\begin{exercise}{Compare two matching invocations}
+\label{ex:28-sort}
+Sort the same three ASCII words twice. Put the locale directly
+before the command the first time and supply it using
+\texttt{env} the second time. Keep the fixture entirely in
+the pipeline; do not create a file.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+printf '%s\n' book BOOK chair | LC_ALL=C sort
+printf '%s\n' book BOOK chair | env LC_ALL=C sort
+\end{terminal}
+Both runs print \texttt{BOOK}, \texttt{book}, then
+\texttt{chair}. There is no file or persistent setting to
+clean up.
+\end{solution}
+
+\begin{exercise}{Check what an override leaves behind}
+\label{ex:28-override}
+Export the chapter's baseline label, \texttt{Kitchen items},
+again. Give one command the value \texttt{Glassware}. Then
+verify that the calling shell still has the baseline value.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+export SWAP_LABEL='Kitchen items'
+SWAP_LABEL=Glassware sh -c 'printf "<%s>\n" "$SWAP_LABEL"'
+printf '<%s>\n' "$SWAP_LABEL"
+\end{terminal}
+The two bracketed values differ. The override was limited to
+the first invocation, so there is no extra setting to remove.
+\end{solution}
+
+Remove \texttt{SWAP\_LABEL} using \texttt{unset SWAP\_LABEL}
+or exit the practice shell. Nothing was written to disk.
+
+\begin{takeaways}
+\item A child gets an environment from its parent but cannot change the parent's variables by assigning its own.
+\item Set a locale for one external command when you need a controlled comparison.
+\item Observe search results and report only the settings relevant to the problem.
+\end{takeaways}
+
+\begin{furtherreading}
+\ReadingItem{POSIX environment variables}{The portable conventions for PATH and locale settings}{https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/V1_chap08.html}
+\ReadingItem{POSIX command}{Identify how a command name is interpreted}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/command.html}
+\ReadingItem{POSIX env}{Invoke a utility with a modified environment}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/env.html}
+\end{furtherreading}

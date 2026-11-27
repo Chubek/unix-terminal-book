@@ -1,0 +1,7 @@
+\begin{tikzpicture}
+\node[utp node] (parent) at (0,1.7) {Parent: Kitchen items};
+\node[utp node] (once) at (-2.5,0) {With override\\ Outdoor items};
+\node[utp node] (later) at (2.5,0) {Later, no override\\ Kitchen items};
+\draw[utp arrow] (parent.south)--(once.north);
+\draw[utp arrow] (parent.south)--(later.north);
+\end{tikzpicture}

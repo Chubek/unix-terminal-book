@@ -1,0 +1,17 @@
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[node distance=6mm and 8mm]
+\node[utp node] (doc) {Source tree};
+\node[utp node,right=of doc] (bundle) {Candidate archive};
+\node[utp node,right=of bundle] (stored) {Stored copy};
+\node[utp node,below=of stored] (ret) {Returned archive};
+\node[utp node,left=of ret] (restore) {Restored tree};
+\draw[utp arrow] (doc) -- (bundle);
+\draw[utp arrow] (bundle) -- (stored);
+\draw[utp arrow] (stored) -- (ret);
+\draw[utp arrow] (ret) -- (restore);
+\end{tikzpicture}
+\caption{A backup drill includes a return route and a separate restoration target.}
+\label{fig:48-roundtrip}
+\VisualDescription{The source tree makes a candidate archive, which is stored then downloaded to a returned archive. The latter is extracted into a separate restored tree.}
+\end{figure}

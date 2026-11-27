@@ -1,0 +1,9 @@
+\begin{tikzpicture}[node distance=4mm]
+\node[utp node] (term) {Terminal\\ window};
+\node[utp node,right=of term] (fish) {Fish\\ prompt};
+\node[utp node,right=of fish] (sh) {\texttt{sh}\\ interpreter};
+\node[utp node,right=of sh] (file) {POSIX\\ script};
+\draw[utp arrow] (term)--(fish);
+\draw[utp arrow] (fish)--(sh);
+\draw[utp arrow] (sh)--(file);
+\end{tikzpicture}

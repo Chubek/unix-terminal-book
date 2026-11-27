@@ -1,0 +1,15 @@
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[node distance=7mm and 14mm]
+\node[utp node] (intake) {Intake files};
+\node[utp node,right=of intake] (stage) {Staged copies};
+\node[utp node,below=of intake] (cat) {CSV catalog};
+\node[utp node,right=of cat] (plan) {JSON plan};
+\draw[utp arrow] (intake) -- node[above]{copy} (stage);
+\draw[utp arrow] (cat) -- node[below]{parse} (plan);
+\draw[utp arrow,dashed] (plan) -- (stage);
+\end{tikzpicture}
+\caption{Parsing makes a plan; the separate copy operation moves the bytes.}
+\label{fig:47-layout}
+\VisualDescription{The CSV feeds the JSON plan, which guides a separate copy from intake to staging. The plan does not execute the copy.}
+\end{figure}

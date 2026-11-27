@@ -1,0 +1,13 @@
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[node distance=5mm]
+\node[utp node,align=center] (name) {Filename\\\texttt{canal.jpg}};
+\node[utp node,align=center,right=of name] (album) {Album\\water};
+\node[utp node,align=center,right=of album] (title) {Title\\Canal, after rain};
+\draw[utp arrow] (name) -- (album);
+\draw[utp arrow] (album) -- (title);
+\end{tikzpicture}
+\caption{A CSV reader keeps the comma inside the quoted title.}
+\label{fig:47-fields}
+\VisualDescription{The example has a filename field canal dot jpg, album field water, and one title field containing Canal, comma, after rain.}
+\end{figure}

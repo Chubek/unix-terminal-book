@@ -1,0 +1,7 @@
+\begin{tikzpicture}
+\node[utp node] (src) at (-2.6,0) {\texttt{handover/}\\rota and note};
+\node[utp node] (dst) at (2.6,0) {\texttt{recovered/handover/}\\rota and note};
+\node[utp node] (tar) at (0,1.4) {\texttt{restored.tar}};
+\draw[utp arrow] (tar)--node[right,font=\scriptsize] {extract} (dst);
+\draw[utp arrow,<->] (src)--node[below,font=\scriptsize] {compare} (dst);
+\end{tikzpicture}

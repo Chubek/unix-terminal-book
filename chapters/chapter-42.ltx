@@ -1,0 +1,470 @@
+You want to send a picture of the neighborhood noticeboard and a PDF
+of the event program. The picture looks ordinary in your photo app.
+The PDF looks ready to print. Before sharing, you want to answer three
+questions: are these files what their names say they are, do they
+include anything private, and will the copies actually work for the
+person receiving them? Those are three separate checks.
+
+\begin{objectives}
+\item Identify an unfamiliar file without trusting its suffix alone.
+\item Inspect selected document and media properties with local tools.
+\item Convert a synthetic file into a new directory and check the result.
+\end{objectives}
+
+\section{A filename is a clue, not a guarantee}
+\index{file@\texttt{file}}\index{file formats}\index{metadata}
+A suffix such as \texttt{.png} or \texttt{.pdf} helps applications
+decide what to open. Renaming a file from \texttt{.txt} to \texttt{.pdf}
+doesn't rewrite any bytes. \cmd|file| looks at properties such as
+recognizable byte patterns and text encodings to make an educated
+guess. This is a useful first observation, not a security scan.
+A truncated, mislabeled, unfamiliar, or specially constructed file
+can confuse a tool. ``Data'' often means that \cmd|file| could not
+classify the bytes more precisely, not that the file is harmless.
+An unexpected attachment should not be opened just because its result
+looks ordinary. Ask for a known valid copy through a trusted route.
+Figure~\ref{fig:42-checks} separates recognition from inspection.
+
+All optional tooling below runs locally on files you make. No images,
+maps, or documents go to a remote service. On Linux, macOS, FreeBSD,
+OpenBSD and NetBSD, check the installed manual for \cmd|file| and
+the packages offered for the optional examples. An exact classification
+depends on the program and its database. See Chapter~\ref{ch:35}
+before installing software. Do not install something from an
+attachment's instructions just to be able to inspect the attachment.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-42/three-checks.tikz}
+\caption{Classification, inspection, and opening answer different questions.}\label{fig:42-checks}
+\VisualDescription{A suffix offers a hint, a classifier tries to recognize the bytes, and a format-aware tool examines the recognized contents.}
+\end{figure}
+
+Use a fresh temporary directory and a shell with \texttt{sh}
+syntax. \texttt{-d} requests a new directory; \cmd|cd| changes
+the working directory. \texttt{mktemp} is common but not
+specified by POSIX; this example asks it to replace the
+final \texttt{X}s with a unique suffix in the trusted system
+temporary directory. Use another trusted absolute temporary
+path if needed. Each \texttt{\&\&} requires the previous
+command to succeed. \texttt{pwd -P} resolves symbolic links
+in the directory path. The setup clears any old value, then
+records and prints the exact physical path once the new
+directory is ready. If it prints no path, stop.
+
+\begin{terminal}
+unset medialab
+newlab=$(mktemp -d /tmp/utp-media.XXXXXXXX) &&
+  cd "$newlab" &&
+  medialab=$(pwd -P) &&
+  printf '%s\n' "$medialab"
+\end{terminal}
+
+Define this check in the same shell. The \texttt{-n} test
+requires a nonempty saved path, and the equality test compares
+the entire current physical path to it. An empty value, a
+different parent directory, or a similar-looking name isn't a
+match. A failed check prints a diagnostic on standard error
+and returns status one; the following command does not run.
+If it fails, don't change the saved value to make it pass.
+
+\begin{terminal}
+in_media_lab() {
+  if test -n "$medialab" && test "$(pwd -P)" = "$medialab"; then
+    return 0
+  fi
+  printf '%s\n' 'Stop: not in the original media lab.' >&2
+  return 1
+}
+in_media_lab && mkdir release
+\end{terminal}
+
+Only in this confirmed fresh lab, make the first fixture. The
+\texttt{>} redirection below can overwrite a file; it's safe
+here because the directory is new and the paths are just fixtures.
+The \texttt{release} directory will hold derivative files
+only. A derivative is a new copy made from the original, not the
+master you want to keep.
+
+\begin{terminal}
+in_media_lab &&
+  printf '%s\n' 'This is only a line of text.' > ./not-a-pdf.pdf &&
+  file ./not-a-pdf.pdf
+\end{terminal}
+
+Expect a text description rather than a PDF classification.
+The \texttt{./} prefix gives an explicit local path, so even a
+name that begins with a hyphen won't be mistaken for an option.
+This is not a damaged PDF; you know the exact line you wrote.
+You can compare this exercise with inspecting a real PDF later.
+If you received a file like this from a colleague, the next step
+would be asking how it was created, not renaming it again.
+
+\section{Inspect a practice image and make a derivative}\label{sec:42-image}
+\index{magick@\texttt{magick}}\index{image conversion}
+Create a tiny plain PPM image. PPM is a simple picture format
+in which you can see the values that make the pixels. \texttt{P3}
+is the signature of a plain-text PPM, \texttt{2 2} is width and
+height in pixels, and \texttt{255} is the maximum sample value
+in this file. Each group of three numbers is red, green, and
+blue. The first row contains red and green pixels; the second
+contains blue and white pixels. \cmd|printf| prints the six
+arguments as separate lines (including the comment beginning with
+\texttt{\#}); real pictures need not be this simple, and files
+from your camera will probably be compressed binary formats.
+
+\begin{terminal}
+in_media_lab &&
+  printf '%s\n' P3 '# synthetic tiles' '2 2' '255' \
+    '255 0 0  0 255 0' '0 0 255  255 255 255' > ./tiles.ppm &&
+  file ./tiles.ppm
+\end{terminal}
+
+\cmd|file| may recognize the image as Netpbm or portable pixmap
+data and report its dimensions. To convert it, this example uses
+ImageMagick 7, whose main command is \cmd|magick|. Older ImageMagick
+6 packages have different command forms; don't substitute a command
+named \texttt{convert} from another vendor. Check the version
+before calling these commands. \cmd|command -v| locates the name
+using the shell's own lookup rules; \texttt{-version} asks
+ImageMagick to print its version information and exits.
+
+\begin{terminal}
+command -v magick
+magick -version
+\end{terminal}
+
+If the tool is unavailable, the PPM and the text comparison are
+enough for the format-identification exercise. Otherwise use a
+new output file. The first operand is the input; \texttt{-set
+comment} sets a property on the output image, whose format is
+chosen from the \texttt{.png} suffix. The comment is invented
+so we have a harmless example of information that isn't part of
+the pixels. ImageMagick can replace an existing output file;
+check that \texttt{./tiles.png} does not exist before running it.
+
+\begin{terminal}
+in_media_lab &&
+  magick ./tiles.ppm -set comment 'fictional noticeboard' ./tiles.png &&
+  file ./tiles.png
+\end{terminal}
+
+ImageMagick's \texttt{identify} subcommand reads information
+about the image. \texttt{-format} takes the requested display
+format: \texttt{\%w} and \texttt{\%h} ask for width and height,
+\texttt{\%c} asks for the comment and \texttt{\textbackslash n}
+ends the line. Keep the format in quotes so the shell passes it
+as one argument.
+
+\begin{terminal}
+magick identify -format '%w x %h: %c\n' ./tiles.png
+\end{terminal}
+
+Expect \texttt{2 x 2: fictional noticeboard}. If you don't
+see the comment, check the command, output type and local
+version before claiming anything about what was retained.
+Now make a separate, new release copy. \texttt{-strip} removes
+profiles and comments in the ImageMagick conversion; don't
+treat it as a universal eraser for every possible file format.
+Apply the same reporting command to both paths to see whether
+this particular field changed. Don't write the result over the
+only original. If a destination already exists, inspect it
+and choose a different unused name.
+
+\begin{terminal}
+in_media_lab &&
+  magick ./tiles.png -strip ./release/tiles-share.png &&
+  magick identify -format '%w x %h: %c\n' ./tiles.png &&
+  magick identify -format '%w x %h: %c\n' ./release/tiles-share.png
+\end{terminal}
+
+The lab's release copy should still be two by two, with no
+comment shown by this inspection; the original still has its
+comment. Verify the view too. Open the synthetic derivative in
+your normal local viewer and zoom in if necessary, or read its
+pixels below. Removing profiles from a real photo can also change
+how colors display. Some image tools use an orientation tag to
+rotate a picture in the viewer; stripping the tag without first
+applying the orientation can leave the copy sideways. Compare the
+rendered original and release copy and choose a tool and export
+process that fit the actual image.
+Figure~\ref{fig:42-derivative} puts the independent inspection after
+the conversion, with the original untouched.
+
+Choose a target format for the recipient's task. A document for
+printing and a small picture for a chat window may have very
+different requirements. Pixel dimensions give you a count, not a
+promise that a small image will be legible when enlarged. PNG can
+preserve a graphical original without the kind of change in
+pixel values often introduced by a lossy photographic format.
+Formats can also differ in whether they support transparency,
+multiple frames, or print color information. Test the single
+derivative you need; don't run a conversion across an entire
+photo folder merely to see whether the words ``PNG image''
+appear in the output.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-42/derivative.tikz}
+\caption{Keep the master and inspect the sharing copy separately.}\label{fig:42-derivative}
+\VisualDescription{The original goes into a conversion, but remains unchanged. A new sharing copy goes through a separate inspection.}
+\end{figure}
+
+There are several paths for information to leave your machine:
+embedded metadata, visible content, companion files, and the
+names and paths of the files you send. A camera can record
+location in metadata. A badge reflected in a window can disclose
+a name directly in the pixels. A shortened image can travel with
+a sidecar file that describes edits or contains notes. Neither
+stripping a comment nor giving the picture a blander filename
+addresses all of these. Inspect the image you will actually share
+and stage only intended files. If anything must be formally
+redacted, use an approved workflow and verify that the underlying
+content is gone, not merely covered by a drawing.
+
+For example, a photo taken for a public article can be
+appropriate to share with its original dimensions and colors but
+not with an embedded street coordinate. A family photo can have
+no embedded location at all and still make its location obvious
+from a readable house number. For this lab the invented comment
+has no consequences: one field provides a simple observable
+change. In a real workflow, the decision about what to keep takes
+longer than the command. Agree with the sender or subject about
+what may be published, keep the original in the approved place,
+and document the crop, export, or removal you actually performed.
+Don't post the original and the redacted derivative together.
+
+\begin{quicktable}{p{1.35in}Y}
+\toprule
+Where to look & Typical examples and what to check \\
+\midrule
+Visible image or page & Names on signs, reflections, handwriting, screen contents and background details. Inspect the rendered copy. \\
+Embedded properties & Creator names, timestamps, location, color profiles, comments. Inspect with a format-aware tool; verify any specific field you intended to remove. \\
+Content not visible by default & PDF annotations, attachments or underlying text; media can also have embedded data or multiple tracks. \\
+Filename and neighbors & Project names, personal initials, companion files and unintentional exports. Inspect the set of files to be shared. \\
+\bottomrule
+\end{quicktable}
+
+\section{Read a document without treating one report as complete}
+\index{pdfinfo@\texttt{pdfinfo}}\index{pdftotext@\texttt{pdftotext}}
+Poppler's \cmd|pdfinfo| summarizes information about a PDF.
+Look for page count, page size, encryption information and
+any creator or title fields. Empty metadata fields don't
+establish that there's no identifying material in the page
+content or in other PDF objects. \cmd|pdftotext| extracts
+accessible text; it needn't capture visual ordering, tables, or
+text in a scanned image. In a properly authorized case, optical
+character recognition is another step, not evidence that a
+blank \cmd|pdftotext| result meant an empty page. A report is a
+tool for asking the next question, not proof of total absence.
+
+For an optional hands-on comparison, create a synthetic PDF
+if \cmd|pdflatex| is already installed, or use a trusted blank
+test document you made yourself. The portable shell command
+below writes three lines of LaTeX source. Single quotes pass
+backslashes and braces literally. The TeX engine composes that
+text into a one-page PDF. \texttt{-interaction=nonstopmode}
+prevents interactive questions; \texttt{-halt-on-error} tells
+it to stop on an error. Check its result before inspecting the
+output. Use the exact fixture only, not LaTeX source from
+an unknown sender. No document in this chapter needs shell escape.
+
+\begin{terminal}
+in_media_lab &&
+  printf '%s\n' '\documentclass{article}' '\begin{document}' \
+    'The practice event begins at noon.\end{document}' > ./program.tex &&
+  pdflatex -no-shell-escape -interaction=nonstopmode \
+    -halt-on-error ./program.tex
+\end{terminal}
+
+The explicit \texttt{-no-shell-escape} option tells the engine
+not to run external shell commands. This produces a PDF and
+auxiliary \texttt{.aux} and \texttt{.log} files in the practice
+directory; they are not part of the sharing copy. If Poppler's
+tools are installed, use the following. The \texttt{-} output
+operand tells \cmd|pdftotext| to print on standard output.
+Expected text includes the line about noon and may include a
+page number. If \cmd|pdfinfo| says one page and \cmd|pdftotext|
+returns an empty result, report those observations separately
+instead of declaring that the file lacks content.
+
+Consider a draft handout saved as a series of scanned pages. It
+can appear to be an ordinary spacious text document and yet only
+contain photographs of text to a basic extractor. A different PDF
+might display a black rectangle placed on top of readable
+underlying text; a text extractor may still read through it.
+Neither result proves more than the method used to obtain it.
+For a friendly review, report which pages you opened and which
+kind of text the extractor found. Don't publish the extracted
+text if it contains the very names you wanted to check for.
+When accessibility or privacy matters, use the release procedure
+required for those needs rather than trying to deduce compliance
+from ``one page'' and a handful of metadata fields.
+
+Some readers need a tagged PDF with a useful reading order, or a
+plain-text companion to a graphic handout. A text extraction is
+helpful for looking for missing headings and broken column order,
+but it isn't a substitute for trying the actual released document
+with the means people will use to read it. If a converted image
+looks fine but the label is now too small to read, the problem
+is not resolved by confirming it matches the expected file type.
+
+\begin{terminal}
+pdfinfo ./program.pdf
+pdftotext ./program.pdf -
+\end{terminal}
+
+\section{Pick the tool that speaks the format}
+A PDF page is not a stream of audio samples. For media files,
+\cmd|ffprobe|, distributed with FFmpeg, reports on the container
+(the wrapper format) and the streams (video, audio or other
+tracks in the wrapper). For a known local file \texttt{clip.wav},
+the following selects information about streams and asks for
+errors only in the logging stream. This is a command form only;
+the image lab hasn't created that file.
+
+\begin{terminal}[title={Illustrative form for a trusted local audio fixture}]
+ffprobe -v error -show_streams ./clip.wav
+\end{terminal}
+
+\texttt{-v error} limits logging; it does not suppress the
+requested information. \texttt{-show\_streams} requests one
+section per stream found. For an ordinary WAV file expect
+an audio section; \texttt{codec\_name} describes its encoding
+and \texttt{channels} the number of audio channels. A different
+container might include separate video and audio streams.
+These properties don't tell you whether a voice can be
+recognized or whether the clip includes a private conversation.
+Review content as well as reported fields. Some media tools
+accept network addresses as inputs, but this chapter uses
+explicit local paths, never credentials, URLs, or downloaded
+conversion services.
+
+Make a habit of writing down what preservation means before a
+conversion. For a text handout it might mean the number of
+pages, the words, and legibility at ordinary zoom. For a recording
+it might include its complete duration, audible speech, synchronization
+between picture and sound, and the intended caption track. Two
+container files can be different byte for byte while presenting
+the same picture or recording. Conversely, a successful conversion
+can discard a caption track you didn't know the original had.
+Chapter~\ref{ch:41} keeps the master recoverable. This chapter
+keeps the derivative fit for a specific use; the two checks belong
+together.
+
+After inspecting the copy, recheck where it will go. A derivative
+stored in a directory named \texttt{release} is ready for further
+review, not automatically approved for distribution. Some tools
+add build dates or software version information during conversion.
+Read the actual output again if you repeat the export using a
+different preset, or if someone edits the exported file. Use the
+transfer checks from Chapter~\ref{ch:39} for the exact set you
+intend to hand off, rather than pointing a sharing tool at your
+entire work area.
+Figure~\ref{fig:42-content} names three channels to check in any
+sharing copy, even one you didn't have to convert.
+
+\begin{quicktable}{p{1.3in}Y}
+\toprule
+Question & Tool and limit \\
+\midrule
+What format is this probably? & \texttt{file}: guess based on file properties; doesn't validate the whole file. \\
+How many pages and what size? & Poppler \texttt{pdfinfo}: PDF summary, not a full review of embedded content. \\
+What text is extractable? & Poppler \texttt{pdftotext}: may miss scans and doesn't preserve every aspect of layout. \\
+What tracks are present? & FFmpeg \texttt{ffprobe}: properties of streams \emph{as recognized by the tool}; not a listening or viewing check. \\
+\bottomrule
+\end{quicktable}
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-42/content.tikz}
+\caption{Some information is rendered, while other information travels with it.}\label{fig:42-content}
+\VisualDescription{A sharing copy can carry visible content, hidden or embedded information, and a revealing filename. Check all three before delivery.}
+\end{figure}
+
+\begin{dialoguebox}{The clean picture}
+\Brian{The comment is gone. Can I send the picture now?}
+\Stephen{That copy no longer reports the comment in our check.}
+\Brian{But the address is still painted on the front door in the picture.}
+\Stephen{Right. Removing a property didn't remove anything from the scene.}
+\Brian{And if I crop the address away, the filename could still be the street name.}
+\Stephen{Exactly. Inspect the picture, properties and filename you're actually releasing.}
+\Brian{So the command proved one thing, not permission to share.}
+\Stephen{That's the distinction.}
+\DialogueConclusion{Check the copy you will actually share.}
+\end{dialoguebox}
+
+\begin{exercise}{Distinguish a suffix from a format}\label{ex:42-suffix}
+Compare the results of \texttt{file} on the pretend PDF
+and on the PPM. If you made the one-page program, include
+that file too. Identify which results were recognizable by
+their contents. This creates no more files.
+\end{exercise}
+\begin{solution}
+\cmd|file ./not-a-pdf.pdf ./tiles.ppm| should identify text
+and a PPM or Netpbm picture, not two things based only on
+suffixes. \cmd|file ./program.pdf|, if created successfully,
+should identify a PDF. A recognized format still does not tell
+you whether it's suitable to share.
+\end{solution}
+
+\begin{exercise}{Check a derivative's pixels and comment}\label{ex:42-derivative}
+If you have ImageMagick 7, inspect the dimensions and comment
+of the PNG pair. View the release image, or print its pixels
+using the solution below. If you don't have the tool, read the
+PPM triples and state the intended pixel layout. Keep the
+fixtures for cleanup.
+\end{exercise}
+\begin{solution}
+Use the earlier \cmd|identify| form to see that both are
+two by two, with the comment absent from the release copy.
+\cmd|magick ./release/tiles-share.png txt:-| uses the special
+\texttt{txt:} output format for a textual pixel enumeration;
+the hyphen sends it to standard output. Check for red, green,
+blue, and white in the intended positions, not exact spelling
+of color names. Neither dimensions nor comment alone tells
+you what the pixels show.
+\end{solution}
+
+\begin{exercise}{Review what would leave the lab}\label{ex:42-review}
+List the release directory and choose which file, if any, would
+be appropriate to send for this make-believe task. Explain why
+the working directory should not be sent as a bundle. Don't send
+anything. Finish by removing only your fixtures.
+\end{exercise}
+\begin{solution}
+\cmd|ls -a ./release| should show only the derivative and the
+ordinary dot entries if conversion was performed. The master,
+pretend PDF, and optional TeX build files are unrelated to that
+image handoff. Follow the lab cleanup steps after this review.
+\end{solution}
+
+\paragraph{Lab cleanup.}
+After finishing the exercises, use the same exact-path check
+before removing any files. The braces group the whole cleanup
+so none of it runs when the check fails. Skip nonexistent
+optional outputs if typing the commands individually, but
+keep the path check before every removal.
+\cmd|rm -i| asks for confirmation; confirm only the synthetic
+fixtures. If a command failed part way through the lab, inspect
+which outputs it actually created before removing them.
+\begin{terminal}
+in_media_lab && {
+  rm -i ./not-a-pdf.pdf ./tiles.ppm
+  rm -i ./tiles.png ./release/tiles-share.png
+  rm -i ./program.tex ./program.pdf ./program.aux ./program.log
+  rmdir ./release
+  cd && rmdir "$medialab"
+}
+\end{terminal}
+If \cmd|rmdir| refuses, inspect the directory for unexpected
+files rather than deleting everything recursively.
+\begin{takeaways}
+\item Check classification from contents, then use a tool that understands the format.
+\item Preserve the original and write conversion output somewhere new.
+\item Inspect the delivered copy, including what you can see and what it carries silently.
+\end{takeaways}
+
+\begin{furtherreading}
+\ReadingItem{Netpbm PPM format}{Plain PPM headers and sample interpretation.}{https://netpbm.sourceforge.net/doc/ppm.html}
+\ReadingItem{ImageMagick command-line options}{Details for format reporting, property setting and stripping.}{https://imagemagick.org/script/command-line-options.php}
+\ReadingItem{Poppler documentation}{Project documentation; use the installed pdfinfo and pdftotext manuals for exact options.}{https://poppler.freedesktop.org/}
+\ReadingItem{ffprobe documentation}{Media stream inspection options and output sections.}{https://ffmpeg.org/ffprobe.html}
+\end{furtherreading}

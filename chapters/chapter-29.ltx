@@ -1,0 +1,532 @@
+A coworker gives you one line to print a collection of titles.
+Their Bash prompt accepts it. Your Fish prompt points at the opening
+parenthesis and objects. The terminal window didn't become defective
+on the walk between desks. The line is written in a different shell
+language. You can keep the prompt you like and still run a script
+written for another interpreter.
+
+\begin{objectives}
+\item Identify the difference between the shell at your prompt and the interpreter running a script.
+\item Pursue a portable recipe without guessing from the operating system or prompt shape.
+\item Recognize useful differences among POSIX sh, Bash, Zsh, Fish, Ksh and the C-shell family.
+\end{objectives}
+
+\section{Identify the thing you want to change}
+\label{sec:29-identity}
+\index{shell families}
+\index{login shell}
+
+There are at least three questions behind ``What shell do I have?''
+Which interpreter reads lines at this prompt? Which shell was
+configured for this account at login? Which language does a
+particular file ask to use? The answers can be different. For
+instance, you can open a Fish prompt, choose to start a temporary
+Zsh session inside it, and run a POSIX shell script from that
+session. None of that changes the account's login setting.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-29/roles.tikz}
+\caption{A chosen interpreter can differ from the interactive shell.}
+\label{fig:29-roles}
+\VisualDescription{The terminal window leads to a Fish prompt. The prompt invokes sh, which reads a script file in the POSIX shell language.}
+\end{figure}
+
+Check for interpreters by name from a fresh \texttt{sh} session.
+Type \texttt{sh} first. Then type the following lines separately;
+these queries neither install nor launch the optional shells:
+
+\begin{terminal}
+command -v sh
+command -v bash
+command -v zsh
+command -v fish
+command -v ksh
+command -v tcsh
+\end{terminal}
+
+As in Chapter~\ref{ch:28}, the \texttt{-v} option of
+\texttt{command} reports what the shell would use. An absent
+optional shell can produce no path and a nonzero status; it is
+fine to skip its experiments. A warning sign is a name resolved
+to a local function or wrapper you don't recognize rather than
+the interpreter you intended. Check its origin before running
+it. Nothing below requires installing anything to follow the
+explanation.
+
+\begin{terminal}
+printf 'Session clue: <%s>\n' "$0"
+printf 'Account clue: <%s>\n' "${SHELL-unset}"
+\end{terminal}
+
+\texttt{\$0} can show the name used to start this shell,
+usually \texttt{sh} in this exercise. When a shell runs a
+script, it may instead give the script name.
+\texttt{SHELL} is usually an inherited preference or login
+shell path. It can be absent, stale, or deliberately set to
+something else. Treat both as clues, not as conclusive probes.
+Knowing which interpreter you explicitly requested is better
+than trying to infer it from a customized prompt.
+
+\section{Portable is a language choice, not an operating-system label}
+\label{sec:29-posix}
+\index{POSIX shell}
+\index{sh@\texttt{sh}}
+
+The POSIX shell specification describes a language shared by
+multiple implementations. It is not a program with a single
+version number. On different Linux installations, the name
+\texttt{sh} can select Dash, Bash, BusyBox Ash or another
+implementation. macOS has long supplied a system \texttt{sh}
+alongside Bash and Zsh; on a recent stock setup the usual
+interactive default for new accounts is Zsh. FreeBSD and
+NetBSD include their own \texttt{sh}; OpenBSD's \texttt{sh}
+comes from its Korn shell family. Those facts help explain
+why a test on one system is not a test of all of them.
+Account defaults can be changed locally. Check your own
+manuals and actual command lookup before making a claim
+about your computer.
+
+\begin{terminal}
+sh -c 'set -- "Paper notes" "Photo index"; printf "<%s>\n" "$@"'
+\end{terminal}
+
+\texttt{-c} runs the fixed source string that follows. The
+parent's single quotes preserve the dollar sign for the new
+shell, which assigns the two positional parameters with
+\texttt{set --} and prints them with \cmd|"$@"|. Expect
+\texttt{<Paper notes>} and \texttt{<Photo index>}. This is a
+small portable way to keep a short group of arguments
+without invoking an interpreter's array feature. If you
+have Bash or Zsh, you can also try the same code with
+\texttt{bash -c} or \texttt{zsh -c} replacing \texttt{sh -c}.
+Passing this test is not proof that either native mode
+implements every POSIX default; it is one shared idiom.
+
+\begin{quicktable}{p{1.05in}YY}
+\toprule
+Family & Why use it & What not to assume \\
+\midrule
+POSIX sh & Share short, conservative scripts across many Unix-like installations. & The underlying implementation is the same everywhere. \\
+Bash & Rich scripting features and an extensive ecosystem, with a familiar interactive style. & Bash-only syntax works in Dash or every system's sh. \\
+Zsh & Friendly interactive facilities such as completion and extensive glob controls. & Native glob and splitting rules are Bash defaults. \\
+Fish & Built-in interactive suggestions and completion, and a distinct language and list model. & A POSIX assignment is native Fish syntax. \\
+Ksh & Korn shell scripting, arithmetic and other extensions for an existing Ksh workflow. & Two systems' Korn variants support exactly the same extensions. \\
+Csh/Tcsh & Maintain an established C-shell workflow; Tcsh adds interactive editing and completion. & The assignment and loop syntax is that of sh. \\
+\bottomrule
+\end{quicktable}
+
+\begin{dialoguebox}{Whose shell reads it?}
+\Brian{If I'm using Fish, does that make every script I run a Fish script?}
+\Stephen{No. If you pass a file to \texttt{sh}, that program reads the file. Fish just starts \texttt{sh}.}
+\Brian{Then why did my attempt to paste a Bash line at this prompt fail?}
+\Stephen{You didn't hand a file to Bash that time. The shell at the prompt tried to read the line itself.}
+\Brian{So I can keep the helpful suggestions at the prompt and still share a script with a friend on BSD?}
+\Stephen{Yes. Give the script a clearly documented language and test it with an interpreter on the intended system.}
+\DialogueConclusion{The reader of the source sets the rules.}
+\end{dialoguebox}
+
+\section{Compare a few intentional differences}
+\label{sec:29-dialects}
+\index{Bash}
+\index{Zsh}
+\index{Fish}
+\index{Korn shell}
+\index{C shell}
+
+Bash and Zsh both have named arrays, in which one name
+refers to a list of values. Fish treats its variables as
+lists, with ordinary scalar-looking values being lists
+with one element. The following demonstrations are
+separate commands at the practice \texttt{sh} prompt.
+Skip the line for any interpreter absent on your computer.
+The fixed strings after \texttt{-c} are examples of the
+target language, protected by the parent shell's single
+quotes. Do not substitute source strings from untrusted
+files or messages.
+
+\begin{terminal}
+bash -c 'title=("Paper notes" "Photo index"); printf "<%s>\n" "${title[0]}"'
+zsh -f -c 'title=("Paper notes" "Photo index"); printf "<%s>\n" "${title[1]}"'
+fish --no-config -c 'set title "Paper notes" "Photo index"; printf "<%s>\n" $title[1]'
+\end{terminal}
+
+Each example prints \texttt{<Paper notes>}. In those native
+default configurations the three spellings select the first
+element by Bash index zero, Zsh index one and Fish index one,
+respectively. Zsh's \texttt{-f} suppresses most startup-file
+processing, though the global \texttt{zshenv} still runs;
+site configuration can change native defaults. Fish's
+\texttt{--no-config} asks it not to read configuration files.
+Bash's noninteractive startup may use a file indicated by
+\texttt{BASH\_ENV}. These are not perfectly fresh simulations
+of every account. If your result differs, check the installed
+version and startup behavior before changing your files.
+
+The example with Fish doesn't need double quotes around the
+single list element to keep its internal space. Do not copy
+that convention to an unquoted POSIX variable expansion.
+Conversely, dropping a POSIX \texttt{name=value} onto its
+own line in a Fish script is not the way Fish assigns a
+variable: use its \texttt{set} command. A familiar utility
+like \texttt{printf} can still put the result on standard
+output. The difference here is the shell language that
+prepares those arguments, not the ability to display text.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-29/first.tikz}
+\caption{The first element has different indexes in the three native modes.}
+\label{fig:29-first}
+\VisualDescription{Bash at index zero, Zsh at index one and Fish at index one all point to the first element, Paper notes.}
+\end{figure}
+
+Korn shells include multiple variants, notably ksh93,
+mksh and the OpenBSD Korn shell. \texttt{ksh} names
+whichever implementation is installed under that name,
+if any. For this exercise, the POSIX list idiom above
+is suitable for Ksh. Unlike the named-array comparison,
+that idiom does not rely on a Ksh extension.
+For a new Ksh-specific script, check whether the options
+or syntax you need are in the local implementation;
+do not infer that all Korn shells are interchangeable.
+
+\begin{terminal}
+ksh -c 'set -- "Paper notes" "Photo index"; printf "<%s>\n" "$1"'
+\end{terminal}
+
+The expected result is \texttt{<Paper notes>} (manual-based
+example). The C-shell family, whose syntax was influenced by
+C, is a separate language. Tcsh extends Csh; neither is
+selected by invoking ordinary \texttt{sh}. To see a different
+variable assignment and lookup, use this optional example
+if Tcsh is installed:
+
+\begin{terminal}
+tcsh -f -c 'set tag = "Paper notes"; echo "$tag"'
+\end{terminal}
+
+Expect \texttt{Paper notes} (manual-based example).
+\texttt{-f} tells Tcsh not to read startup files;
+\texttt{-c} takes the command string. The separate words
+around \texttt{=} are deliberate here, in contrast with
+POSIX shell assignment in Chapter~\ref{ch:27}. This example
+uses \texttt{echo} with an ordinary string containing no
+ambiguous option or backslash. A reader maintaining an
+existing C-shell script should use the appropriate manual,
+not convert a few punctuation marks by intuition.
+
+\begin{quicktable}{YY}
+\toprule
+If the task is\ldots & Fit the interpreter to it \\
+\midrule
+Share a small script with users of several systems & Start with conservative POSIX syntax and test a second implementation. \\
+Use well-tested features of one interpreter & Document the required interpreter and version, and show an explicit invocation. \\
+Try a different interactive experience & Start the optional shell for a temporary session; exit to return. \\
+Understand a historical or inherited script & Read its invocation instructions and local shell documentation before modifying it. \\
+\bottomrule
+\end{quicktable}
+
+\section{Run the file in its own language}
+\label{sec:29-invocation}
+
+The common first line \texttt{\#!/bin/sh} on a script is
+called a \emph{shebang}. On the systems discussed here,
+when you directly invoke an executable script, that line
+can identify the interpreter by path. But in
+\texttt{sh script.sh}, \texttt{sh} is already selected;
+it opens the script as input. Running \texttt{sh} on a
+Bash-specific script doesn't honor a Bash shebang by handing
+the file over to Bash. And a filename ending in
+\texttt{.sh}, \texttt{.bash} or \texttt{.fish} is a helpful
+convention, not instructions to the operating system.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-29/select.tikz}
+\caption{Two invocation methods select an interpreter at different points.}
+\label{fig:29-select}
+\VisualDescription{With an explicit sh invocation, sh reads the file. With direct execution of an executable script, the operating system uses the shebang interpreter path.}
+\end{figure}
+
+This chapter needs no new script or startup file. To try
+another interpreter interactively, type its name only if
+your availability check found the expected installation.
+For example, run \texttt{zsh -f}, then try the following
+two lines separately and return using \texttt{exit}.
+Do not type \texttt{exit} if the shell didn't start.
+
+\begin{terminal}
+printf '<%s>\n' "Different prompt, same terminal"
+exit
+\end{terminal}
+
+That temporary session is a safe comparison. There is no
+need to change your login shell to make a script work.
+Before using syntax you just learned at a different prompt,
+ask whether you are comparing the commands' arguments, the
+interactive amenities, or the script language. Each can
+change without changing the other two.
+
+\section{Decide what to put in the handoff}
+\label{sec:29-handoff}
+
+Imagine sending this instruction with a small script:
+``Run it at the terminal.'' That tells the recipient where
+to sit, not which program reads the source. A more useful
+instruction might say ``Plain-text POSIX shell script;
+run it as \texttt{sh report.sh} from the folder containing
+the inputs.'' That also makes explicit which working
+directory the recipe assumes. If you rely on Bash arrays,
+say so and use \texttt{bash report.bash} instead. The named
+interpreter is as much a part of the recipe as the name of
+the script.
+
+For a small script, choose a known input that shows
+a meaningful boundary. Here both arguments have spaces:
+
+\begin{terminal}
+sh -c 'set -- "Paper notes" "Photo index"; printf "%s\n" "$#"'
+sh -c 'set -- "Paper notes" "Photo index"; printf "<%s>\n" "$2"'
+\end{terminal}
+
+Your baseline is \texttt{2} and \texttt{<Photo index>}.
+Someone using a different implementation can check a
+portable recipe with the same input. If you are comparing
+native shells instead, don't hide a language change
+behind the same script label. Identify the feature used
+in each version and compare what the versions accomplish
+with identical inputs, not which spelling is shortest.
+An array offers named structured storage where the short
+portable list above reuses positional arguments; neither
+is a drop-in substitute for the other in a longer script.
+
+Be careful also with syntax checking. \texttt{sh -n file}
+asks this \texttt{sh} to read the file without executing
+it. A successful result means this particular interpreter
+could read the syntax, not that a different interpreter
+can read it, or that any of them will handle all the inputs
+correctly. For behavior, run the intended interpreter on
+invented input. For portability, run another implementation
+and record which one. If you cannot, name the specification
+or manuals you consulted and leave the result marked
+untested on the other system.
+
+There is also a legitimate reason not to aim for portability.
+If a script's only job is adjusting how the Fish prompt
+displays a folder, it belongs to that interactive setup.
+Rewriting it as POSIX shell to satisfy an unrelated recipe
+would obscure what it does. At the other end of the scale,
+a recipe that wraps a third-party utility cannot be portable
+merely because its syntax is POSIX. The recipient needs the
+same utility or a documented alternative, too. Separate
+those two kinds of dependency: first who reads the source,
+then which commands that source asks the reader to run.
+
+\section{Narrow a compatibility problem to one symptom}
+\label{sec:29-debug}
+
+Suppose an instruction says that an unquoted pattern
+with no match will be left as-is. The person with Zsh
+at the prompt instead gets an error before the command
+starts. Neither result is a property of the
+\texttt{printf} utility. The first important question
+is which interpreter saw the pattern. Try this probe
+in a fresh empty practice directory made using
+Chapter~\ref{ch:12}. The quoted outer strings keep the
+pattern away from the calling shell and give each child
+interpreter the same source to read.
+
+\begin{terminal}
+sh -c 'printf "<%s>\n" ./*.absent'
+zsh -f -c 'printf "<%s>\n" ./*.absent'
+\end{terminal}
+
+The POSIX invocation should print \texttt{<./*.absent>}.
+The native Zsh default should report no match with
+nonzero status. Skip the second line if unavailable,
+and remember the caveat about global startup files.
+Neither command creates anything. Leave and remove
+only the empty practice directory if you made one.
+If a real recipe is intended to work in the caller's
+shell, you may need to handle the failure there, not
+by editing the first command the glob was supposed
+to invoke. If it is intended to work under \texttt{sh},
+run the recipe there before asking the recipient to
+change their Zsh configuration.
+
+Compatibility work gets muddled when you change the
+script, the interpreter and the inputs all at once.
+Start with the smallest source that exposes the
+difference. Record one expected outcome and one
+observed outcome. If both shells run the same probe
+but a larger script still fails, the probe hasn't
+tested the faulty feature. Choose a smaller example
+of the first command that actually differs. A syntax
+error before a tool is invoked belongs to a different
+layer from a diagnostic printed by the tool.
+
+This procedure also respects the advantages of other
+shells. Native Fish list behavior is useful when you
+want it; making Fish pretend to be sh is not the
+lesson of this chapter. Likewise, Zsh's early no-match
+message can be helpful when an interactive user expects
+the pattern to select something. A portable script
+written for another interpreter may need to accommodate
+an unchanged pattern explicitly. An honest comparison
+shows which behavior a task relies on rather than
+ranking every shell by one small example.
+
+\section{Separate the interpreter from what it launches}
+\label{sec:29-utilities}
+
+One recommendation might use Bash on both machines yet
+still fail on one. Start the following once on each
+machine. It runs a fixed POSIX command string twice
+if the optional Bash is present, and reports the
+utility lookup without running the utility:
+
+\begin{terminal}
+sh -c 'command -v sort'
+bash -c 'command -v sort'
+\end{terminal}
+
+On one machine both shells may identify the same
+system \texttt{sort}; another may find a different
+executable. The path may even look alike on both
+machines despite referring to different implementations.
+The interpreter can read a valid line while the selected
+utility rejects that line's options. On a new machine,
+use its own manual to check the relevant option and
+look at the implementation your shell found. Don't
+decide that a utility option is portable on the basis
+of the shell's version number.
+
+Change just one dimension when comparing results.
+On one computer, run the same portable command
+string through two interpreters while leaving the
+input and utility lookup the same. If they disagree,
+check what the shell handles: token boundaries,
+substitution, patterns and redirections. Then hold
+the interpreter and command string fixed while
+checking the utility from a different installation,
+where version and platform may change what the utility
+accepts. In either test, keep the baseline command
+read-only. Investigating an obscure option doesn't
+require letting it act on your real files.
+
+If a recipient has only the portable system shell
+and your instructions require a native Fish feature,
+label the mismatch plainly. A recognized file
+extension is not evidence that there's an interpreter
+on the computer to read it. Replacing every visible
+instance of the word Fish with sh in the instructions
+does not convert the language, either. Consider
+providing a short equivalent that uses the earlier
+POSIX idiom, or choose the native interpreter and
+document the dependency. Do not silently substitute
+one for the other in a command that will modify
+files just because a small display test happened
+to work.
+
+The smallest useful handoff also says what to do if an
+interpreter is absent. Imagine the report is due in an
+hour. If the Bash path is missing, the reader needs to
+know whether to use a documented POSIX alternative, to
+ask for a completed report, or to arrange installation
+later through their normal package process. Installing
+an unfamiliar executable is not a prerequisite for
+reporting a compatibility difference. Return the exact
+interpreter name, a nonprivate sample input, and the
+first error. That gives the author something to test
+without requiring the recipient to change their system.
+
+When you find a promising alternative, compare boundaries
+as well as visible text. An argument containing two
+words, an explicitly empty argument, and an argument
+beginning with a hyphen answer three different questions
+about the receiving code. If a report is meant to read
+files, keep those tests in a disposable directory. A
+successful ordinary-title example does not establish that
+the alternate dialect preserved every input. Write down
+which cases actually ran, distinguish native defaults
+from compatibility mode, and keep the example short
+enough that someone else can repeat it.
+
+It is useful to give the baseline first and the extension
+second in shared instructions. Someone who cannot use the
+extension can still check whether the baseline works on
+their machine. Someone who can use it now has a known
+result to compare. If the baseline itself fails, stop
+there: the error may be in the working directory, the
+command lookup, or the input, rather than in the optional
+language feature. That ordering makes the recipe easier
+to maintain without making the reader learn seven shells.
+
+\section{Exercises and cleanup}
+
+\begin{exercise}{Probe the intended interpreter}
+\label{ex:29-available}
+Check whether your system supplies \texttt{sh} and
+\texttt{ksh}. Explain what you know from the output
+without guessing the underlying implementation.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+command -v sh
+command -v ksh
+\end{terminal}
+The first should identify the practice interpreter; the
+second may be absent. A path or command name is not a
+version report. These queries create no files.
+\end{solution}
+
+\begin{exercise}{Share the data, not the array syntax}
+\label{ex:29-posix}
+Run a POSIX command string that stores \texttt{Saturday
+group} and \texttt{Sunday group} as separate arguments.
+Print just the second one without using an array.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+sh -c 'set -- "Saturday group" "Sunday group"; printf "<%s>\n" "$2"'
+\end{terminal}
+Expect \texttt{<Sunday group>}. The child shell exits and
+its positional arguments are discarded. No file is made.
+\end{solution}
+
+\begin{exercise}{Choose an index on purpose}
+\label{ex:29-index}
+If Bash or Zsh is available, rerun its array example with
+the index for \texttt{Photo index}. If neither is available,
+predict the output and verify the same title using POSIX
+positional parameters instead.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+bash -c 'title=("Paper notes" "Photo index"); printf "<%s>\n" "${title[1]}"'
+zsh -f -c 'title=("Paper notes" "Photo index"); printf "<%s>\n" "${title[2]}"'
+sh -c 'set -- "Paper notes" "Photo index"; printf "<%s>\n" "$2"'
+\end{terminal}
+Run only the available variants. Each should show
+\texttt{<Photo index>}. All practice lists disappear when
+their child shells exit.
+\end{solution}
+
+Leave the outer practice \texttt{sh} with \texttt{exit} once
+you have finished. Nothing in this exercise requires changing
+your account or cleaning any directories.
+
+\begin{takeaways}
+\item Your prompt, your account's default and a script's interpreter are separate choices.
+\item Check a shell's name and documentation before copying its extensions to another language.
+\item A conservative POSIX idiom is often the easiest way to share a small task.
+\end{takeaways}
+
+\begin{furtherreading}
+\ReadingItem{GNU Bash Reference Manual}{Arrays, invocation and Bash POSIX mode}{https://www.gnu.org/software/bash/manual/html_node/}
+\ReadingItem{Zsh Manual}{Native parameters, expansions and options}{https://zsh.sourceforge.io/Doc/Release/Parameters.html}
+\ReadingItem{Fish documentation}{Fish language and syntax}{https://fishshell.com/docs/current/language.html}
+\ReadingItem{OpenBSD ksh manual}{Korn shell variant and supported syntax}{https://man.openbsd.org/ksh}
+\ReadingItem{FreeBSD tcsh manual}{Tcsh syntax, startup and invocation}{https://man.freebsd.org/tcsh}
+\end{furtherreading}

@@ -1,0 +1,8 @@
+# Chapter	Source	Broker reply	Disposition and evidence
+23	5c7d512	d990e864056d4007922063f4062a59fd	Fail-closed setup independently tested: valid Linux scratch path worked and injected mktemp failure produced no writes in the caller. Prior guarded archive tests still pass.
+27	ab7b62c	00f37ace26b8408293da11b53ee3bb0e	Expanded shift examples passed three cases on Linux sh and Zsh emulation, distinguishing absent and empty headings.
+28	ab7b62c	98de45b036424ef391cbccf5ebe40479	Exact expanded blocks passed in Linux sh and Zsh emulation, including exported-empty and one-command override.
+29	ab7b62c	b27b145c96974e0f8d18d2aeeb837611	Expanded interpreter versus utility distinction and read-only comparison approved. Both command lookup cases passed on Linux.
+42	2272354	2796d1526ee34c8485204308505aea79	All seven write and cleanup blocks independently rejected unset and wrong directory paths, preserved sentinels, and accepted the exact physical directory under Linux sh and Zsh emulation.
+47	4e7d9e3	3db5585a666d4480b6ccc274cc7da753	Exact recorded-path and interactive cleanup safeguards approved. Linux sh and Zsh emulation passed setup-failure and full catalog/copy/cleanup probes.
+48	4e7d9e3	a6583049132b48ae8aafa999d1271965	Setup failure exited without writes. Offline restore passed GNU tar and Linux bsdtar at prior review; no live SFTP or native BSD/macOS test.

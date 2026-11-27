@@ -1,0 +1,9 @@
+\begin{tikzpicture}
+\node[utp node] (bash) at (-2.5,1.6) {Bash: 0};
+\node[utp node] (zsh) at (0,1.6) {Zsh: 1};
+\node[utp node] (fish) at (2.5,1.6) {Fish: 1};
+\node[utp node] (item) at (0,0) {Paper notes};
+\draw[utp arrow] (bash.south)--(item.north west);
+\draw[utp arrow] (zsh.south)--(item.north);
+\draw[utp arrow] (fish.south)--(item.north east);
+\end{tikzpicture}
