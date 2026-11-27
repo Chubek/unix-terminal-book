@@ -1,0 +1,8 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{utp-objectives}[2026/11/27 v1.0 Chapter outcomes and prerequisites]
+\RequirePackage{utp-callouts}
+\RequirePackage{utp-lists}
+\newenvironment{objectives}{\begin{conceptbox}[In this chapter]\begin{itemize}}{\end{itemize}\end{conceptbox}}
+\newenvironment{prerequisites}{\begin{notebox}[Before you begin]\begin{itemize}}{\end{itemize}\end{notebox}}
+\newcommand{\EstimatedTime}[1]{\par\textbf{Estimated time:} #1\par}
+\endinput

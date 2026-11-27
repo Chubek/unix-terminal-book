@@ -1,0 +1,7 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{utp-glossary}[2026/11/27 v1.0 Curated glossary entries and links]
+\RequirePackage{utp-lists}
+\NewDocumentEnvironment{bookglossary}{}{\chapter*{Glossary}\addcontentsline{toc}{chapter}{Glossary}\begin{terms}}{\end{terms}}
+\newcommand{\GlossaryEntry}[3]{\item[#2]\ifdefined\phantomsection\phantomsection\fi\label{gloss:#1}#3}
+\newcommand{\GlossaryLink}[2]{\ifdefined\hyperref\hyperref[gloss:#1]{#2}\else#2\fi}
+\endinput

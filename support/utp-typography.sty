@@ -1,0 +1,20 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{utp-typography}[2026/11/27 v1.0 Engine-aware fonts and readable prose]
+\RequirePackage{iftex}
+\ifPDFTeX
+  \RequirePackage[T1]{fontenc}
+  \RequirePackage{lmodern}
+\else
+  \RequirePackage{fontspec}
+  \setmainfont{lmroman10-regular.otf}[BoldFont=lmroman10-bold.otf,ItalicFont=lmroman10-italic.otf,BoldItalicFont=lmroman10-bolditalic.otf]
+  \setsansfont{lmsans10-regular.otf}[BoldFont=lmsans10-bold.otf,ItalicFont=lmsans10-oblique.otf,BoldItalicFont=lmsans10-boldoblique.otf]
+  \setmonofont{lmmono10-regular.otf}[Scale=MatchLowercase,BoldFont=lmmonolt10-bold.otf,ItalicFont=lmmono10-italic.otf,BoldItalicFont=lmmonolt10-boldoblique.otf]
+\fi
+\RequirePackage{microtype}
+\RequirePackage{textcomp}
+\RequirePackage{upquote}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.55em plus 0.15em minus 0.1em}
+\setlength{\emergencystretch}{2em}
+\linespread{1.07}
+\endinput

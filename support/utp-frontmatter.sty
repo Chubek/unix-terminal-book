@@ -1,0 +1,8 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{utp-frontmatter}[2026/11/27 v1.0 Title page and unnumbered front matter]
+\RequirePackage{utp-metadata}
+\RequirePackage{utp-colors}
+\newcommand{\MakeBookTitle}{\ifdefined\hypersetup\hypersetup{pageanchor=false}\fi\begin{titlepage}\thispagestyle{empty}\raggedright\vspace*{0.12\textheight}{\color{UTPAccent}\rule{\linewidth}{1pt}}\par\vspace{1.5em}{\sffamily\bfseries\Huge\color{UTPInk}\@title\par}\vspace{0.7em}{\Large\sffamily\color{UTPMuted}\utp@subtitle\par}\vfill{\Large\@author\par}\vspace{1em}{\sffamily\utp@edition\par\utp@publisher\par\@date\par}\end{titlepage}\ifdefined\hypersetup\hypersetup{pageanchor=true}\fi}
+\NewDocumentEnvironment{copyrightpage}{}{\clearpage\thispagestyle{empty}\vspace*{\fill}\small}{\par\clearpage}
+\newcommand{\FrontChapter}[1]{\chapter*{#1}\ifdefined\phantomsection\phantomsection\fi\addcontentsline{toc}{chapter}{#1}\markboth{#1}{}}
+\endinput

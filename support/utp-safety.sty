@@ -1,0 +1,8 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{utp-safety}[2026/11/27 v1.0 Explicit risk and recovery warnings]
+\RequirePackage{utp-callouts}
+\newtcolorbox{warningbox}[1][Caution]{utp box,colframe=UTPWarn,coltitle=UTPWarn,title={#1}}
+\newtcolorbox{dangerbox}[1][Stop: potential data loss]{utp box,colframe=UTPDanger,coltitle=UTPDanger,title={#1}}
+\newtcolorbox{recoverybox}[1][How to recover]{utp box,colframe=UTPGood,coltitle=UTPGood,title={#1}}
+\newcommand{\RiskLabel}[1]{\textbf{\textcolor{UTPWarn}{Risk: #1}}}
+\endinput

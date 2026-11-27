@@ -1,0 +1,8 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{utp-checklists}[2026/11/27 v1.0 Printable completion checklists]
+\RequirePackage{utp-lists}
+\RequirePackage{amssymb}
+\newlist{checklist}{itemize}{1}
+\setlist[checklist]{label=\ensuremath{\square},leftmargin=*}
+\newcommand{\CheckedItem}{\item[\ensuremath{\checkmark}]}
+\endinput

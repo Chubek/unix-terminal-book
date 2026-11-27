@@ -1,0 +1,9 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{utp-troubleshooting}[2026/11/27 v1.0 Symptom, cause and recovery format]
+\RequirePackage{utp-callouts}
+\newtcolorbox{troubleshoot}[1]{utp box,title={Troubleshooting: #1},colframe=UTPWarn}
+\newcommand{\Symptom}[1]{\par\textbf{Symptom:} #1\par}
+\newcommand{\LikelyCause}[1]{\par\textbf{Likely cause:} #1\par}
+\newcommand{\TryThis}[1]{\par\textbf{Try this:} #1\par}
+\newcommand{\VerifyFix}[1]{\par\textbf{Check:} #1\par}
+\endinput

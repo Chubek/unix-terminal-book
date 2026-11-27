@@ -1,0 +1,8 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{utp-index}[2026/11/27 v1.0 Subject and command indexing]
+\RequirePackage{makeidx}
+\makeindex
+\newcommand{\IndexTerm}[1]{#1\index{#1}}
+\newcommand{\IndexCommand}[1]{\texttt{#1}\index{#1@\texttt{#1}}}
+\newcommand{\PrintBookIndex}{\cleardoublepage\ifdefined\phantomsection\phantomsection\fi\addcontentsline{toc}{chapter}{\indexname}\printindex}
+\endinput

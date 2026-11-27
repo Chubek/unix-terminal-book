@@ -1,0 +1,7 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{utp-output}[2026/11/27 v1.0 Output and error listings]
+\RequirePackage{utp-terminal}
+\NewTCBListing{terminaloutput}{!O{}}{utp listing,title={Example output},#1}
+\NewTCBListing{erroroutput}{!O{}}{utp listing,title={Example error},colframe=UTPWarn,coltitle=UTPWarn,#1}
+\NewTCBListing{filecontentsbox}{!O{}}{utp listing,title={File contents},#1}
+\endinput

@@ -1,0 +1,7 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{utp-summaries}[2026/11/27 v1.0 Chapter recap and key takeaways]
+\RequirePackage{utp-callouts}
+\RequirePackage{utp-lists}
+\newenvironment{takeaways}{\begin{conceptbox}[What to remember]\begin{itemize}}{\end{itemize}\end{conceptbox}}
+\newcommand{\NextChapter}[1]{\par\textbf{Up next.}\enspace #1\par}
+\endinput

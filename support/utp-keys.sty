@@ -1,0 +1,8 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{utp-keys}[2026/11/27 v1.0 Keyboard shortcuts and keycaps]
+\RequirePackage{utp-colors}
+\newcommand{\Key}[1]{{\setlength{\fboxsep}{1.5pt}\setlength{\fboxrule}{0.4pt}\fcolorbox{UTPRule}{UTPSoft}{\strut\footnotesize\sffamily #1}}}
+\newcommand{\KeyChord}[2]{\Key{#1}\nobreak\hspace{0.15em}+\hspace{0.15em}\Key{#2}}
+\newcommand{\EnterKey}{\Key{Enter}}
+\newcommand{\TabKey}{\Key{Tab}}
+\endinput

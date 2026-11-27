@@ -1,0 +1,9 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{utp-lists}[2026/11/27 v1.0 Readable lists and step sequences]
+\RequirePackage{enumitem}
+\setlist{topsep=0.4em,itemsep=0.25em,parsep=0pt,leftmargin=*}
+\newlist{steps}{enumerate}{1}
+\setlist[steps]{label=\textbf{\arabic*.},ref=\arabic*,leftmargin=*}
+\newlist{terms}{description}{1}
+\setlist[terms]{style=nextline,font=\normalfont\bfseries,leftmargin=1.4em}
+\endinput

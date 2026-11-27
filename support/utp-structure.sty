@@ -1,0 +1,18 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{utp-structure}[2026/11/27 v1.0 Four-part chapter structure and optional count check]
+\RequirePackage{xparse}
+\RequirePackage{utp-colors}
+\RequirePackage{titlesec}
+\titleformat{\chapter}[display]{\normalfont\sffamily\bfseries\color{UTPInk}}{\large\color{UTPAccent}\chaptertitlename\ \thechapter}{0.5em}{\Huge}
+\titleformat{\section}{\Large\sffamily\bfseries\color{UTPInk}}{\thesection}{0.65em}{}
+\titleformat{\subsection}{\large\sffamily\bfseries\color{UTPInk}}{\thesubsection}{0.65em}{}
+\titlespacing*{\chapter}{0pt}{0pt}{1.5em}
+\setcounter{secnumdepth}{2}
+\newcounter{utpbookparts}
+\newcounter{utppartchapters}
+\newcounter{utpbookchapters}
+\newcommand{\utp@checkpart}{\ifnum\value{utpbookparts}>0\relax\ifnum\value{utppartchapters}=12\relax\else\PackageWarning{utp-structure}{Part \arabic{utpbookparts} has \arabic{utppartchapters} chapters; expected 12}\fi\fi}
+\NewDocumentCommand{\BookPart}{m}{\utp@checkpart\stepcounter{utpbookparts}\setcounter{utppartchapters}{0}\part{#1}}
+\NewDocumentCommand{\BookChapter}{m}{\ifnum\value{utpbookparts}=0\relax\PackageWarning{utp-structure}{BookChapter before BookPart}\fi\stepcounter{utppartchapters}\stepcounter{utpbookchapters}\chapter{#1}}
+\newcommand{\CheckBookStructure}{\utp@checkpart\ifnum\value{utpbookparts}=4\relax\else\PackageWarning{utp-structure}{Expected 4 parts; found \arabic{utpbookparts}}\fi\ifnum\value{utpbookchapters}=48\relax\else\PackageWarning{utp-structure}{Expected 48 chapters; found \arabic{utpbookchapters}}\fi}
+\endinput

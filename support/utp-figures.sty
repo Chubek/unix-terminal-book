@@ -1,0 +1,8 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{utp-figures}[2026/11/27 v1.0 Illustrations and consistent captions]
+\RequirePackage{graphicx}
+\RequirePackage{caption}
+\captionsetup{font=small,labelfont={bf,sf}}
+\NewDocumentCommand{\BookFigure}{O{0.9\linewidth} m m m}{\begin{figure}[htbp]\centering\includegraphics[width=#1]{#2}\caption{#3}\label{#4}\end{figure}}
+\NewDocumentCommand{\FigurePlaceholder}{m m}{\begin{figure}[htbp]\centering\fbox{\parbox[c][35mm][c]{0.85\linewidth}{\centering\sffamily #1}}\caption{#2}\end{figure}}
+\endinput

@@ -1,0 +1,7 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{utp-references}[2026/11/27 v1.0 Further reading and source citation helpers]
+\RequirePackage{url}
+\newenvironment{furtherreading}{\section*{Further reading}\begin{itemize}}{\end{itemize}}
+\newcommand{\ReadingItem}[3]{\item \textbf{#1}. #2. \url{#3}}
+\newcommand{\SourceNote}[1]{\par{\footnotesize\textit{Source:} #1\par}}
+\endinput

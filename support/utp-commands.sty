@@ -1,0 +1,9 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{utp-commands}[2026/11/27 v1.0 Command anatomy and option reference]
+\RequirePackage{utp-callouts}
+\RequirePackage{utp-inline}
+\newtcolorbox{commandcard}[1]{utp box,title={Command: \texttt{#1}}}
+\newcommand{\CommandField}[2]{\par\noindent\textbf{#1:}\enspace #2\par}
+\NewDocumentCommand{\CommandSyntax}{v}{\par\noindent\textbf{Syntax:}\enspace\texttt{#1}\par}
+\newcommand{\CommandOption}[2]{\par\noindent\textbf{#1}\enspace #2\par}
+\endinput

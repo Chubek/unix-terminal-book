@@ -1,0 +1,15 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{utp-links}[2026/11/27 v1.0 Hyperlinks and PDF navigation]
+\RequirePackage{utp-colors}
+\RequirePackage{hyperref}
+\RequirePackage{bookmark}
+\@ifundefined{ifutpscreen}{\newif\ifutpscreen}{}
+\ifutpscreen
+  \hypersetup{colorlinks=true,linkcolor=UTPAccent,urlcolor=UTPAccent,citecolor=UTPAccent}
+\else
+  \hypersetup{hidelinks}
+\fi
+\hypersetup{bookmarksopen=true,bookmarksnumbered=true,pdfdisplaydoctitle=true}
+\newcommand{\WebLink}[2]{\href{#1}{#2}}
+\pdfstringdefDisableCommands{\def\Platform#1{#1}\def\FirstUse#1{#1}\def\texttt#1{#1}}
+\endinput

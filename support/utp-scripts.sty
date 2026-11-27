@@ -1,0 +1,7 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{utp-scripts}[2026/11/27 v1.0 Shell scripts and external source files]
+\RequirePackage{utp-terminal}
+\lstdefinestyle{utpshell}{style=utpcode,language=bash,keywordstyle=\bfseries\color{UTPAccent},commentstyle=\itshape\color{UTPMuted},stringstyle=\color{UTPGood}}
+\NewTCBListing{shellscript}{!O{}}{utp listing,title={Shell script},listing options={style=utpshell},#1}
+\NewDocumentCommand{\ShellFile}{O{} m}{\tcbinputlisting{utp listing,title={Shell script},listing file={#2},listing options={style=utpshell},#1}}
+\endinput

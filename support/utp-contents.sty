@@ -1,0 +1,10 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{utp-contents}[2026/11/27 v1.0 Contents and navigation depth]
+\RequirePackage{tocloft}
+\setcounter{tocdepth}{1}
+\renewcommand{\cftpartfont}{\sffamily\bfseries}
+\renewcommand{\cftchapfont}{\sffamily\bfseries}
+\setlength{\cftbeforechapskip}{0.6em}
+\newcommand{\BookContents}{\cleardoublepage\tableofcontents}
+\newcommand{\DetailedContents}{\setcounter{tocdepth}{2}}
+\endinput

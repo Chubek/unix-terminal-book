@@ -1,0 +1,11 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{utp-solutions}[2026/11/27 v1.0 Optional solutions including literal listings]
+\RequirePackage{utp-callouts}
+\@ifundefined{ifutpanswers}{\newif\ifutpanswers\utpanswerstrue}{}
+\ifutpanswers
+  \newtcolorbox{solution}{utp box,title={Solution},colframe=UTPGood}
+\else
+  \RequirePackage{comment}
+  \excludecomment{solution}
+\fi
+\endinput

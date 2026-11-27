@@ -1,0 +1,7 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{utp-tables}[2026/11/27 v1.0 Reference and comparison tables]
+\RequirePackage{array,tabularx,booktabs,longtable}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{M}[1]{>{\raggedright\arraybackslash\ttfamily}p{#1}}
+\NewDocumentEnvironment{quicktable}{m +b}{\par\smallskip\noindent\begin{tabularx}{\linewidth}{#1}#2\end{tabularx}\par\smallskip}{}
+\endinput

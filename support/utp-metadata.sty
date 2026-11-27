@@ -1,0 +1,10 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{utp-metadata}[2026/11/27 v1.0 Book title metadata]
+\RequirePackage{xparse}
+\newcommand{\utp@subtitle}{}
+\newcommand{\utp@edition}{}
+\newcommand{\utp@publisher}{}
+\NewDocumentCommand{\BookSubtitle}{m}{\gdef\utp@subtitle{#1}}
+\NewDocumentCommand{\BookEdition}{m}{\gdef\utp@edition{#1}}
+\NewDocumentCommand{\BookPublisher}{m}{\gdef\utp@publisher{#1}}
+\endinput

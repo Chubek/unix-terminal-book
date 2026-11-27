@@ -1,0 +1,6 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{utp-backmatter}[2026/11/27 v1.0 Appendix and back-matter navigation]
+\newcommand{\BeginAppendices}{\appendix}
+\newcommand{\BackChapter}[1]{\chapter*{#1}\ifdefined\phantomsection\phantomsection\fi\addcontentsline{toc}{chapter}{#1}\markboth{#1}{}}
+\newcommand{\BookSee}[2]{See #1~\ref{#2} on page~\pageref{#2}.}
+\endinput

@@ -1,0 +1,7 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{utp-accessibility}[2026/11/27 v1.0 Text alternatives and nonvisual cues]
+\RequirePackage{utp-figures}
+\newcommand{\VisualDescription}[1]{\par{\small\textbf{Visual description:} #1\par}}
+\newcommand{\AccessibleFigure}[5][0.9\linewidth]{\begin{figure}[htbp]\centering\includegraphics[width=#1]{#2}\caption{#3}\label{#4}\VisualDescription{#5}\end{figure}}
+\newcommand{\NonvisualCue}[1]{\par\textbf{What to look for:} #1\par}
+\endinput

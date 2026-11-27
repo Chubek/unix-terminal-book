@@ -1,0 +1,8 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{utp-inline}[2026/11/27 v1.0 Literal inline commands and syntax]
+\RequirePackage{xparse}
+\NewDocumentCommand{\cmd}{v}{{\ttfamily #1}}
+\NewDocumentCommand{\literal}{v}{{\ttfamily #1}}
+\NewDocumentCommand{\Placeholder}{m}{\textnormal{\textit{#1}}}
+\NewDocumentCommand{\OptionName}{v}{{\ttfamily #1}}
+\endinput

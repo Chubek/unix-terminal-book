@@ -1,0 +1,14 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{utp-platforms}[2026/11/27 v1.0 Platform and shell compatibility labels]
+\RequirePackage{utp-callouts}
+\newcommand{\Platform}[1]{\textbf{\textsf{#1}}}
+\newcommand{\Linux}{\Platform{Linux}}
+\newcommand{\macOS}{\Platform{macOS}}
+\newcommand{\FreeBSD}{\Platform{FreeBSD}}
+\newcommand{\OpenBSD}{\Platform{OpenBSD}}
+\newcommand{\NetBSD}{\Platform{NetBSD}}
+\newcommand{\POSIXShell}{\Platform{POSIX sh}}
+\newcommand{\BashShell}{\Platform{Bash}}
+\newcommand{\ZshShell}{\Platform{Zsh}}
+\newtcolorbox{platformnote}[1]{utp box,title={Platform note: #1}}
+\endinput

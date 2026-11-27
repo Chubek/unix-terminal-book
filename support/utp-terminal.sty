@@ -1,0 +1,10 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{utp-terminal}[2026/11/27 v1.0 Shared literal terminal listing machinery]
+\RequirePackage{utp-colors}
+\RequirePackage{listings}
+\RequirePackage{tcolorbox}
+\tcbuselibrary{listings,breakable,skins}
+\lstdefinestyle{utpcode}{basicstyle=\small\ttfamily,columns=fullflexible,keepspaces=true,showstringspaces=false,breaklines=true,breakatwhitespace=false,upquote=true,tabsize=4,aboveskip=0pt,belowskip=0pt}
+\tcbset{utp listing/.style={enhanced,breakable,listing only,colback=UTPCode,colframe=UTPRule,colbacktitle=UTPSoft,coltitle=UTPInk,fonttitle=\small\sffamily\bfseries,boxrule=0.45pt,arc=1mm,left=2mm,right=2mm,top=1mm,bottom=1mm,before skip=0.75em,after skip=0.75em,listing options={style=utpcode}}}
+\NewTCBListing{terminal}{!O{}}{utp listing,title={Terminal},#1}
+\endinput

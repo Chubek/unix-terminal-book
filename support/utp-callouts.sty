@@ -1,0 +1,10 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{utp-callouts}[2026/11/27 v1.0 Notes, tips and explanatory boxes]
+\RequirePackage{utp-colors}
+\RequirePackage{tcolorbox}
+\tcbuselibrary{breakable,skins}
+\tcbset{utp box/.style={enhanced,breakable,colback=UTPSoft,colframe=UTPRule,coltitle=UTPInk,colbacktitle=UTPSoft,fonttitle=\sffamily\bfseries,boxrule=0.45pt,arc=1mm,left=2mm,right=2mm,top=1mm,bottom=1mm,before skip=0.75em,after skip=0.75em}}
+\newtcolorbox{notebox}[1][Note]{utp box,title={#1}}
+\newtcolorbox{tipbox}[1][Tip]{utp box,colframe=UTPAccent,title={#1}}
+\newtcolorbox{conceptbox}[1][How it works]{utp box,title={#1}}
+\endinput

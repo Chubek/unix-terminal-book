@@ -1,0 +1,13 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{utp-layout}[2026/11/27 v1.0 Page geometry and vertical rhythm]
+\RequirePackage{geometry}
+\RequirePackage{needspace}
+\@ifundefined{ifutpscreen}{\newif\ifutpscreen}{}
+\ifutpscreen
+  \geometry{paperwidth=7in,paperheight=10in,margin=0.82in,headheight=16pt,headsep=20pt,footskip=25pt}
+\else
+  \geometry{paperwidth=7in,paperheight=10in,inner=0.95in,outer=0.75in,top=0.8in,bottom=0.85in,headheight=16pt,headsep=20pt,footskip=25pt}
+\fi
+\raggedbottom
+\newcommand{\KeepNext}[1][4]{\Needspace{#1\baselineskip}}
+\endinput

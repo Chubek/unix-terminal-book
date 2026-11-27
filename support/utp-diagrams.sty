@@ -1,0 +1,8 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{utp-diagrams}[2026/11/27 v1.0 Simple process and pipe diagrams]
+\RequirePackage{utp-colors}
+\RequirePackage{tikz}
+\usetikzlibrary{positioning,arrows.meta}
+\tikzset{utp node/.style={draw=UTPRule,fill=UTPSoft,rounded corners=2pt,minimum height=8mm,inner sep=5pt,font=\small\sffamily,align=center},utp arrow/.style={-{Stealth[length=2mm]},thick,draw=UTPAccent}}
+\newcommand{\PipeDiagram}[3]{\par\smallskip\noindent\begin{tikzpicture}\node[utp node] (a) {#1};\node[utp node,right=7mm of a] (b) {#2};\node[utp node,right=7mm of b] (c) {#3};\draw[utp arrow] (a)--(b);\draw[utp arrow] (b)--(c);\end{tikzpicture}\par\smallskip}
+\endinput
