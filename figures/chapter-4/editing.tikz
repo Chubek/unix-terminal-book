@@ -1,0 +1,9 @@
+\begin{tikzpicture}
+  \node[utp node] (type) at (0,0) {Type};
+  \node[utp node] (check) at (3,0) {Inspect or revise};
+  \node[utp node] (send) at (6.2,.8) {Submit};
+  \node[utp node] (cancel) at (6.2,-.8) {Cancel};
+  \draw[utp arrow] (type) -- (check);
+  \draw[utp arrow] (check.east) -- (send.west);
+  \draw[utp arrow] (check.east) -- (cancel.west);
+\end{tikzpicture}

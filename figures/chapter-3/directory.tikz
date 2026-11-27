@@ -1,0 +1,8 @@
+\begin{tikzpicture}
+  \node[utp node] (p0) at (0,0) {Parent: \texttt{/home/reader}};
+  \node[utp node] (p1) at (6.5,0) {Parent: \texttt{/home/reader}};
+  \node[utp node] (c0) at (0,-1.35) {Child: \texttt{/home/reader}};
+  \node[utp node] (c1) at (6.5,-1.35) {Child: \texttt{/}};
+  \draw[utp arrow] (p0) -- node[above,font=\small\sffamily]{wait} (p1);
+  \draw[utp arrow] (c0) -- node[above,font=\small\ttfamily]{cd /} (c1);
+\end{tikzpicture}

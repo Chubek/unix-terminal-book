@@ -1,0 +1,8 @@
+\begin{tikzpicture}
+  \node[utp node] (abs) at (0,0) {\ttfamily /home/reader};
+  \node[utp node] (rel) at (0,-1.3) {\ttfamily albums/April};
+  \node[utp node] (root) at (5.4,0) {Start at filesystem root};
+  \node[utp node] (cur) at (5.4,-1.3) {Start at working directory};
+  \draw[utp arrow] (abs) -- (root);
+  \draw[utp arrow] (rel) -- (cur);
+\end{tikzpicture}

@@ -1,3 +1,4 @@
 [
-  {"interpreter": "/bin/sh", "path": "editorial/check-appendices.sh"}
+  {"interpreter": "/bin/sh", "path": "editorial/check-appendices.sh"},
+  {"interpreter": "/bin/sh", "path": "listings/chapter-3/shell-lookup.sh"}
 ]

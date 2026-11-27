@@ -1,0 +1,10 @@
+\begin{tikzpicture}
+\node[utp node] (shell) at (-2,1.1) {shell};
+\node[utp node] (os) at (2,1.1) {operating system};
+\node[utp node] (timer) at (2,-.2) {timer};
+\node[utp node] (status) at (-2,-.2) {child status};
+\draw[utp arrow] (shell) -- node[above,font=\small] {request} (os);
+\draw[utp arrow] (os) -- node[right,font=\small] {signal} (timer);
+\draw[utp arrow,dashed] (timer) -- node[below,font=\small] {on exit} (status);
+\draw[utp arrow] (status) -- node[left,font=\small] {collect} (shell);
+\end{tikzpicture}

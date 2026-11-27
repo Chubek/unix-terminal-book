@@ -23,6 +23,13 @@ def begins(text, group):
     return re.findall(r"(?m)^[ \t]*\\begin\{(" + group + r")\}", text)
 
 
+LITERAL_BLOCK = re.compile(
+    r"^[ \t]*\\begin\{(terminal|session|shellscript|terminaloutput|erroroutput|filecontentsbox)\}"
+    r"[^\n]*\n.*?^[ \t]*\\end\{\1\}[^\n]*",
+    re.M | re.S,
+)
+
+
 def validate(release):
     manifest = json.loads(contents("chapters/MANIFEST.json"))
     chapters = manifest["chapters"]
@@ -76,10 +83,19 @@ def validate(release):
                     and file.stat().st_size > 0, f"{prefix}: missing or invalid asset {asset}")
         raw = contents(f"chapters/chapter-{n}.ltx")
         source = re.sub(r"(?m)^[ \t]*%.*$", "", raw)
-        require(not re.search(r"\\(?:BookChapter|BookPart|part|chapter|documentclass)\b|\\(?:begin|end)\{document\}", source),
+        prose = LITERAL_BLOCK.sub("", source)
+        require(not re.search(r"(?m)^[ \t]*\\(?:BookChapter|BookPart|part|chapter|documentclass)\b|^[ \t]*\\(?:begin|end)\{document\}", prose),
                 f"{prefix}: document wrapper or part/chapter declaration in fragment")
-        labels.update(re.findall(r"\\label\{([^{}]+)\}", source))
-        figures = len(begins(source, r"figure\*?")) + len(re.findall(r"\\(?:BookFigure|AccessibleFigure)\b", source))
+        labels.update(re.findall(r"\\label\{([^{}]+)\}", prose))
+        figures = len(begins(prose, r"figure\*?")) + len(re.findall(r"\\(?:BookFigure|AccessibleFigure)\b", prose))
+        paths = re.findall(r"\\input\{(figures/chapter-" + str(n) + r"/[\w.-]+\.tikz)\}", prose)
+        for path in paths:
+            figure = ROOT / path
+            require(figure.is_file(), f"{prefix}: broken figure input {path}")
+            if figure.is_file():
+                body = figure.read_text()
+                figures += len(begins(body, r"figure\*?"))
+                labels.update(re.findall(r"\\label\{([^{}]+)\}", body))
         tables = len(begins(source, "quicktable|longtable"))
         examples = len(begins(source, "terminal|session|shellscript")) + len(re.findall(r"\\ShellFile\b", source))
         exercises = len(begins(source, "exercise"))
@@ -104,6 +120,8 @@ def validate(release):
             require(exercises >= 3 and solutions == exercises, f"{prefix}: missing exercise or solution")
             require(bool(dialogues), f"{prefix}: missing dialogue")
             require(r"\FigurePlaceholder" not in source, f"{prefix}: placeholder figure")
+            require(not re.search(r"(?m)^[ \t]*\\Index(?:Term|Command)\{[^{}]+\}[ \t]*$", prose),
+                    f"{prefix}: standalone index macro would print stray text")
             for folder in ("evidence", "reviews"):
                 record = ROOT / "editorial" / folder / f"chapter-{n}.md"
                 require(record.is_file() and record.stat().st_size > 0, f"{prefix}: no {folder} record")
@@ -129,7 +147,7 @@ def examples():
     build.mkdir(exist_ok=True)
     for entry in registry:
         path = (ROOT / entry["path"]).resolve()
-        if not path.is_relative_to(ROOT / "editorial") or not path.is_file():
+        if not any(path.is_relative_to(ROOT / folder) for folder in ("editorial", "listings")) or not path.is_file():
             raise SystemExit(f"Invalid example harness: {entry['path']}")
         with tempfile.TemporaryDirectory(prefix="example-", dir=build) as temp:
             env = {"PATH": os.defpath, "HOME": temp, "TMPDIR": temp, "LC_ALL": "C"}

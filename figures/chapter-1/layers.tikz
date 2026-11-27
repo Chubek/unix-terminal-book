@@ -1,0 +1,8 @@
+\begin{tikzpicture}
+  \node[utp node] (human) {Reader};
+  \node[utp node,right=10mm of human] (terminal) {Terminal};
+  \node[utp node,right=10mm of terminal] (shell) {Shell};
+  \draw[utp arrow] (human) -- (terminal);
+  \draw[utp arrow] (terminal) -- (shell);
+  \draw[utp arrow] (shell.south) -- ++(0,-.6) -| node[pos=.25,below,font=\small\sffamily]{returned text} (human.south);
+\end{tikzpicture}

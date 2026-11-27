@@ -29,11 +29,14 @@ will give Homebrew sustained attention while comparing it with the
 package workflows on Linux and the BSDs. This is a drafting assignment,
 not a completed feature.
 
-Chapters 1–6 entered peer review at `utp/W1` commit `59e359a`. They
-have not been imported. The exercise hyperlinks now include a chapter
-component so the same visible exercise number in different chapters
-does not collide; cross-chapter anchor uniqueness is covered in the
-edition fixture.
+All eight author groups have handed off manuscript sources for
+non-author review. The first approved batch, Chapters 1, 3–6 and 31,
+is integrated with evidence and review receipts. Chapter 5's revised
+practice-directory transitions were independently rechecked. Other
+chapters with open findings remain on their author branches. The
+exercise hyperlinks now include a chapter component so the same visible
+exercise number in different chapters does not collide; the edition
+fixture checks cross-chapter anchor uniqueness.
 
 ## Verified at this checkpoint
 

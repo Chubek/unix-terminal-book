@@ -1,0 +1,7 @@
+\begin{tikzpicture}
+  \node[utp node] (ready) at (0,0) {Ready shell};
+  \node[utp node] (more) at (5,1.05) {Needs more input};
+  \node[utp node] (run) at (5,-1.05) {Command runs};
+  \draw[utp arrow] (ready.east) -- node[above,sloped,font=\small\sffamily]{incomplete line} (more.west);
+  \draw[utp arrow] (ready.east) -- node[below,sloped,font=\small\sffamily]{complete line} (run.west);
+\end{tikzpicture}

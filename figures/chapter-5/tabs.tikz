@@ -1,0 +1,8 @@
+\begin{tikzpicture}
+  \node[utp node] (a) at (0,0) {Tab A: \texttt{\$}};
+  \node[utp node] (b) at (0,-1.35) {Tab B: \texttt{\$}};
+  \node[utp node] (ap) at (5.8,0) {\ttfamily /home/reader/Holiday};
+  \node[utp node] (bp) at (5.8,-1.35) {\ttfamily /home/reader/Volunteers};
+  \draw[utp arrow] (a) -- node[above,font=\small\ttfamily]{pwd} (ap);
+  \draw[utp arrow] (b) -- node[above,font=\small\ttfamily]{pwd} (bp);
+\end{tikzpicture}

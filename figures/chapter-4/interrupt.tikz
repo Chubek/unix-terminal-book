@@ -1,0 +1,8 @@
+\begin{tikzpicture}
+  \node[utp node] (draft) at (0,0) {Unfinished\\line};
+  \node[utp node] (wait) at (0,-1.35) {Running\\\texttt{sleep}};
+  \node[utp node] (gone) at (5.6,0) {Discarded draft};
+  \node[utp node] (stop) at (5.6,-1.35) {Interrupted wait};
+  \draw[utp arrow] (draft) -- node[above,font=\small\sffamily]{Ctrl-C} (gone);
+  \draw[utp arrow] (wait) -- node[above,font=\small\sffamily]{Ctrl-C} (stop);
+\end{tikzpicture}

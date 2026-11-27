@@ -1,0 +1,8 @@
+\begin{tikzpicture}
+  \node[utp node] (lookup) at (0,0) {\ttfamily command -v uname};
+  \node[utp node] (run) at (0,-1.25) {\ttfamily uname};
+  \node[utp node] (meaning) at (6.4,0) {Reports a program path};
+  \node[utp node] (result) at (6.4,-1.25) {Reports a system name};
+  \draw[utp arrow] (lookup) -- (meaning);
+  \draw[utp arrow] (run) -- (result);
+\end{tikzpicture}

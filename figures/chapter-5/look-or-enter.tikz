@@ -1,0 +1,8 @@
+\begin{tikzpicture}
+  \node[utp node] (ls) at (0,0) {\ttfamily ls ./Holiday};
+  \node[utp node] (cd) at (0,-1.3) {\ttfamily cd ./Holiday};
+  \node[utp node] (same) at (6,0) {Start stays at practice root};
+  \node[utp node] (new) at (6,-1.3) {New start is Holiday};
+  \draw[utp arrow] (ls) -- (same);
+  \draw[utp arrow] (cd) -- (new);
+\end{tikzpicture}
