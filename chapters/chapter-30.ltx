@@ -331,6 +331,64 @@ dozens of files is a poor way to tell whether a change works:
 when the result differs you don't know if the script,
 the inputs or the working directory changed.
 
+\section{Debug the caller before rewriting the loop}
+\label{sec:30-debug}
+
+The committee's next run returns two errors for a
+document you know exists. Before making the script
+more complicated, replace it at your practice prompt
+with the old argument probe. Compare the two versions
+below. They print rather than open anything.
+
+\begin{terminal}
+printf '<%s>\n' ./May notes.txt './agenda.txt'
+printf '<%s>\n' './May notes.txt' './agenda.txt'
+\end{terminal}
+
+The first shows \texttt{<./May>} and \texttt{<notes.txt>}
+before the agenda; the second shows the intended two
+path arguments. The script never had the missing
+space to recover in the first version. It might even
+pass one of those unintended names if another file
+of that name happened to exist. You cannot fix a
+misdelivered list by adding quotes inside the receiver
+after the split. Correct the invocation and keep using
+\cmd|"$@"| inside the script.
+
+A different failure is ``right arguments, wrong
+directory.'' Check the absolute script location with
+the argument probe and the input location with
+\texttt{pwd}. The former tells you which source file
+the interpreter should read; the latter tells you the
+base for a relative input path. They can differ and
+that need not be a problem. What matters is which one
+the caller expected to use. When sending a procedure
+to someone else, include both pieces explicitly:
+which interpreter and source file to open, and from
+which folder to run the invocation.
+
+Another check is whether the script prints a rejection
+but returns success. Run the failure first and again
+last when checking edits. A script that blindly uses
+the last test status may look fine with the failure
+last and get the other ordering wrong. The stored
+\texttt{result} avoids that mistake. Your record of
+the run should include the status and both streams,
+not just a screenshot of the last line. If the
+correct output arrives with a wrong status, the
+script is still misleading to anything making a
+decision from its result.
+
+For an everyday task, stop once this procedure is
+small enough to understand and easy enough to repeat.
+Keep a copy of the working script alongside the
+documentation that says how to invoke it. Don't change
+your login shell, edit workplace policy or schedule
+the job just to see whether it works. A repeatable
+manual invocation is already automation: it moves
+the tedious checks out of your memory while leaving
+the final decision in your hands.
+
 \section{Exercises and cleanup}
 
 \begin{exercise}{Include two real fixtures}

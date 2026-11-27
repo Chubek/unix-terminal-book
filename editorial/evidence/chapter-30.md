@@ -16,9 +16,9 @@ executor.
 
 Author system: Linux 6.18.52-1-lts, EndeavourOS x86_64, Python
 3.14.7, `/bin/sh` linked to GNU Bash 5.3.15(1). Local run:
-29 selected checks passed across six chapters; Ksh and Tcsh unavailable
+36 selected checks passed across six chapters; Ksh and Tcsh unavailable
 and skipped. Chapter 30 checks two test/branch examples, `sh -n`,
-successful relative and absolute path operands, mixed fixture
+the caller's argument boundaries, successful relative and absolute path operands, mixed fixture
 outcomes, argument misuse, and empty and option-like candidates.
 The test doesn't deliberately create unreadable files or race filesystem
 changes. Native macOS, FreeBSD, OpenBSD and NetBSD were not tested by W5.

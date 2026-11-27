@@ -302,6 +302,112 @@ problem. The point of redaction is to preserve the useful
 evidence while withholding the details unrelated to the
 question.
 
+\section{Choose where a setting should live}
+\label{sec:28-scope}
+
+When deciding how widely to set a value, imagine the
+next command you will run. If only one comparison needs
+the C locale, write it directly on that comparison.
+If several consecutive shell commands really do need
+the same setting, use a new practice shell, export the
+setting there, and exit when finished. Changing a startup
+file is a different decision: it could affect every
+future session that reads that file, including a session
+you open for an unrelated task. You do not need the
+largest scope to solve the smallest problem.
+
+Try it with a harmless recording convention. This
+pair of reads prints the parent value before and after
+running a group in parentheses. The shell runs that
+group in a subshell environment, so the change doesn't
+survive into the calling shell. The parentheses are
+shell syntax in this example, not punctuation in the
+label.
+
+\begin{terminal}
+SWAP_LABEL='Kitchen items'
+printf 'Before: <%s>\n' "$SWAP_LABEL"
+(
+    export SWAP_LABEL='Children'
+    sh -c 'printf "Inside: <%s>\n" "$SWAP_LABEL"'
+)
+printf 'After: <%s>\n' "$SWAP_LABEL"
+\end{terminal}
+
+Expect \texttt{Kitchen items}, \texttt{Children}, and
+\texttt{Kitchen items}. \texttt{export name=value} both
+assigns and marks the variable in one action. This time
+that action is inside the group; the inner \texttt{sh}
+gets the value that is current there. The finish of the
+group does not change the stored setting outside it.
+Like a single-command override, this is useful for a
+short-lived choice; unlike a prefix assignment, the
+group can include more than one command. Neither is
+needed simply to print the label in your current prompt:
+ordinary shell expansion already handles that.
+
+There is another distinction worth recording. If you
+want someone to select the file to print, an explicit
+argument makes the choice visible in the invocation.
+If the application needs to follow a general locale
+convention, it makes sense to inherit the setting.
+Where both are available, use the precedence documented
+by the application. The shell passes the arguments and
+environment along; it does not decide on behalf of the
+application which of them should win. This is why a
+successful child-shell test only establishes delivery
+to the environment, not that a completely different
+tool reads or interprets the setting as you expect.
+
+\section{Compare a shell setting with a command lookup}
+\label{sec:28-lookup}
+
+Suppose a teammate reports finding a different copy of a
+utility. You can use the same test case to distinguish
+two questions: ``What did this shell resolve?'' and
+``What would another shell resolve with the same
+environment?'' Try the following with \texttt{sort};
+it reads no input and starts no copy of \texttt{sort}.
+
+\begin{terminal}
+command -v sort
+sh -c 'command -v sort'
+\end{terminal}
+
+On a typical installation both identify the same
+external utility. They need not be identical if your
+current shell has a function or alias that changes
+the first lookup, or the new shell's startup
+configuration changes its environment. A match
+establishes that the same spelling was resolved in
+this test, not that every command in a more involved
+recipe has the same identity. Repeat the comparison
+on the first utility whose behavior actually differs.
+
+When reading \texttt{PATH}, it can be tempting to start
+with its entire printed value and search it by eye.
+But not every directory in the list has the utility,
+and ordinary command lookup can also remember a path
+from a former search. If you recently installed
+another version, a fresh shell is a useful independent
+check, provided you know which configuration it reads.
+Compare the paths it reports before considering a
+persistent change. If both report the intended path
+and the options still differ, the manuals or version
+details are the next place to look; adding directories
+will not turn one implementation's options into another's.
+
+For a documented repeatable task on one computer, an
+explicit executable path can settle which installed
+copy to use. It can also tie the recipe to that one
+computer. An executable in a user's private folder
+will not magically appear on a collaborator's system.
+If the recipe needs to travel, document which utility
+and features you require, let the reader locate their
+copy, and use examples small enough to compare. This
+is more useful than pasting a long \texttt{PATH} from
+one account into someone else's startup file.
+
 \section{Exercises and cleanup}
 
 \begin{exercise}{Distinguish a local variable from an export}

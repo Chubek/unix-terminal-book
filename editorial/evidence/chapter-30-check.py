@@ -56,6 +56,7 @@ def main():
         code(25, "printf '%s\\n' 'Send for comments'", out="Send for comments\nApproved\n")
         code(25, "grep -F", out="Hall [draft]\n")
         code(25, "printf '%s\\n' 'This is a filename'", out="This is a filename\n")
+        code(25, "printf '<%s>\\n' 'Hall [draft]'.*", out="<Hall [draft].txt>\n<Hall [draft].*>\n")
 
         work = work / "reading-group"
         work.mkdir()
@@ -66,9 +67,10 @@ def main():
         ))
         code(26, 'printf \'<%s>\\n\' ~ "$HOME"', out=f"<{home}>\n<{home}>\n<~>\n<{home}/Reading group>\n")
         code(26, """printf '<%s>\\n' "$(printf 'queue""", out="<queue>\n<first\nsecond>\n")
-        code(26, "title=$(cat", out="<Friday selection>\n<Friday>\n<selection>\n")
+        code(26, "title=$(cat 'Long title.txt')", out="<Friday selection>\n<Friday>\n<selection>\n")
         code(26, 'label="', out="<'two>\n<words'>\n<'two words'>\n")
         code(26, "printf '<%s>\\n' ./*.bak", out="<./*.bak>\n")
+        code(26, "value=$(printf '%s' '')", out="Status: 0; value: <>\nStatus: 1; value: <>\n")
 
         check("27: assignment and name boundaries", [sh],
               source=block(27, "packet='Welcome packet'") + block(27, "unset packet_notes"),
@@ -80,6 +82,7 @@ def main():
               out=("Count: 3\nFirst: <Welcome packet.txt>\nAgain: <Welcome packet.txt>\nAgain: <>\n"
                    "Again: <Volunteer guide.pdf>\n<Welcome packet.txt  Volunteer guide.pdf>\n"
                    "<end>\n<Welcome packet.txt>\n<>\n<Volunteer guide.pdf>\n<end>\n<end>\n"))
+        code(27, "set -- '$HOME' '*' ''", out="Supplied: <$HOME>\nSupplied: <*>\nSupplied: <>\n")
 
         check("28: export, child changes, and prefix override", [sh],
               source=(block(28, "unset SWAP_LABEL") + block(28, "sh -c 'SWAP_LABEL=changed")
@@ -88,6 +91,8 @@ def main():
                    "<changed>\nParent: <Kitchen items>\n<Outdoor items>\n<Kitchen items>\n"))
         code(28, "printf '%s\\n' apple Apple Book", out="Apple\nBook\napple\n")
         code(28, "env SWAP_LABEL=Preview", out="<Preview>\n")
+        code(28, "SWAP_LABEL='Kitchen items'",
+             out="Before: <Kitchen items>\nInside: <Children>\nAfter: <Kitchen items>\n")
 
         code(29, "sh -c 'set -- \"Paper notes\" \"Photo index\"; printf \"<%s>\\n\" \"$@\"'",
              out="<Paper notes>\n<Photo index>\n")
@@ -103,12 +108,22 @@ def main():
                 code(29, starts, out=output)
             else:
                 print(f"SKIP 29: {shell} unavailable")
+        posix_probe, zsh_probe = block(29, "sh -c 'printf \"<%s>\\n\" ./*.absent'").splitlines()
+        check("29: sh leaves unmatched pattern", [sh], source=posix_probe + "\n", out="<./*.absent>\n")
+        if shutil.which("zsh", path=env["PATH"]):
+            outcome = subprocess.run([sh], input=zsh_probe + "\n", capture_output=True,
+                                     cwd=work, env=env, text=True, timeout=15, check=False)
+            assert outcome.returncode != 0 and not outcome.stdout and "no matches found" in outcome.stderr, outcome
+            checks.append("29: zsh rejects unmatched pattern")
+            print("PASS 29: zsh rejects unmatched pattern")
 
         (work / "May notes.txt").write_text("Sample minutes\n")
         (work / "agenda.txt").write_text("Sample agenda\n")
         (work / "Handouts").mkdir()
         code(30, "test -f './May notes.txt'", out="Present: 0\nDirectory: 1\n")
         code(30, "if [ -f", out="Found a regular file\n")
+        code(30, "printf '<%s>\\n' ./May notes.txt",
+             out="<./May>\n<notes.txt>\n<./agenda.txt>\n<./May notes.txt>\n<./agenda.txt>\n")
         check("30: syntax check", [sh, "-n", PREVIEW])
         check("30: success", [sh, PREVIEW, "./May notes.txt", "./agenda.txt"],
               out="Would include: <./May notes.txt>\nWould include: <./agenda.txt>\n")

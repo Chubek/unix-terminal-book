@@ -323,6 +323,60 @@ same utility or a documented alternative, too. Separate
 those two kinds of dependency: first who reads the source,
 then which commands that source asks the reader to run.
 
+\section{Narrow a compatibility problem to one symptom}
+\label{sec:29-debug}
+
+Suppose an instruction says that an unquoted pattern
+with no match will be left as-is. The person with Zsh
+at the prompt instead gets an error before the command
+starts. Neither result is a property of the
+\texttt{printf} utility. The first important question
+is which interpreter saw the pattern. Try this probe
+in a fresh empty practice directory made using
+Chapter~\ref{ch:12}. The quoted outer strings keep the
+pattern away from the calling shell and give each child
+interpreter the same source to read.
+
+\begin{terminal}
+sh -c 'printf "<%s>\n" ./*.absent'
+zsh -f -c 'printf "<%s>\n" ./*.absent'
+\end{terminal}
+
+The POSIX invocation should print \texttt{<./*.absent>}.
+The native Zsh default should report no match with
+nonzero status. Skip the second line if unavailable,
+and remember the caveat about global startup files.
+Neither command creates anything. Leave and remove
+only the empty practice directory if you made one.
+If a real recipe is intended to work in the caller's
+shell, you may need to handle the failure there, not
+by editing the first command the glob was supposed
+to invoke. If it is intended to work under \texttt{sh},
+run the recipe there before asking the recipient to
+change their Zsh configuration.
+
+Compatibility work gets muddled when you change the
+script, the interpreter and the inputs all at once.
+Start with the smallest source that exposes the
+difference. Record one expected outcome and one
+observed outcome. If both shells run the same probe
+but a larger script still fails, the probe hasn't
+tested the faulty feature. Choose a smaller example
+of the first command that actually differs. A syntax
+error before a tool is invoked belongs to a different
+layer from a diagnostic printed by the tool.
+
+This procedure also respects the advantages of other
+shells. Native Fish list behavior is useful when you
+want it; making Fish pretend to be sh is not the
+lesson of this chapter. Likewise, Zsh's early no-match
+message can be helpful when an interactive user expects
+the pattern to select something. A portable script
+written for another interpreter may need to accommodate
+an unchanged pattern explicitly. An honest comparison
+shows which behavior a task relies on rather than
+ranking every shell by one small example.
+
 \section{Exercises and cleanup}
 
 \begin{exercise}{Probe the intended interpreter}

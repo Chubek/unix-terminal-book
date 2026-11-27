@@ -3,9 +3,10 @@
 - Author validation: Linux on EndeavourOS x86_64, GNU Bash 5.3.15(1)
   via `/bin/sh`, GNU `sort` and `env` from GNU coreutils 9.11.
   Reproduce using `python3 editorial/evidence/chapter-30-check.py`.
-- Three grouped checks assert output and status for export, child-only
+- Four checks assert output and status for export, child-only
   assignment, command-prefix precedence, `C` collation of simple ASCII
-  data and an invocation with `env`. The validator's inherited
+  data, an invocation with `env`, and an export scoped to a subshell
+  environment. The validator's inherited
   environment is constructed explicitly; it does not print or copy
   the caller's settings except for selecting a writable fixture root.
 - Portability basis: POSIX `command`, `env` and environment variables.

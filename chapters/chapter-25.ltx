@@ -364,6 +364,65 @@ the particular syntax your completion system chose.
 \CommandField{Check}{An empty string has an empty bracket pair; a newline in the value can span more than one visible line.}
 \end{commandcard}
 
+\section{Quote only the part that is data}
+\label{sec:25-mixed}
+
+Suppose the chair now wants every file with the literal base
+name \texttt{Hall [draft]} and any extension. You mean the
+brackets literally and the star as a pattern. Quoting the
+whole word would protect the star as well, while leaving
+the word unquoted would expose the brackets. Attach the
+unquoted star to the quoted base without a space:
+
+\begin{terminal}
+printf '<%s>\n' 'Hall [draft]'.*
+printf '<%s>\n' 'Hall [draft].*'
+\end{terminal}
+
+In the fixture, the first line reports the real
+\texttt{Hall [draft].txt}. The second always reports
+\texttt{Hall [draft].*} regardless of what's in the folder.
+The contrast is useful when you intend to select several
+files but the preview shows something stranger. Preview
+the names first; do not interpret a printed star as proof
+of either failure or success. A star can be an ordinary
+character in a filename, and some shells leave unmatched
+patterns written as they were. Chapter~\ref{ch:26} tests
+that case separately.
+
+Quoting decisions are easiest to make locally. If a
+section of a word contains a printed amount, protect that
+amount. If another section is a variable to look up,
+double-quote the lookup. If a third section is an
+intentional glob, leave just its pattern characters
+outside the quotes. You do not have to settle on one rule
+for the entire word. You do need to distinguish the
+spaces between arguments from spaces inside the data.
+
+The same exercise works with the attachment's human
+title instead of its file extension. Suppose a note
+contains \texttt{Hall plan; check Monday}. Inside single
+quotes the semicolon is ordinary punctuation. Outside
+quotes it ends the first command and starts another.
+There is no good reason to test the unquoted form if the
+second part looks like a command you didn't intend to
+run. Show the literal form with the probe instead:
+
+\begin{terminal}
+printf '<%s>\n' 'Hall plan; check Monday'
+\end{terminal}
+
+This is why quoting is more than a cosmetic convention.
+It's how you say that a character in the source is not
+to be interpreted at that stage. A semicolon in a value
+substituted from a variable is different from a semicolon
+typed unquoted in the command itself: the shell had
+already read the command boundaries before substituting
+the value. Keep the variable expansion quoted anyway to
+preserve its data boundary. No step in this exercise
+needs to turn the attachment's title back into shell
+instructions.
+
 \section{Exercises and cleanup}
 
 \begin{exercise}{Make two words one argument}

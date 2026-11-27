@@ -320,6 +320,101 @@ whether either exists. Do not confuse generating strings
 with browsing what is on disk; a literal alternative can be
 produced even when nothing with that name was ever created.
 
+\section{Separate a captured result from its success signal}
+\label{sec:26-status}
+
+The notes project brings up a practical question: how do
+you know there was something to capture? A command can exit
+successfully without printing anything. It can also fail
+with a message on standard error and produce no standard
+output. In both cases, looking only at the resulting
+variable could show the same empty value. Ask for two
+pieces of evidence: the command's exit status and its
+captured text. This test uses a file already created
+in the reading group fixture:
+
+\begin{terminal}
+title=$(cat './Long title.txt')
+status=$?
+printf 'Status: %s\nTitle: <%s>\n' "$status" "$title"
+\end{terminal}
+
+Expect status zero and \texttt{<Friday selection>}. This
+assignment line has no command name of its own, so
+its status comes from the command substitution. The second
+line saves that status before \texttt{printf} can replace
+it. If you move the substitution directly into the
+arguments of \texttt{printf}, the status left afterward
+would instead be \texttt{printf}'s: did the display
+command run successfully? That may be true even when the
+inside command failed. Keeping the assignment separate
+makes the status check meaningful.
+
+Compare these two outputs without creating any additional
+files. The first inner command deliberately prints no
+visible text; the second checks a filename deliberately
+absent from this fixture. The check itself doesn't print a
+failure message.
+
+\begin{terminal}
+value=$(printf '%s' '')
+printf 'Status: %s; value: <%s>\n' "$?" "$value"
+value=$(test -f './Never supplied.txt')
+printf 'Status: %s; value: <%s>\n' "$?" "$value"
+\end{terminal}
+
+You should see two empty brackets, but the first status
+is zero and the second is one. The two results aren't
+interchangeable. A variable can be blank because a command
+supplied no text, because its only output consisted of
+trailing newlines, or because it could not do its job.
+Choose which clue to inspect according to the question.
+Do not manufacture a text error message just so you
+can search for it with another command. A genuine exit
+status is already available.
+
+\section{Make the exception deliberate}
+\label{sec:26-exception}
+
+There is one useful circumstance where you may leave an
+expansion unquoted on purpose: you are following a shell
+recipe that explicitly treats a controlled string as
+several fields and also deals with pathname matching.
+But that is not a general recipe for consuming lists. Take
+the simple instruction ``print these two labels in
+order.'' You could put the labels on different lines
+in a value and split it by editing \texttt{IFS}, but then
+you would need to decide what happens if a label contains
+one of those separators or a wildcard. Two explicit
+quoted arguments already express the entire instruction:
+
+\begin{terminal}
+printf 'Label: <%s>\n' 'Audio notes' 'Reading notes'
+\end{terminal}
+
+Likewise, to list members of a directory, let pathname
+expansion do the listing while keeping any parts of the
+pattern that are data protected. To take the numerical
+answer from a single command into an argument, use a
+quoted substitution and check the producer's status.
+These choices are less surprising than parsing a command's
+display. Displays are often made for people: they may
+align columns, add headings or abbreviate the values.
+They can look like an organized list without being a
+format you should split.
+
+If someone gives you a recipe containing unquoted
+\cmd|$word|, ask what would happen if that word were blank,
+contained a space, or contained a star. You can test the
+boundaries without assuming the recipe's command is safe:
+replace the receiving command with the \texttt{printf}
+probe and use invented inputs in the practice directory.
+In the whitespace case, the difference between one and
+two bracket pairs is direct evidence. In the star case,
+check from a folder with known matches and from an empty
+one. Otherwise it is easy to mistake one day's harmless
+result for a guarantee about the recipe.
+
 \section{Exercises and cleanup}
 
 \begin{exercise}{Let the shell match only the suffix}

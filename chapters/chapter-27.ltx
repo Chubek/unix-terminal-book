@@ -318,6 +318,104 @@ Confirming that the shell produced one argument is a
 necessary check, not a guarantee that it is the intended
 argument.
 
+\section{Name a setting for the reader who comes after you}
+\label{sec:27-names}
+
+Naming a setting well is practical, not ceremonial.
+\texttt{packet} worked in a few lines because the only
+thing in view was the packet. If you write a longer
+recipe with two similar names, \texttt{source\_stem} and
+\texttt{print\_stem} explain which one goes where.
+Keep the values at the point where they are decided.
+For example, if the notes and print copy always share a
+stem, reference a single \texttt{packet\_stem} from both
+commands rather than storing two copies of the same
+piece of text. If the reviewer needs an independently
+named file, then keep a separately named value.
+
+Direction also matters. A report may tell you which
+file would be used, but seeing the word \texttt{Draft}
+does not tell you whether the user entered it or your
+default supplied it. To test the difference, choose
+fixtures where the outcomes differ in a visible way.
+Use \texttt{Committee} as the default, then explicitly
+assign \texttt{Anonymous} as the alternate. This sounds
+like an extra test only until you need to change the
+default for the next meeting: it protects a deliberate
+override from accidentally shifting with everyone else.
+
+\begin{terminal}
+unset credit
+display=${credit-Committee}
+printf 'Proposed: <%s>\n' "$display"
+credit=Anonymous
+display=${credit-Committee}
+printf 'Proposed: <%s>\n' "$display"
+\end{terminal}
+
+The first shows \texttt{Committee}; the second shows
+\texttt{Anonymous}. The policy is part of the expansion
+that assigns \texttt{display}. It does not assign a
+default to \texttt{credit}. If you later change
+\texttt{credit} without repeating the assignment to
+\texttt{display}, the previous display value remains.
+A variable stores the result, not an instruction to
+recalculate every time you refer to it. That explains
+why commands printed before a reassignment remain
+unchanged, and why storing a path for later use can
+be a good way to keep a verified spelling.
+
+\section{Give an unknown argument a boundary, not a new meaning}
+\label{sec:27-unknown}
+
+Try three values as if someone else had supplied them:
+\texttt{\$HOME}, \texttt{*}, and the empty string.
+These are not recommended file names; the point is to
+learn what happens to characters that look like shell
+instructions while they are stored in the argument list.
+The first command supplies each literally. The second
+passes each as a separate argument to the probe.
+
+\begin{terminal}
+set -- '$HOME' '*' ''
+printf 'Supplied: <%s>\n' "$@"
+set --
+\end{terminal}
+
+Expect one printed line for each supplied argument.
+The dollar characters do not cause a home lookup on
+the way out. The star does not enumerate the current
+directory. The empty string is not discarded. The
+initial quote marks were syntax; the later quoted at-sign
+expansion preserves what they established. The printing
+operation uses a fixed format too, so even a percent sign
+in supplied text would remain data rather than rewriting
+the output format. This is a design worth keeping when
+you move from quick experiments to the real script.
+
+One tempting shortcut is to use the quoted star form for
+a summary, then read that same joined string as if it
+still contained individually recoverable arguments. A
+summary for a bulletin may deliberately render ``Welcome
+packet and Volunteer guide'' with no further use. But
+a command accepting two file paths cannot deduce the
+original boundaries from that phrase. There is no
+disagreement between the human and the shell: the list
+was replaced with a sentence. If both are needed, keep
+the argument list and produce the sentence as a
+separate display, not as the new source of inputs.
+
+Finally, keep in mind who owns a value. The current shell
+owns the variables and practice positional parameters
+you set here. Exiting it restores the earlier prompt
+without carrying these changes back. A value belongs in
+an invocation's arguments if you want the task runner
+to choose it each time. An environment setting can give
+several tools a shared convention, as Chapter~\ref{ch:28}
+explains, but ordinary shell variables do not automatically
+gain that wider visibility merely because you write their
+names in uppercase.
+
 \section{Exercises and cleanup}
 
 \begin{exercise}{Build a suffix without changing the value}
