@@ -1,0 +1,7 @@
+\begin{tikzpicture}
+\node[utp node] (open) {Shell truncates\\destination};
+\node[utp node,right=5mm of open] (run) {Command runs\\and fails};
+\node[utp node,right=5mm of run] (end) {Destination\\still empty};
+\draw[utp arrow] (open)--(run);
+\draw[utp arrow] (run)--(end);
+\end{tikzpicture}

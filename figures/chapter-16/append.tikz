@@ -1,0 +1,7 @@
+\begin{tikzpicture}
+\node[utp node] (before) {Before\\A, B};
+\node[utp node] (replace) at (6,.75) {After replacing\\C};
+\node[utp node] (append) at (6,-.75) {After appending\\A, B, C};
+\draw[utp arrow] (before.east)--node[above,font=\small]{Write C with \texttt{>}} (replace.west);
+\draw[utp arrow] (before.east)--node[below,font=\small]{Write C with \texttt{>>}} (append.west);
+\end{tikzpicture}

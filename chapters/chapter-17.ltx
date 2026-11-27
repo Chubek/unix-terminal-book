@@ -1,0 +1,428 @@
+The library sends a plain-text list of donations. The first two
+lines are a heading and a date, and the remaining lines name the
+boxes that arrived. You want to count the boxes without counting
+the heading. Rather than opening an editor and deleting the first
+two lines, you can ask one command to skip them and another to
+count what remains. You don't need another file just to pass a
+short list between the two.
+
+\begin{objectives}
+\item Read a pipeline as a series of connections between commands.
+\item Test stages independently, and use \texttt{tee} to retain an intermediate result.
+\item Find failures that the last stage's status can hide.
+\end{objectives}
+
+\section{Remove a heading without editing a file}
+\label{sec:17-first}
+Start a practice \cmd|sh| shell if necessary; return to your
+usual shell with \cmd|exit| at the end. The first input line
+makes a new private directory, saves its path as \texttt{lab},
+and enters it before printing the path. Stop if it fails and
+record the path if it succeeds. In the new directory only,
+\cmd|printf| writes the fixture with a newline after each phrase.
+
+\begin{terminal}
+lab=$(mktemp -d) && cd "$lab" && pwd
+printf '%s\n' 'Donation list' 'Saturday' 'Mystery box' \
+  'Poetry box' 'Garden box' > donations.txt
+\end{terminal}
+
+The backslash at the end of the second input line immediately
+precedes the newline. It continues the same command onto the
+next line; do not put a space after that backslash. The indentation
+on the continuation line is only for readability. The shell's
+\cmd|>| opens a fresh output file here and would truncate it if
+it already existed.
+
+\begin{terminal}
+tail -n +3 donations.txt
+\end{terminal}
+
+\cmd|tail -n +3| prints from line three through the end,
+counting the first line as one. The plus sign matters: plain
+\cmd|tail -n 3| instead takes the last three lines. The answers
+coincide in this small fixture but would differ if another box
+arrived. Think of \cmd|+3| as an address at which to start and
+\cmd|3| as the size of the ending piece. The output here is the
+three lines naming boxes. \cmd|tail| sends the result to standard
+output without modifying the original file.
+
+\begin{terminal}
+tail -n +3 donations.txt | wc -l
+\end{terminal}
+
+Read \cmd+|+ as ``connect standard output on the left to standard
+input on the right.'' This connection is called a \emph{pipe};
+the complete arrangement is a \emph{pipeline}. The shell starts
+both stages and provides the connections. The second stage can
+start reading as the first supplies bytes; it need not wait for a
+completed file. The count itself waits until the incoming stream
+ends. Expect three without a filename because \cmd|wc -l| receives
+its data through standard input and has no file operand. It
+counts newline characters; here each box occupies one completed
+line.
+\IndexTerm{pipeline}
+\IndexTerm{pipe}
+\IndexCommand{tail}
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-17/donations.tikz}
+\caption{The counter reads the tail's output, not the original file.}
+\label{fig:17-donations}
+\VisualDescription{The donations file goes into tail; only the box lines travel through the pipe from tail to wc. The count goes from wc to the terminal.}
+\end{figure}
+
+Try to say what crosses the connection without using the names of
+the commands. Here it's ``three lines, one per box, in the
+original order.'' That is enough to predict the count. For a
+larger job, the same sentence can uncover a mismatched assumption:
+perhaps the first command writes a decorative heading, or maybe
+one logical record spans multiple lines. The pipe itself doesn't
+know what a heading, record, or line means. It transports bytes.
+
+\begin{quicktable}{M{1.5in}Y}
+\toprule
+Part of this request & What it knows \\
+\midrule
+tail -n +3 & Starts at a line number; doesn't recognize donation boxes. \\
+Pipe & Carries bytes in order; doesn't label or store a report for later. \\
+wc -l & Counts newlines; doesn't know what was skipped. \\
+Shell & Connects the commands; doesn't decide whether three is a meaningful total. \\
+\bottomrule
+\end{quicktable}
+
+\section{Check the middle, not just the end}
+\label{sec:17-inspect}
+A count of three could describe three valid boxes, three
+headings, or three blank lines. Start by running the left stage
+alone with the small fixture. When you want both a record of
+its exact output and a downstream count, insert \cmd|tee|.
+It copies standard input to standard output and to each file
+operand. With no append option it replaces a previous file of
+that name, so use the new practice name shown here.
+\IndexCommand{tee}
+
+\begin{terminal}
+tail -n +3 donations.txt | tee box-rows.txt | wc -l
+cat box-rows.txt
+\end{terminal}
+
+The number is still three. The saved lines identify the boxes;
+the number itself is not in \texttt{box-rows.txt}. Inspect
+the position of \cmd|tee| before deciding whether it saves the
+part you care about. The following captures the other side of
+the count as a separate experiment:
+
+\begin{terminal}
+tail -n +3 donations.txt | wc -l | tee total.txt
+cat total.txt
+\end{terminal}
+
+Now you get the count once from \cmd|tee| and again when you
+read \texttt{total.txt}. See Figure~\ref{fig:17-tee} for the
+first arrangement. The important choice is not whether to keep
+a file but which stage's output to keep. Saving intermediates
+can make a muddled pipeline easier to debug. Once the stages
+are understood, you may decide the intermediate copy isn't
+useful. Don't store a copy of sensitive data accidentally while
+testing a real job.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-17/tee.tikz}
+\caption{\texttt{tee} forwards a stream and also writes a copy.}
+\label{fig:17-tee}
+\VisualDescription{Box lines flow from tail into tee. One branch sends a copy to box-rows.txt and the other passes the same lines to the counter.}
+\end{figure}
+
+For a beginner's check, it is also reasonable to use two
+separate commands with an explicitly named intermediate file.
+This takes disk space and creates cleanup work but it gives
+you a chance to check the first command before calling the
+second. Here \cmd|&&| asks the shell to run the count only
+if \cmd|tail| reports success; it does not judge the quality
+of the result.
+
+\begin{terminal}
+tail -n +3 donations.txt > checked-rows.txt &&
+wc -l < checked-rows.txt
+\end{terminal}
+
+If the first command fails, inspect the diagnostic and the
+possibly empty or partial intermediate file. If it works,
+verify that the rows make sense before trusting the count.
+The small expense of retaining intermediate data can be
+worth paying when a count is going into a report that others
+will rely on.
+
+\section{A successful count can follow a failed read}
+\label{sec:17-status}
+\IndexTerm{pipeline status}
+The normal pipe connects standard output, not standard error.
+In this example the input path doesn't exist. \cmd|tail| has no
+rows to send, and its diagnostic normally remains visible on the
+terminal. \cmd|wc| can still count the empty stream correctly.
+
+\begin{terminal}
+tail -n +3 not-here.txt | wc -l
+printf 'Pipeline status: %s\n' "$?"
+\end{terminal}
+
+Expect a missing-file diagnostic, a count of zero, and status
+zero in ordinary \cmd|sh| with \texttt{pipefail} not enabled.
+The two messages are independent; exact wording and their
+relative order can vary. The zero count describes the input
+received by the counter, not a real inventory of a missing
+file. The zero status normally reports the final command's
+success, not the success of all stages. This is a place where
+printing an extra result can obscure the actual problem
+rather than clarify it.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-17/failure.tikz}
+\caption{The last stage can succeed using an empty stream.}
+\label{fig:17-failure}
+\VisualDescription{The missing file makes tail report a diagnostic outside the pipe. The pipe contains no rows; the counter counts zero and returns success.}
+\end{figure}
+
+One way to diagnose is to run individual stages. This example
+uses exactly the left command from the failed pipeline, with
+no pipe, followed immediately by the status check.
+
+\begin{terminal}
+tail -n +3 not-here.txt
+printf 'Tail status: %s\n' "$?"
+\end{terminal}
+
+Now the status is nonzero. A useful habit when assembling a
+pipeline is to run each prefix against a known small input:
+first the producer alone; then producer and next stage;
+finally add the last stage. Don't keep adding commands to make
+an unexpected result less visible. Also watch for a stage that
+takes a file operand and therefore doesn't read the piped
+data. It might be giving you a valid answer about the wrong file.
+
+\begin{quicktable}{M{1.55in}Y}
+\toprule
+Observation & What to investigate \\
+\midrule
+Count zero, no diagnostic & Was a genuinely empty stream expected? Inspect the producer's output. \\
+Count zero, missing-file message & The producer failed. Fix or verify the input, not the counter. \\
+Count looks plausible & Check one intermediate result; sensible-looking output can describe the wrong rows. \\
+Pipeline status nonzero & Read the command-specific diagnostics. Split the pipeline to identify the stage. \\
+\bottomrule
+\end{quicktable}
+
+\begin{platformnote}{POSIX sh, Bash, and Zsh}
+POSIX.1-2024 specifies a \texttt{pipefail} option, but older
+POSIX editions did not and deployed shells vary. Bash and
+Zsh provide \cmd|set -o pipefail|; do not assume it is present
+in the \cmd|sh| you started. With it enabled, the pipeline
+can report failure by a stage even when its last command succeeds.
+Check the local shell manual or use separately checked stages.
+In Bash, run \cmd|bash| to start a disposable child shell
+if available, then try:
+\begin{terminal}
+set -o pipefail
+tail -n +3 not-here.txt | wc -l
+printf 'Pipeline status: %s\n' "$?"
+exit
+\end{terminal}
+The count remains zero but the status is nonzero. Leaving the
+child restores your previous shell with its own options unchanged.
+\end{platformnote}
+
+Don't interpret that option as ``the data is correct if the
+status is zero.'' It checks command completion, not your choice
+of stages. Some intentional pipelines use a reader that
+finishes early, and a producer that tries to write more after
+the reader has gone can fail. Chapter~\ref{ch:31} introduces
+signals and command termination; until then, use a small,
+complete stream when learning what a multi-stage status means.
+Also resist piping a diagnostic into a data counter just to
+hide it: \cmd|2>&1| can make the missing-file message count
+as a box. Keep errors separate when rows need to remain data.
+
+\begin{dialoguebox}{Three or none?}
+\Brian{When the input file was missing, the pipeline printed zero. Is that a bug?}
+\Stephen{The counter received no lines, so zero is the right count for its input.}
+\Brian{But I asked how many boxes were in the donation list.}
+\Stephen{The first stage couldn't read the list. The counter didn't know why there were no lines.}
+\Brian{I checked the status, and that was zero too.}
+\Stephen{Ordinarily that's the last stage's answer. Test the producer separately, or use an available pipeline failure option.}
+\Brian{Then I can report zero only after checking where the rows came from.}
+\Stephen{Right. Don't turn ``no data arrived'' into ``the list was empty.''}
+\DialogueConclusion{A valid count can describe incomplete input.}
+\end{dialoguebox}
+
+\section{Make each stage answer a smaller question}
+\label{sec:17-contract}
+Suppose the organizer adds a fourth box, but also leaves
+a blank line in the list. Is the answer now four or five?
+The existing pipeline counts every newline after the
+heading, so its answer depends on the shape of the input,
+not on whether a line actually describes a box. It was
+correct for the original fixture because each box occupied
+exactly one line and there were no blank lines. If that
+guarantee is no longer true, inspect the output from the
+first stage before trying to fix the count. The ability
+to insert a filter is useful only once you know what the
+filter should keep. Chapter~\ref{ch:21} introduces filters
+that can work with more explicit row and field rules.
+
+There is another easy mistake: ask the second stage to
+read the original file by name even though you've piped
+the selected rows into it.
+
+\begin{terminal}
+tail -n +3 donations.txt | wc -l donations.txt
+\end{terminal}
+
+Expect five and the filename, not three. The right stage
+has a file operand so it reads that file rather than
+counting the pipe. With this tiny fixture the left stage's
+ordinary data either fits in the pipe or the command can
+encounter a closed reader, depending on timing. In neither
+case are the rows its successor counts. The extra pathname
+at the end hasn't made the original pipeline safer; it has
+made it answer a different question. Trace each connection
+and check whether the receiving command will actually use
+it.
+
+Similarly, mixing stderr into a stream can produce a
+surprisingly plausible answer. This practice command uses
+the intentionally absent file and deliberately makes the
+diagnostic part of the count:
+
+\begin{terminal}
+tail -n +3 not-here.txt 2>&1 | wc -l
+\end{terminal}
+
+Here the shell connects the left command's stdout to
+the pipe before applying \cmd|2>&1|. The duplicate now
+points at the pipe rather than at your screen. The
+counter counts whatever diagnostic line endings are
+supplied and may print one instead of zero. It also
+removes the actual diagnostic text from your view. It
+doesn't tell you that the file was read. If you need to
+keep the problem for later, save stderr to its own file
+as in Chapter~\ref{ch:16}. Use a merged stream only if
+the reader wants a combined human-readable report, not a
+clean count.
+
+For a chain that will be repeated, write down two things
+about each stage: what data it expects, and what output
+counts as success. The producer in this chapter expects
+the two-line heading; the counter expects one box per
+newline; the human running the commands checks both
+assumptions against the source. If the source changes,
+there may be no reason to change the pipe itself.
+Instead you change the command that removes the heading
+or choose a representation where records can be distinguished
+from the heading. Keeping the intermediate for one test helps
+you choose which stage needs work. It is usually faster than
+trying to deduce the input from a single number at the end.
+On an important job, save the output under a fresh name
+after checking the stages, and decide explicitly what should
+happen if the first stage fails. A message requesting the
+missing file can be more useful than a clean-looking count.
+
+\section{Use a small, deliberate test set}
+An empty stream is a useful test, not just a failure case.
+Use the valid donations file with a start position beyond
+its end. This time the file exists; skipping past the last
+line legitimately produces no box rows.
+
+\begin{terminal}
+tail -n +6 donations.txt | wc -l
+tail -n +6 donations.txt
+printf 'Producer status: %s\n' "$?"
+\end{terminal}
+
+Expect a zero count, no diagnostic, and a successful
+producer. Compare that with the earlier missing input.
+The counter's result is identical, yet the absence of
+rows has different explanations. If you'll use a zero
+as an instruction to cancel a delivery or skip a pickup,
+validate which explanation applies. Test both a normal
+input and an empty result to see whether your workflow
+mistakes missing data for a valid empty result.
+
+Make each test fixture small enough to check by hand.
+Keep the header exactly as the source format specifies.
+Include one row that looks like a header and one gap you
+don't want counted. Describe the result without mentioning
+the pipeline: ``there are three donation boxes even though
+the report is five lines.'' This check is independent of
+the commands. If the count is right, run the producer again
+without the counter to see if it kept the right three
+rows rather than retaining a heading and omitting a box.
+
+Decide what should become evidence for the next reader.
+Keeping the total at the end with \cmd|tee| can be useful,
+but the saved and displayed totals don't prove anything
+independently: they are copies of the same bytes. If you
+need other evidence, keep the selected rows or count the
+small fixture manually. If you repeat the job for several
+days, make the output pathname identify the input and
+avoid overwriting yesterday's check. A pipeline lets
+commands cooperate without an intermediate file; it doesn't
+force you to discard data someone needs for review.
+
+\section{Practice and cleanup}
+\begin{exercise}{Skip only the first line}
+Construct a pipeline that still includes the date but not
+the heading. Inspect the producer separately and then count
+its result. Leave the original list intact.
+\end{exercise}
+\begin{solution}
+\cmd|tail -n +2 donations.txt| prints the date and three
+box lines. Connect it to \cmd|wc -l| for four. The count
+doesn't change any file; no exercise cleanup is needed.
+\end{solution}
+
+\begin{exercise}{Save at the right stage}
+Count the three boxes again. Put a copy of the lines being
+counted in \texttt{exercise-rows.txt}. Verify that it contains
+names rather than the count.
+\end{exercise}
+\begin{solution}
+Run \cmd+tail -n +3 donations.txt | tee exercise-rows.txt | wc -l+.
+Expect three on the terminal. Use \cmd|cat exercise-rows.txt|
+to check the three box lines. The cleanup below includes the copy.
+\end{solution}
+
+\begin{exercise}{Don't publish the failed count}
+Attempt the missing-file count. Then run the failing stage
+on its own. Check each status directly and explain any
+difference before treating the count as a fact.
+\end{exercise}
+\begin{solution}
+Use \cmd+tail -n +3 not-here.txt | wc -l+ then
+\cmd|printf '%s\n' "$?"|. With the normal last-stage rule,
+this prints zero. Run \cmd|tail -n +3 not-here.txt| alone
+and check again: it fails. Neither call makes a file.
+\end{solution}
+
+After confirming \cmd|pwd| is the recorded lab directory,
+remove only these known practice files with confirmation.
+Omit an optional output if you didn't make it. If the directory
+isn't empty, inspect the remaining entries and save anything
+valuable before leaving it behind or cleaning it up.
+
+\begin{terminal}
+rm -i donations.txt box-rows.txt total.txt checked-rows.txt
+rm -i exercise-rows.txt
+cd ..
+rmdir "$lab"
+\end{terminal}
+
+\begin{takeaways}
+\item Connect output to input, and describe the bytes crossing each pipe.
+\item Put \texttt{tee} where the information you want to keep passes through.
+\item Check producer failures independently when a final stage could succeed with incomplete data.
+\end{takeaways}
+
+\begin{furtherreading}
+\ReadingItem{POSIX Shell Command Language}{See Pipelines for pipe connections and the rules for pipeline status.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/V3_chap02.html}
+\ReadingItem{POSIX tee}{Copying standard input to standard output and to file operands.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/tee.html}
+\end{furtherreading}

@@ -1,0 +1,9 @@
+\begin{tikzpicture}
+\node[utp node] (tail) {\texttt{tail}\\Read failed};
+\node[utp node,right=31mm of tail] (wc) {\texttt{wc}\\Count: zero};
+\node[utp node,below=5mm of tail] (err) {Diagnostic};
+\node[utp node,below=5mm of wc] (status) {Last status: 0};
+\draw[utp arrow,dashed] (tail)--node[above,font=\small]{No rows} (wc);
+\draw[utp arrow] (tail)--(err);
+\draw[utp arrow] (wc)--(status);
+\end{tikzpicture}

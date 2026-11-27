@@ -1,0 +1,11 @@
+\begin{tikzpicture}
+\foreach \b [count=\x] in {43,61,66,C3,A9,0A} {
+  \node[utp node,minimum width=9mm] at (\x,0) {\texttt{\b}};
+}
+\foreach \x/\c in {1/C,2/a,3/f,4.5/{\'e},6/LF} {
+  \node[font=\small\ttfamily] at (\x,-.8) {\c};
+}
+\draw[thick] (3.55,-.45)--(3.55,-.5)--(5.45,-.5)--(5.45,-.45);
+\node[font=\small,anchor=west] at (6.65,0) {Hex bytes};
+\node[font=\small,anchor=west] at (6.65,-.8) {Characters};
+\end{tikzpicture}

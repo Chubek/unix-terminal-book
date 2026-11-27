@@ -1,0 +1,8 @@
+\begin{tikzpicture}
+\node[utp node] (a) {File, then duplicate};
+\node[utp node,right=5mm of a] (b) {Duplicate, then file};
+\node[utp node,below=5mm of a] (af) {1 and 2 $\longrightarrow$ file};
+\node[utp node,below=5mm of b] (bf) {1 $\longrightarrow$ file\\2 $\longrightarrow$ original 1};
+\draw[utp arrow] (a)--(af);
+\draw[utp arrow] (b)--(bf);
+\end{tikzpicture}

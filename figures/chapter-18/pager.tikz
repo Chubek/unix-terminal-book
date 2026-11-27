@@ -1,0 +1,9 @@
+\begin{tikzpicture}
+\node[utp node] (file) {Text file};
+\node[utp node,right=7mm of file] (pager) {Pager};
+\node[utp node,right=7mm of pager] (view) {Screenful};
+\node[utp node,below=6mm of pager] (keys) {Navigation keys};
+\draw[utp arrow] (file)--(pager);
+\draw[utp arrow] (pager)--(view);
+\draw[utp arrow] (keys)--(pager);
+\end{tikzpicture}
