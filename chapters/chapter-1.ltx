@@ -8,8 +8,7 @@ You want to know which folder a set of instructions will use before you try them
 
 \section{Open a window you can throw away}
 \label{sec:1-open}
-\IndexTerm{terminal}
-\IndexTerm{shell}
+\index{terminal}\index{shell}
 
 Open an additional window or tab, not one you already use to run something important. On macOS, look for Terminal in Applications under Utilities, or use your usual application search. On a Linux desktop, look for an application named Terminal, Console, Konsole, or similar. FreeBSD, OpenBSD, and NetBSD desktops can have different terminal applications depending on what was installed; use the terminal in your desktop menu if there is one. If you already have a local text console rather than a desktop, an ordinary signed-in shell there is sufficient. On systems that display a login screen, use your own ordinary account. You do not need a privileged account for these exercises. Don't enter your password at a command prompt.
 
@@ -38,8 +37,7 @@ You can run the first several examples in the shell you find there. The notation
 
 \section{Make a round trip}
 \label{sec:1-round-trip}
-\IndexCommand{printf}
-\IndexCommand{pwd}
+\index{printf@\texttt{printf}}\index{pwd@\texttt{pwd}}
 
 At a ready prompt, type the following line, then press \EnterKey. Use ordinary straight quote marks, not the curly ones a writing app may insert. Do not type any prompt symbol.
 
@@ -140,7 +138,7 @@ No fresh prompt yet & Wait briefly. If typing a fresh command, first verify the 
 \bottomrule
 \end{quicktable}
 
-\begin{dialoguebox}{Who said that?}
+\begin{dialoguebox}[unbreakable]{Who said that?}
 \Brian{The terminal told me that option was wrong.}
 \Stephen{The terminal displayed the complaint, but the shell or utility supplied it.}
 \Brian{Then why does it matter which one said it? The same screen showed both.}
@@ -154,6 +152,28 @@ No fresh prompt yet & Wait briefly. If typing a fresh command, first verify the 
 \section{What it means to be done}
 
 A fresh prompt normally means the shell is ready to accept another command, not that the previous command succeeded. After an error, the prompt is often identical to the prompt after a good result. Some prompts add an indicator of success or failure, but do not depend on decoration you haven't learned to read. Some commands are designed to be quiet when their work succeeds. The test for a task is a relevant observation: did \texttt{pwd} show the expected place, did \texttt{printf} show the expected line, or did a later check confirm the file you meant to create? Here you don't need to create any files to practice that distinction.
+
+\subsection{Make the screen tell a short story}
+
+When you have several commands' worth of output, the latest result can blend into older material. The terminal retains a record of what went by so you can scroll back; that record is called \emph{scrollback}. It can include both the line you entered and what the command replied. Scrollback is not the set of commands the shell can recall for editing, and neither should be regarded as a private notebook. Chapter~\ref{ch:4} shows what the shell can recall. For now, try making the current observation easy to find:
+
+\begin{terminal}
+printf '%s\n' 'Starting directory follows'
+pwd
+printf '%s\n' 'End of check'
+\end{terminal}
+
+The labels bracket one actual reading. You should be able to point out not just the occurrences of \texttt{Starting directory follows}, but which one is the line \texttt{printf} produced. A screen reader that announces a new line may read the line you submitted and the result as separate events. On a visual display, some terminals dim old prompts or put a marker beside each command; you don't need those features to find the result. Compare what follows \texttt{pwd} with what follows each \texttt{printf}. If you print a sentence saying ``all tests passed,'' that's just text. The directory printed by \texttt{pwd} is the evidence here, and its significance depends on what you expected.
+
+This distinction matters when following written instructions. Suppose an example begins with a line containing a dollar sign and \texttt{pwd}, then shows a named directory, then another dollar sign. Those are three roles: prompt plus input, result, and new prompt. To repeat the observation on your system, enter only \texttt{pwd}. If you copy the illustrative directory into the shell as another line, the shell treats it as another instruction, not as a comment on the previous result. Likewise a dollar sign typed before a command isn't the same thing as the shell printing one before it. Simply type the literal input examples until interpreting transcripts feels routine.
+
+\subsection{Decide whether to continue}
+
+Before following someone else's instruction, ask for two specifics: what it is supposed to do and what observation will confirm it. ``It should print the current directory'' and ``the final part should be the practice folder I created'' are enough for \texttt{pwd} later on. ``It shouldn't complain'' isn't enough for an action you cannot undo. A successful command can still have done the wrong job if it received the wrong address. When an instruction doesn't say what it will change, start with a read-only check or ask what the intended result is. Someone posting helpful advice may have forgotten to state that their tools or folder names differ from yours.
+
+If the letters on screen are too small to inspect, make the text larger in the spare terminal using its ordinary display controls. A missing quote and a curly quote can be nearly indistinguishable in some fonts. For a screen reader, short predictable output and a quiet window make it easier to follow a trial. Don't change the font or terminal program just to match the illustration: the meaningful part is whether you can identify the text you enter and the response it produces.
+
+For a live walkthrough, resist the temptation to catch up by pasting a batch of lines. Submitting one line at a time lets you stop where a result first diverges. If the guide expected you to be in one directory and you aren't, the earlier difference may explain every later one. This can save more time than quick typing. Until you know what a command does, neither automatic suggestions nor the absence of an immediate error makes it safe to run. The exercises use only printing and inspection, so you can practice the habit without risking a document.
 
 Ending a shell is also a command. Use it in the extra local window when you are ready to finish:
 

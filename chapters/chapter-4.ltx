@@ -8,9 +8,7 @@ You are entering the name of a folder when the cursor jumps to a new line. You p
 
 \section{Start with a prompt you recognize}
 \label{sec:4-status}
-\IndexTerm{prompt}
-\IndexTerm{primary prompt}
-\IndexTerm{continuation prompt}
+\index{prompt}\index{primary prompt}\index{continuation prompt}
 
 Open a spare local terminal with your ordinary interactive shell. Don't start a child shell for these demonstrations: a minimal \texttt{sh} is useful for syntax, but may omit the editing and completion conveniences we want to try. The harmless command lines below work in the familiar interactive shell families discussed in Chapter~\ref{ch:3}. The keystrokes, prompt characters and history settings are local choices. Where an editing keystroke is unsupported, skip that demonstration instead of changing any configuration.
 
@@ -41,7 +39,7 @@ Running & You submitted a complete command and the expected ready prompt hasn't 
 
 \section{Edit a draft, not the transcript}
 \label{sec:4-edit}
-\IndexTerm{line editing}
+\index{line editing}
 
 Type the following without pressing \EnterKey:
 
@@ -67,8 +65,7 @@ Some editing modes bind \KeyChord{Ctrl}{A} to the start of the draft and \KeyCho
 
 \section{Reuse a line deliberately}
 \label{sec:4-reuse}
-\IndexTerm{command history}
-\IndexTerm{completion}
+\index{command history}\index{completion}
 
 Try a neutral line that you can safely run twice:
 
@@ -99,8 +96,7 @@ Re-running & Does the command do something you actually want to happen again? \\
 
 \section{When Enter doesn't finish the command}
 \label{sec:4-continuation}
-\IndexTerm{interrupt}
-\IndexCommand{sleep}
+\index{interrupt}\index{sleep@\texttt{sleep}}
 
 In the spare shell, enter and submit this deliberately incomplete draft, with no closing quote:
 
@@ -124,7 +120,7 @@ sleep 8
 \VisualDescription{A cancel key at a continuation prompt discards the unsubmitted request. During a running sleep, the usual interrupt key stops the wait. Both routes can end at a ready prompt, but only one had a running utility.}
 \end{figure}
 
-\begin{dialoguebox}{One key, two effects}
+\begin{dialoguebox}[unbreakable]{One key, two effects}
 \Brian{Control-C is an undo button for the terminal, then?}
 \Stephen{It's a good way to back out of a draft or stop a simple wait.}
 \Brian{But a running command could have written something before I stopped it.}
@@ -134,6 +130,50 @@ sleep 8
 \Brian{Let's call it stop, not undo.}
 \DialogueConclusion{Interruption is not undo.}
 \end{dialoguebox}
+
+\section{Recognize a line break with a purpose}
+\label{sec:4-lines}
+
+In an interactive shell an unclosed single quote can produce a continuation rather than a rejection. You used that property to cancel. In a shell that does continue, you can also use it to see exactly what the new line contributes. Try this optional exercise in \texttt{/bin/sh} in a spare terminal, where the POSIX quoting rule applies. Enter line one, wait for the prompt asking for more input, then enter line two:
+
+\begin{terminal}
+printf '%s\n' 'The first line
+and the second'
+\end{terminal}
+
+The second line is not a separate command. It supplies the rest of the text and the closing quote. The newline typed inside the quotes is part of the one item supplied to \texttt{printf}, which prints the item and then adds its own final newline. The result is two lines:
+
+\begin{terminaloutput}
+The first line
+and the second
+\end{terminaloutput}
+
+Compare the result with these separate quoted items:
+
+\begin{terminal}
+printf '%s\n' 'The first line' 'and the second'
+\end{terminal}
+
+The output looks the same, but there are now two items. Here \texttt{printf} repeats the format to handle the second item, just as it did in Chapter~\ref{ch:1}. A different utility could respond very differently to one item containing a newline and two items containing none. You don't need multiline text for ordinary first steps. If you see a continuation you didn't intend, cancel it rather than guessing which characters will make the line run. Return to the original shell with one \texttt{exit} when done.
+
+Distinguish this real newline from a visual wrap. If a command grows too wide for the display, its final words may appear on another screen line before you have pressed Enter. In a ready shell that is usually still one editable line. Try shrinking the width of the spare window, if your terminal allows it, then type this at a known-ready prompt without pressing Enter:
+
+\begin{terminal}
+printf '%s\n' 'This message can wrap in a narrow terminal.'
+\end{terminal}
+
+Read to the closing quote, even if it wraps. Submit it only when the whole input is correct. The output can also wrap on screen, even though the format adds only one newline. Restore the window width when done. You may skip the resize if you use a console, have a fixed window, or find resizing disruptive; the presence or absence of a submitted line ending is the distinction that matters.
+
+\section{Make a routine that works without special keys}
+\label{sec:4-fallback}
+
+The fastest editing shortcut is not necessarily the one you can use in an unfamiliar window. A different machine might have a different keyboard layout, a shell with another editing mode, or an accessibility application that uses the same chord for another purpose. If a shortcut does something surprising, don't poke at the line with more unfamiliar shortcuts. Stop with the known cancel action if it works; otherwise discard just the spare session rather than trying more commands there. The reliable alternative for a short line is to retype it from the beginning.
+
+A helpful order on a busy screen is: establish a ready prompt, type a short and predictable command, read the result, and then do the real task. You have already used \texttt{printf} for that first test. Don't choose a test that would have a consequence if it accidentally reached another program. If someone tells you to press an editing key, ask whether the instruction applies before submission or while a command is running. The same key may do something entirely different in those two places. Keeping the phase of the interaction clear saves more trouble than memorizing every shortcut.
+
+If you paste a command from a trustworthy guide, copy just the single line identified as input. Some applications treat a pasted newline as submission; others protect multiline pastes or ask for confirmation. A safeguard you're familiar with on one machine might be missing on the next. For this chapter, type the harmless practice lines yourself. You can feel the difference between drafting and submitting, which is harder to notice when several events happen during a paste. Don't copy the leading dollar sign of a transcript, and don't accept a suggestion just because it appears faintly after the cursor. Fish and configured Bash or Zsh sessions can display suggested text without making it part of the submitted input. The exact acceptance key is a feature of that local shell and setup.
+
+If an unexpected input state keeps recurring, note how you got there: the text you entered, which key you pressed, and whether Enter had already submitted a line. If safe to share, preserve the relevant diagnostic rather than an image of the entire screen. Those details distinguish a keyboard binding from shell syntax and from a running process that ignores a key. When you don't know which process is listening, don't test a second shortcut just because a forum lists it. Recover the disposable window first; Chapter~\ref{ch:45} develops this way of separating problems.
 
 \begin{exercise}{Repair one letter before submission}
 \label{ex:4-letter}

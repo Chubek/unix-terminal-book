@@ -8,8 +8,7 @@ You open a fresh terminal after a colleague shows you a handy trick. Your window
 
 \section{Borrow a shell for practice}
 \label{sec:3-borrow}
-\IndexCommand{sh}
-\IndexTerm{child shell}
+\index{sh@\texttt{sh}}\index{child shell}
 
 In a spare local terminal, at its regular prompt, enter:
 
@@ -54,9 +53,7 @@ No one needs to switch their everyday shell to follow this book. Use your usual 
 
 \section{Ask the shell what it would run}
 \label{sec:3-lookup}
-\IndexTerm{builtin}
-\IndexCommand{command}
-\IndexCommand{cd}
+\index{builtin}\index{command@\texttt{command}}\index{cd@\texttt{cd}}
 
 Run this in the child shell:
 
@@ -122,7 +119,7 @@ Run each line separately. \texttt{cd} takes a directory to enter; \texttt{/} is 
 \VisualDescription{Both shells initially use the same example directory. When the child enters slash, the parent stays at its original directory.}
 \end{figure}
 
-\begin{dialoguebox}{Which shell moved?}
+\begin{dialoguebox}[unbreakable]{Which shell moved?}
 \Brian{I changed directories and then exited; why did my old location return?}
 \Stephen{The terminal saved it while you were away.}
 \Brian{But we said the terminal only carries the conversation. Is it tracking directories too?}
@@ -140,6 +137,39 @@ exit
 \end{terminal}
 
 At the returning prompt, run \texttt{pwd} in the original shell. It should report its earlier directory. Avoid typing several copies of \texttt{exit} in one paste: if the child is gone, the next copy can exit the parent too. You can close the spare practice window normally when you've checked the parent. No account setting or practice file needs to be restored.
+
+\section{Keep interpretation separate from the job}
+\label{sec:3-separate}
+
+Consider a command line that names a program, provides a formatting pattern, and supplies two messages. Before that program prints a thing, the shell has to decide where one item ends and another begins:
+
+\begin{terminal}
+printf '%s\n' 'Pickup on Monday' 'Bring a bag'
+\end{terminal}
+
+This prints two lines. The shell interpreted the quote marks and delivered two messages after the format. \texttt{printf} supplied the result by applying the format to each. An external utility would receive the prepared items when it starts. A builtin is supplied those items by the shell without having to start an external program. Either way, changing a word inside the quotes changes the message; changing the spaces that separate quoted pieces can change the shape of the request. If you aren't sure whether the utility received the items you intended, it often helps to test with printing before moving on to a utility that does more.
+
+There are at least three moments at which a small example can go wrong. First the shell may not see a complete line. A closing quote could be missing, for instance, and the utility never starts. Second, the shell may accept the line but not find the name at the beginning. That can happen when instructions assume an optional program you don't have. Third, the selected utility can reject what it was asked to do. A read-only invalid-option example from Chapter~\ref{ch:1} illustrates the third kind. Asking \texttt{command -v} helps with the second kind, but it can't repair an incomplete line or tell you whether a particular option will be accepted.
+
+If you want to see a safe example of a lookup that probably finds nothing, ask about an invented program together with one you know:
+
+\begin{terminal}
+command -v utp-invented-63098
+command -v pwd
+\end{terminal}
+
+The first command is a question, not an instruction to run the invented name. In a normal session it will print nothing; the second should report a known name or path. Silence from the first is expected because there is nothing to report. If your shell does find something, don't run the unexpected program. Select a different invented name and use only the lookup. In both cases \texttt{command} reports success or failure in a form the shell can use, called an exit status. You don't need to read that number to notice the contrast here; Chapter~\ref{ch:13} shows how to inspect it without confusing it with visible output.
+
+\section{When to use a temporary shell, and when not to}
+\label{sec:3-choice}
+
+The temporary shell is useful when a line was written for that shell or when you want to remove some interactive customizations from a comparison. It does not install missing programs or make the system underneath it different. If a GNU option wasn't accepted in your ordinary shell, simply starting \texttt{sh} may still select the same external program. Ask what changed: a new interpreter, a new command lookup, or a different implementation of the utility? Open another local terminal only if you need an independent session; it does not provide a second operating system.
+
+You also don't need a new shell just to learn a useful keyboard shortcut in the one you already use. For editing and completion, keep your ordinary interactive shell, since that is the setting where you intend to repeat the task. For an example explicitly labeled POSIX sh, use the portable practice shell and its documented rules. When sharing instructions with someone else, label the intended shell in plain words instead of assuming that a dollar-shaped prompt identifies it. The best choice is the one that matches the question you are trying to answer.
+
+There is a simple lookup comparison you can do without changing anything. Ask for the descriptive form of the \texttt{printf} lookup in your usual prompt if that shell supports \texttt{command -V}, and then again in \texttt{/bin/sh}. If both say it is a builtin, that does not tell you both shells are the same; each can implement its own builtin with the same name. If one finds a path and the other finds a builtin, run the same harmless \texttt{printf} example in both. They should still produce the same text for the portable format used here. This is why the question ``what provided it?'' and the question ``did it produce the expected result?'' are worth keeping separate.
+
+One more boundary matters: \texttt{/bin/sh} started while you're already in a shell is a separate live session, not a directory or a command-editing mode. Closing just that child with \texttt{exit} brings back the original shell's prompt; seeing the same prompt before and after can make the transition seem uneventful. If you lose count after opening several shells, don't keep issuing \texttt{exit} mechanically. Finish the current practice in a known session, then close the extra practice tab normally when no command is running there. A one-child rehearsal is enough to learn the relationship.
 
 \begin{exercise}{Tell the two lookups apart}
 \label{ex:3-lookup}
@@ -183,5 +213,5 @@ The reading in the child after \texttt{cd /} is \texttt{/}; the final reading in
 \begin{furtherreading}
 \ReadingItem{POSIX Shell Command Language}{Shell interpretation, command search, and execution.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/V3_chap02.html}
 \ReadingItem{POSIX command}{The two portable command lookup options.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/command.html}
-\ReadingItem{POSIX cd}{Why a change of directory applies to the current shell execution environment.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/cd.html}
+\ReadingItem{POSIX cd}{Changing the current shell's directory.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/cd.html}
 \end{furtherreading}

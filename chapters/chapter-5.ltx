@@ -8,10 +8,8 @@ The file manager shows two folders named \texttt{Plans}: one for a holiday and o
 
 \section{Ask where you are}
 \label{sec:5-where}
-\IndexTerm{working directory}
-\IndexCommand{pwd}
-\IndexCommand{cd}
-\IndexCommand{ls}
+\index{working directory}\index{pwd@\texttt{pwd}}
+\index{cd@\texttt{cd}}\index{ls@\texttt{ls}}
 
 Open a spare local terminal and enter \texttt{/bin/sh} as in Chapter~\ref{ch:3}. The shell maintains a \emph{working directory}: the starting directory for names it and its utilities resolve without a full address. The working directory is like the open folder in one file-manager window. Another terminal tab can have a different starting point, even if both tabs use the same kind of shell. You can ask for the location even if it appears in your prompt:
 
@@ -48,8 +46,7 @@ ls name & If name denotes a directory, list its ordinary contents without enteri
 
 \section{Build a small, disposable map}
 \label{sec:5-practice}
-\IndexCommand{mkdir}
-\IndexCommand{rmdir}
+\index{mkdir@\texttt{mkdir}}\index{rmdir@\texttt{rmdir}}
 
 We'll use a new directory named \texttt{utp-nav-5-7319}. It must not already exist. The steps below only use empty directories, and nothing in this chapter depends on paths created in another chapter. If the name is taken, stop and choose a different unused suffix; use that replacement throughout, including the cleanup. Never enter, empty, or replace an existing directory just because its name matches the book. Run each line or block in order, one line at a time. After any unexpected error stop: successful later commands do not make an earlier failure safe.
 
@@ -131,6 +128,28 @@ pwd
 
 The first command should report that it could not enter \texttt{Not-Made}. The second should still end in \texttt{/Holiday/Plans}; a failing \texttt{cd} didn't take you somewhere else. Knowing this is vital when the next command is meant to modify files. A command on the next line might run from the previous directory even though you thought you had moved. Stop at the failed step, then use \texttt{pwd} and \texttt{ls} to confirm the current location and the exact spelling of a known child. Do not add privileges or create a replacement in haste.
 
+\subsection{Reduce the question to one component}
+
+A diagnostic refuses a destination but seldom gives you the full map. Suppose you meant to leave the holiday directory and enter the volunteer plans. Repeating a long path with several changes will not tell you which component first failed. Return to a known start and test the destination in pieces. From home, after confirming with \texttt{pwd}, use:
+
+\begin{terminal}
+cd ./utp-nav-5-7319
+ls ./Volunteers
+ls ./Volunteers/Plans
+\end{terminal}
+
+Confirm the move after the first line. The second listing should show a child named \texttt{Plans}. The third should be empty because the child was newly created. Those observations establish different things: that the known root can be reached, that the first component can be looked into, and that the target exists and currently has no ordinary contents. They don't claim that the shell moved into the target. If the second check fails, there's no point trying the third with the same spelling; inspect from the current directory instead.
+
+Here's a more specific check if you need to display the name of the directory itself rather than its contents:
+
+\begin{terminal}
+ls -d ./Volunteers/Plans
+\end{terminal}
+
+The \texttt{-d} option tells \texttt{ls} to display the directory operand as an entry, rather than list what is inside it. Expect the supplied relative name, possibly styled differently by the display. It is useful to distinguish ``I found the named directory'' from ``that directory was not empty.'' Do not read the fact that the name appeared as proof that you can do every kind of work there. Access to a directory and to its contents depends on permissions, which Chapter~\ref{ch:33} covers. The diagnostic tells you what was denied for this particular attempt; it does not justify changing who has access.
+
+These tests also keep case differences manageable. The first letter in \texttt{Volunteers} is uppercase. Some filesystems treat case differences as distinct and others may resolve different spellings to the same entry. In portable instructions, use the spelling you observed, not a guess about the filesystem. A listing in a differently configured terminal might decorate a directory name with color or a marker; don't type a decorative marker as part of the name. The fixture uses plain names so the exact inputs are unambiguous.
+
 \begin{quicktable}{lY}
 \toprule
 Observation & Interpretation and next check \\
@@ -142,7 +161,7 @@ Unexpected listing & Verify the starting directory and the operand you supplied 
 \bottomrule
 \end{quicktable}
 
-\begin{dialoguebox}{The same name twice}
+\begin{dialoguebox}[unbreakable]{The same name twice}
 \Brian{The prompt says \texttt{Plans}. That proves I'm in the holiday folder, yes?}
 \Stephen{It proves you can see the name \texttt{Plans}. I would ask \texttt{pwd} for the rest.}
 \Brian{But I listed \texttt{Holiday}, and it said \texttt{Plans}.}
@@ -174,6 +193,20 @@ rmdir ./utp-nav-5-7319
 \end{terminal}
 
 If a removal fails, stop and inspect rather than switching to a stronger removal command. Leaving a rehearsal folder is preferable to guessing. If all five lines succeed, \texttt{ls ./utp-nav-5-7319} should now report that no such entry exists. Exit the child and close your extra window or tab. Other windows' working directories did not change.
+
+\subsection{Use the same checks in a real task}
+
+Imagine the practice tree belongs to a volunteer coordinator. Before asking another person to check the plans, tell them which parent to look from and which copy they should see. ``From the practice root, the listing of Volunteers contains Plans'' conveys more than ``I found Plans.'' The other person can reconstruct the route without deciding whether your shortened prompt or their file-manager window is authoritative. If they send you a discrepancy, agree on the starting directory first. Then compare the name of one child at a time.
+
+When a real task will eventually change something, spend the read-only checks before the change. Ask \texttt{pwd} to confirm the starting point, inspect the intended parent with \texttt{ls}, and distinguish an empty result from an error. If you need to work across two locations at once, you can keep one shell in each and run \texttt{pwd} in each before the important step. The tab titles can be a reminder, not proof. In the next chapter you'll choose spellings that make some tasks independent of where the shell happens to be. Until then, leaving an unwanted folder alone is always safer than trying to repair it in the wrong place.
+
+\subsection{Practice a handoff between two views}
+
+If you use a graphical file manager, you can open the same practice tree there without changing any of these instructions. In the file manager's home view, find the practice folder, open \texttt{Holiday}, and find its \texttt{Plans}. Then return to the terminal and run \texttt{pwd}. Unless you told the shell to change directories, only the graphical window moved. The reverse works the same way: \texttt{cd} in a shell usually won't move an already open file-manager window. This is an observation, not an exercise in configuring one application to follow another. If your desktop offers ``Open in Terminal'' for a folder, it can create a terminal already located there; verify it with \texttt{pwd} before assuming where it started.
+
+File managers sometimes show a friendly title instead of a filesystem name, or mark one folder with a picture. A terminal doesn't use those pictures or menu titles as operands. In this practice tree, everything is named with plain letters and the numeric suffix so that the views can be checked against each other. For real work ask which actual name you need to supply, especially when two windows display the same short title. Chapter~\ref{ch:6} shows how a whole address names a location independently of either window's display. If you don't have a GUI, the two-shell comparison in Figure~\ref{fig:5-tabs} provides the same lesson.
+
+You can pause between these checks and return later. Reestablish the starting point with \texttt{pwd}; do not assume it from the last instruction you remember reading. If the fixture is already gone because you cleaned up, don't try navigation steps against a similarly named folder. Re-create only the empty practice tree from the documented setup, or finish without it.
 
 \begin{exercise}{List twice, move once}
 \label{ex:5-list}

@@ -8,9 +8,7 @@ You have a folder called \texttt{April photos}. A relative tells you to open it 
 
 \section{Read a path as a route}
 \label{sec:6-address}
-\IndexTerm{absolute path}
-\IndexTerm{relative path}
-\IndexTerm{filesystem root}
+\index{absolute path}\index{relative path}\index{filesystem root}
 
 The answer from \texttt{pwd} is a \emph{path}, an address in the filesystem. Run it in a spare local shell:
 
@@ -84,8 +82,7 @@ The first invocation prints one line containing the path. The second prints two 
 
 \section{Find the same place from two starts}
 \label{sec:6-two-starts}
-\IndexTerm{dot path component}
-\IndexTerm{dot-dot path component}
+\index{dot path component}\index{dot-dot path component}
 
 Enter the album from the practice root:
 
@@ -135,8 +132,7 @@ Substitute your actual path, including your suffix if you chose a different one,
 
 \section{Home is a useful starting place, not the root}
 \label{sec:6-home}
-\IndexTerm{home directory}
-\IndexTerm{tilde expansion}
+\index{home directory}\index{tilde expansion}
 
 Go home with \texttt{cd} and verify it. Then try another spelling in POSIX sh:
 
@@ -146,6 +142,37 @@ pwd
 \end{terminal}
 
 The bare \texttt{\textasciitilde} is a tilde. Unquoted at the beginning of an ordinary word like this, it is replaced by the shell with your home directory, assuming your environment provides the usual home setting. It isn't a special path component like dot. Quoting the tilde in \texttt{cd '\textasciitilde'} suppresses that replacement, so it would ask for a directory actually named \texttt{\textasciitilde}; there is no need to try that in your home. If you just want home, use the simpler no-operand \texttt{cd}. To use it as a known parent for another path, verify the home reading and enter the relative path from there.
+
+\subsection{Tell the address apart from its notation}
+
+Printing a value is often safer than using it as a destination. Compare two uses of the tilde at the ready prompt of your practice sh:
+
+\begin{terminal}
+printf '%s\n' ~
+printf '%s\n' '~'
+\end{terminal}
+
+The first normally prints the home address. The second prints a literal tilde. Neither changes directories. The same printable symbol served two purposes: a marker in shell syntax when unquoted, and ordinary text when quoted. In contrast, a slash is a separator even when it survives inside a quoted text item, as you saw when you made the album. The shell and the filesystem don't read the same notation. First ask what item the shell prepared, then ask what that item means as a filesystem address.
+
+An address ending in a slash can carry one more useful detail. Enter the following from your verified practice root. If you are still at home after the tilde test, enter the practice directory first:
+
+\begin{terminal}
+ls -d './albums/April photos/'
+\end{terminal}
+
+The final slash is outside the last name but inside this single quoted path operand. It indicates that the path must resolve as a directory here; the extra slash is not part of the name \texttt{April photos}. The \texttt{-d} option requests the directory entry itself, not the contents of the empty album. Compare with the same command without the final slash. Both succeed in this tree because the target is an actual directory. The trailing slash can matter when a path could name a regular file or when links are involved. Do not add or remove it blindly from a utility's source and destination examples; consult the documentation for that utility's interpretation.
+
+\subsection{Document a route that survives a move}
+
+Suppose you keep this tree as a model for a real album project. If you send someone the absolute path from your machine, it gives them the names you used but is unlikely to be their address. If instead you say ``from the project root, go to \texttt{./albums/April photos},'' they can place the project under their own home and still apply the instruction. That sentence contains two pieces, the starting place and the route. Without the first, the relative path is incomplete as guidance; without the second, the recipient has to guess inside the project.
+
+On your own system you might prefer the absolute address for a repeated listing you want to run from any directory. That is convenient until the project moves. In that case an old absolute address can fail, or worse, still exist while pointing to an outdated copy. Confirm the expected destination by inspecting the path and, when you know the contents, looking for a recognizable entry you intended to find. The fact that a valid directory exists is not proof it is today's directory. When sharing an example, replace private pieces of an absolute address with an explicitly illustrative prefix. Say what the recipient should substitute. A fake prefix printed in a transcript is not text they should type literally.
+
+\subsection{Use a route as a diagnostic}
+
+If you get an error, make a small observation from a known start. Check \texttt{pwd}; compare the first component with the actual names at that location; then look one level deeper. In this rehearsal, from the practice root \texttt{ls ./albums} should include \texttt{April photos}. That is enough information to catch both a spelling error and a wrong starting place without modifying anything. Don't make a new folder just because the path wasn't found: a newly created folder might hide a bad assumption about where the real one lives. When ordinary names still fail, keep the original error and get local help rather than changing unrelated settings.
+
+Remember that \texttt{pwd} is an observation made at the moment you ran it. If you enter a child shell, switch tabs, or change directories, a relative-path instruction from your earlier observation may need a new check. A small practice tree makes this easy to see: \texttt{.} names each current directory as you move, but it isn't a second name you should write on a label and expect to identify one fixed place forever. An absolute address can be written down for later use on that machine; even then, check that it still points to the intended copy before using it for a change. An address is a route, not a certificate of identity.
 
 \begin{quicktable}{lY}
 \toprule
@@ -158,7 +185,7 @@ Different directory than expected & Check the exact spelling and remember that e
 \bottomrule
 \end{quicktable}
 
-\begin{dialoguebox}{The path that stopped working}
+\begin{dialoguebox}[unbreakable]{The path that stopped working}
 \Brian{The path worked a minute ago. It must still name the same album.}
 \Stephen{Only if the route starts at the same directory, or starts with a slash.}
 \Brian{I added a dot to the front. Doesn't that pin it down?}

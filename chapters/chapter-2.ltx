@@ -8,7 +8,7 @@ You send a friend a command that worked on your laptop. On theirs, the command h
 
 \section{Collect a clue, not a full inventory}
 \label{sec:2-clue}
-\IndexCommand{uname}
+\index{uname@\texttt{uname}}
 
 At a local shell prompt, ask the system to identify itself. This is a read-only request; it does not contact another computer.
 
@@ -66,10 +66,7 @@ It prints the system name followed by the release on one line, separated by a sp
 
 \section{How the resemblance came about}
 \label{sec:2-family}
-\IndexTerm{Unix}
-\IndexTerm{BSD}
-\IndexTerm{Linux distributions}
-\IndexTerm{POSIX}
+\index{Unix}\index{BSD}\index{Linux distributions}\index{POSIX}
 
 Unix began at Bell Labs around 1969. Early versions ran on machines that were very different from today's laptops. A printer or a text display could serve as the interface. The significant idea for us isn't the shape of the equipment: it is that a person could ask a small command to do one job and use its result to guide the next job. A short text instruction could be written down, sent to someone and tried again. Later chapters put that ability to work with commands whose results can feed other commands.
 
@@ -85,7 +82,7 @@ The GNU project began in the 1980s to build a free Unix-compatible operating sys
 
 There is also a separate question of a marketed system's UNIX certification. The Open Group maintains a register of certified products and configurations. Certification applies to particular entries and does not follow simply from resembling Unix, running on the same hardware or containing inherited source code. In this book, ``Unix-like'' is a useful descriptive term for systems that share these conventions; it is not a certification claim. Where a command differs, the difference matters even if both systems have impressive credentials.
 
-\begin{dialoguebox}{The familiar name}
+\begin{dialoguebox}[unbreakable]{The familiar name}
 \Brian{If both computers have a command called \texttt{ls}, why shouldn't they take the same instructions?}
 \Stephen{They share many instructions, because the command comes from a common tradition.}
 \Brian{That sounds like a promise. My friend's extra option still failed.}
@@ -142,6 +139,21 @@ Is a tool optional? & State the tool and availability requirement instead of ass
 
 It is possible to write portable instructions that still produce different-looking output. Directory listings can be arranged according to language settings, window width and local preferences. File names are obviously different on two machines. When sharing a verification criterion, say ``the listing includes the dot-prefixed name we created,'' rather than requiring the reader's screen to look exactly like yours. Diagnose the smallest mismatch first: command missing, option rejected, or expected information displayed differently. Each outcome suggests a different repair.
 
+\section{Write instructions someone else can use}
+\label{sec:2-handoff}
+
+Start with the goal, not the command that just happened to work. For the directory example, the goal is to include names starting with a dot. The portable request \texttt{ls -a} is sufficient. In a different example, the nonstandard option might express something you can't replace with a short portable spelling. In that case it's fine to require a particular tool; say which implementation you mean. ``Use GNU \texttt{ls} for this GNU long option'' is actionable; ``use the one on a real Unix machine'' is not. Say what to do on a system where the extra isn't available. That might be using a different tool, looking up the feature locally, or simply skipping an optional display preference.
+
+When an instruction is forwarded through several people, context gets stripped. A script written for a Linux distribution might reach a Mac user with all mentions of the original setting removed. Even ``runs on Linux'' is not very precise: it could mean one maintained distribution's standard desktop installation or a stripped-down environment with only a handful of utilities. ``Uses POSIX sh and POSIX \texttt{ls -a}'' is more precise about the interfaces that concern us. It still doesn't promise that the reader has access to your files or that their output will use the same language. State assumptions about inputs separately from assumptions about tools.
+
+The medium also matters. In a terminal on the desktop, you usually talk to a shell on that system. Later you may open a terminal tab whose shell runs elsewhere. The tab label and the window's visual style can stay the same while the utility behaves like it does on the other system. \texttt{uname -s}, run in the session you're actually using, is more useful than reporting what logo is on the laptop. You do not need to test a remote connection here; the principle matters whenever the interface and the program aren't in the same place.
+
+For an example you intend to share, annotate a known answer rather than pasting the entire window. If a command fails, preserve the exact option and the relevant part of the diagnostic, but omit directory names or other details that don't contribute to the question. For a reproducible example later in the book, use an invented folder with predictable names. At this stage you can report that \texttt{ls -a} worked and that the double-hyphen spelling did or didn't work without publishing a directory listing at all. A short report with a precise difference gives a reader a better starting point than a long transcript plus ``didn't work.''
+
+Finally, notice the advantage of keeping the portable and local forms in separate lines. A reader who wants only the common action does not have to separate the optional feature from a big combined instruction. When you later compose several utilities into a workflow, this is even more useful: check the portability of each step before testing the whole. Familiar names and familiar-looking switches give you a place to start asking questions, not permission to assume the answers.
+
+Specifications age just as software does. The online standard cited here is POSIX.1-2024. A machine released earlier may target an earlier revision, and even a currently maintained system may not implement every interface you read about. The simple examples in this chapter use long-standing features except where deliberately marked as an extension. When a later example calls for a recently added feature, verify what your installed utility actually documents. A citation helps locate the rule; it is not evidence that your copy has caught up with it.
+
 \begin{exercise}{Describe the session without a data dump}
 \label{ex:2-identify}
 Request the name, release and hardware name individually. Decide which single field would help a person tell Linux and OpenBSD apart. Do not publish the other fields. Nothing is created; close your practice tab when done.
@@ -183,4 +195,5 @@ The first field of \texttt{uname -s -r} should match plain \texttt{uname}. The r
 \ReadingItem{GNU: The GNU Project}{The project history in its own words.}{https://www.gnu.org/gnu/thegnuproject.html}
 \ReadingItem{FreeBSD Handbook: Introduction}{The origins and goals of FreeBSD.}{https://docs.freebsd.org/en/books/handbook/introduction/}
 \ReadingItem{POSIX uname}{Definitions of the individual system fields.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/uname.html}
+\ReadingItem{GNU Coreutils: Which files are listed}{The short and long GNU spellings of the option.}{https://www.gnu.org/software/coreutils/manual/html_node/Which-files-are-listed.html}
 \end{furtherreading}
