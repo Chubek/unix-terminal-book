@@ -9,6 +9,16 @@ explicitly addressed hidden fixture; allocation numbers are not required
 outcomes. The chapter's short `df` table is illustrative. An actual
 full disk or mounting/unmounting was not required.
 
+The exact revised manuscript setup, exercise-2, and final cleanup
+blocks were also exercised together under Linux `/bin/sh` and Zsh
+`sh` emulation. With the current directory changed to a sibling with
+all three target names, both guarded blocks printed the mismatch
+warning, made no removal requests, and left every sentinel unchanged.
+Back in the recorded physical practice directory, the test confirmed
+the three interactive removal prompts separately and verified that
+the setup directory was removed and its saved variable cleared.
+The latest print preview compiled without overfull boxes.
+
 The APFS explanation was checked against Apple's Disk Utility User Guide
 pages on volume groups/space sharing and snapshot viewing. `diskutil` and
 `tmutil` examples are macOS-only read-only lookups, with local manuals named

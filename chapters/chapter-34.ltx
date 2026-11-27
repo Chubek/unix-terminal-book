@@ -101,15 +101,27 @@ people's files is neither a test nor a fix.
 \section{Measure what you can name}
 \label{sec:34-du}
 \index{du@\texttt{du}}
-Use \cmd|sh| for the examples. Run the setup line separately
-from a writable directory, and proceed only if it prints the
-fresh practice location. \cmd|mktemp -d| creates a directory
+Use \cmd|sh| for the examples. Run the setup block separately
+from a trusted, writable directory you control. Proceed only
+if it prints the fresh practice location with no error, and
+keep that path for the exercises and cleanup. \cmd|mktemp -d| creates a directory
 from the supplied template, replacing the Xs. It is widely
 available on our target families but is not POSIX.
 
 \begin{terminal}
-room=$(mktemp -d ./utp-space.XXXXXX) && cd "$room" && pwd
+unset space_room
+new_room=$(mktemp -d ./utp-space.XXXXXX) &&
+    cd "$new_room" &&
+    space_room=$(pwd -P) &&
+    printf '%s\n' "$space_room"
 \end{terminal}
+
+\cmd|pwd -P| prints the physical absolute location, without
+aliasing directory components through symbolic links. The
+shell saves that result in \cmd|space_room| only after it
+enters the new directory. The \cmd|&&| chain stops at the
+first failed step; a failed setup is not a reason to try
+the next block in the old directory.
 
 \begin{terminal}
 mkdir ./notes
@@ -416,6 +428,9 @@ usable.
 \DialogueConclusion{Different scopes give different totals.}
 \end{dialoguebox}
 
+Before the exercises, check that \cmd|pwd -P| still matches
+the practice location saved at setup. Stop if it does not.
+
 \begin{exercise}{Locate the destination before measuring it}
 \label{ex:34-mount}
 Ask which filesystem serves \texttt{notes} and compare the
@@ -433,14 +448,19 @@ No cleanup is needed for a report.
 \label{ex:34-units}
 Create one tiny file with a known number of bytes and measure
 its length and disk usage separately. Explain why there is no
-required numeric match.
+required numeric match. Choose a fresh name and remove only
+that file from the verified practice directory when done.
 \end{exercise}
 \begin{solution}
 \begin{terminal}
-printf 'three\n' > ./extra.txt
-wc -c < ./extra.txt
-du -k ./extra.txt
-rm -i ./extra.txt
+if here=$(pwd -P) && [ "$here" = "${space_room:-}" ]; then
+    printf 'three\n' > ./extra.txt
+    wc -c < ./extra.txt
+    du -k ./extra.txt
+    rm -i ./extra.txt
+else
+    printf '%s\n' 'Not in the practice directory.' >&2
+fi
 \end{terminal}
 The count is six; the disk usage describes allocation in
 1024-byte units. Confirm removal only for the new practice
@@ -465,16 +485,30 @@ With the normal \cmd|sh| glob semantics the star omits
 exercise does not add a file.
 \end{solution}
 
-After checking \cmd|pwd|, remove only the two original
-practice files. Confirm only those names at the prompts.
-The nonrecursive \cmd|rmdir| checks that no other material is
-left in each practice directory before removing it.
+The cleanup first compares today's physical working directory
+with the absolute path saved by setup. The bracketed test checks
+that the two path strings are equal; \cmd|${space_room:-}|
+supplies an empty value if no path was saved. If the check fails,
+only the warning is printed and nothing is removed. Confirm
+only the two original practice files at the prompts.
+Nonrecursive \cmd|rmdir| refuses nonempty directories. The
+chain leaves the practice directory only after removing its
+empty \texttt{notes} subdirectory and will try to remove
+the practice directory itself only if leaving it succeeds.
+If a command fails, inspect what remains rather than adding
+force or recursion.
 
 \begin{terminal}
-rm -i ./notes/list.txt ./.note
-rmdir ./notes
-cd .. && rmdir "$room"
-unset room
+if here=$(pwd -P) && [ "$here" = "${space_room:-}" ]; then
+    rm -i ./notes/list.txt ./.note &&
+        rmdir ./notes &&
+        cd .. &&
+        rmdir "$space_room" &&
+        unset space_room new_room
+else
+    printf '%s\n' 'Not in the practice directory.' >&2
+fi
+unset here
 \end{terminal}
 
 \begin{takeaways}
