@@ -1,0 +1,429 @@
+You saved a household budget in a shared directory, but now
+you want a private copy. While checking you discover a
+different problem: a document you can read but cannot save.
+Should you change the file, the directory, both, or neither?
+Unix records different kinds of access on each object. Start
+by learning to read that evidence before changing anything.
+
+\begin{objectives}
+\item Read owner, group, and other permissions in a long listing.
+\item Explain why opening a file and removing its name are different.
+\item Change the mode of a disposable file and predict new-file defaults.
+\end{objectives}
+
+\section{Make a room for the practice}
+\label{sec:33-setup}
+Use an ordinary, unprivileged account. If you are already an
+administrator working in an elevated shell, open a normal
+terminal instead: permission checks can behave differently with
+elevated privileges. Use \cmd|sh| syntax throughout. These
+commands create new names only after a fresh directory has been
+made and entered. Run the first line separately; continue only if
+it prints the practice directory and no error. The command
+substitution lets the shell save the new pathname. \cmd|-d|
+asks the widely available but non-POSIX \cmd|mktemp| utility for
+a directory; the relative name avoids differences in default
+temporary locations. The last six characters are replaced.
+
+\begin{terminal}
+room=$(mktemp -d ./utp-mode.XXXXXX) && cd "$room" && pwd
+\end{terminal}
+
+\begin{terminal}
+mkdir -m 700 ./folder
+printf 'fictional lunch budget\n' > ./folder/budget.txt
+ls -ld ./folder
+ls -l ./folder/budget.txt
+\end{terminal}
+
+The \cmd|mkdir -m 700| form requests a directory with all
+three owner bits and no group or other bits. We'll decode
+those digits below. \cmd|ls -l| asks for the long form, and \cmd|-d| shows the
+named directory itself rather than listing its contents. Look
+at the first field on each line. The first character identifies
+the file type: \texttt{d} for a directory and \texttt{-} for
+an ordinary file. After it come three sets of three positions:
+owner, group, and other. The owner and group columns farther
+along the same row tell you to whom the first two sets refer.
+If the system appends a marker after the permission characters,
+check \ManPage{ls}{1}; it may indicate additional information
+such as an access control list or extended attributes, depending
+on the system.
+
+\index{permissions}
+\index{owner}
+\index{group}
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-33/mode.tex}
+\caption{Read a mode from left to right, keeping the type
+separate from the three permission sets.}
+\label{fig:33-mode}
+\VisualDescription{Four labeled boxes show \texttt{-}, \texttt{rw-},
+\texttt{r--}, and \texttt{---}: type, owner, group, and other.}
+\end{figure}
+
+Figure~\ref{fig:33-mode} describes a file whose owner can read
+and write, whose group can read, and whose remaining users get
+none of these mode permissions. A hyphen in one of the nine
+slots means that permission bit is not set. Use the next
+command to compare your account with the first listing.
+
+\begin{terminal}
+id
+\end{terminal}
+
+Typical \cmd|id| output includes \texttt{uid}, your numeric user
+identifier, \texttt{gid}, your primary group identifier, and a
+list of groups. Names may accompany numbers. These groups can
+help explain why two accounts see different results. Don't
+publish your account and group listing when asking for help;
+``owner'', ``group member'', and ``other'' can usually describe
+the case without naming anyone. In the basic mode check, if
+you own the object the owner class applies; you don't give
+yourself a different class by also being in its group.
+
+\begin{quicktable}{M{.67in}YY}
+\toprule
+Bit & On an ordinary file & On a directory\\
+\midrule
+r & Read its contents. & Read the list of entry names.\\
+w & Modify its contents. & Modify entries, normally also requiring
+search permission.\\
+x & Request execution as a program, if otherwise runnable. &
+Search or traverse it when resolving a path.\\
+\bottomrule
+\end{quicktable}
+
+\section{What a directory lets you do}
+\label{sec:33-directory}
+\index{directory!search permission}
+Say you know there is a file named \texttt{budget.txt} inside
+\texttt{folder}. Directory read permission is about listing
+names. Directory search permission is about going through the
+directory to reach a named entry. To read data at
+\texttt{folder/budget.txt}, you need to traverse the directories
+on the path and also pass the file's own read check. The outer
+directory matters, too. A file whose mode allows everyone to
+read is not thereby reachable by everyone if the directory
+containing it is private.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-33/path.tex}
+\caption{Access to data can fail before the file is reached.}
+\label{fig:33-path}
+\VisualDescription{A reader moves through the practice directory
+and folder, then reaches the file. Both directory arrows require
+search; reading the contents requires file read permission.}
+\end{figure}
+
+Removing a file's name changes a directory: it is not a write
+into the contents of the file. A read-only file may still be
+removable if the containing directory permits a change. The
+utility performing the removal can prompt in some cases; that
+prompt isn't a substitute for access rules or a backup.
+Directories can also have a sticky bit. In a shared writable
+directory it restricts who can remove or rename entries even
+when several people can write there; commonly the entry owner,
+directory owner, and privileged users can do so. None of this
+makes a shared directory a reliable place for the only copy of
+a document. Editors may save by replacing a directory entry
+rather than by updating bytes in place. That helps explain how
+one application can save and another cannot in the same
+folder, even with the same permissions on the old file.
+
+\section{Change the smallest possible thing}
+\label{sec:33-chmod}
+\index{chmod@\texttt{chmod}}
+\index{file mode}
+Here is a reversible experiment. Symbolic \cmd|chmod| says who,
+what operation, and which permission. \texttt{u} is owner,
+\texttt{g} is group, \texttt{o} is other, and \texttt{a} is all
+three. \texttt{+} adds, \texttt{-} removes, and \texttt{=}
+sets exactly the listed basic permissions for that class.
+An empty list following \texttt{=} clears the bits. A comma
+separates clauses applied to the same mode.
+
+\begin{terminal}
+chmod u=rw,go= ./folder/budget.txt
+ls -l ./folder/budget.txt
+\end{terminal}
+
+The basic mode now starts with \texttt{-rw-------}. The file
+remains readable by its owner, but grants no group or other
+access in its mode bits. The entire path is under your
+practice directory, so this is not a live test involving another
+account. \cmd|chmod| changes a mode, not ownership, and gives
+no guarantee that previous copies are private. If private data
+has already been shared, restrict further access as appropriate
+and consult the responsible person; changing a mode cannot
+recall an exported copy.
+
+\begin{terminal}
+chmod u-w ./folder/budget.txt
+ls -l ./folder/budget.txt
+cat ./folder/budget.txt
+chmod u+w ./folder/budget.txt
+\end{terminal}
+
+Removing owner write doesn't remove read. \cmd|cat| should still
+print the original text. The final line restores write.
+When you need an exact mode for your own new file, you might
+see numeric forms. Three ordinary octal digits encode the
+owner, group, and other sets, in that order. Add 4 for read,
+2 for write, and 1 for execute or search. Thus 6 is read plus
+write; 7 is all three. Zero does not mean ``leave the group
+alone''; it clears that group's basic bits.
+
+\begin{quicktable}{M{.73in}YY}
+\toprule
+Mode & Meaning on an ordinary file & Typical directory consequence\\
+\midrule
+600 & Only owner read and write. & Owner can list names but lacks
+search.\\
+700 & Only owner read, write, and execute. & Owner can list, traverse,
+and change entries.\\
+644 & Owner read and write; others read. & The three classes lack
+search.\\
+755 & Owner all three; others read and execute. & Others can list
+and traverse, not write entries.\\
+\bottomrule
+\end{quicktable}
+
+Now remove just the owner search bit on your practice
+subdirectory, not on the outer practice directory. The outer
+directory stays searchable so you can name the subdirectory
+to restore its mode. Do not try this on your home directory
+or a system path.
+
+\begin{terminal}
+chmod u-x ./folder
+ls -ld ./folder
+cat ./folder/budget.txt
+chmod u+x ./folder
+cat ./folder/budget.txt
+\end{terminal}
+
+An ordinary unprivileged account should get a permission error
+from the first \cmd|cat|, and the original contents from the
+second. Note that \cmd|ls -ld| can show the directory itself
+even when you can't go through it. If the first \cmd|cat| succeeds,
+check what account and filesystem you are using rather than
+tightening permissions on other directories. ACLs, protected
+system areas, sandbox rules, file flags, and read-only mounts
+can also affect actual access. If a change doesn't do what you
+expect, locate the boundary first.
+
+\begin{dialoguebox}{Can I make it read-only and relax?}
+\Brian{If I remove write from the file, nobody can delete it, right?}
+\Stephen{That protects the contents from an ordinary write.}
+\Brian{But deleting it would surely write something somewhere.}
+\Stephen{Yes: it changes the directory entry, not the file bytes.}
+\Brian{So a directory I can write is enough?}
+\Stephen{Not quite: it also needs search, and sticky rules may apply.}
+\Brian{Then read-only is neither impossible to remove nor a backup.}
+\Stephen{Exactly. Keep the version you need somewhere independent.}
+\DialogueConclusion{File contents and directory entries differ.}
+\end{dialoguebox}
+
+\section{Start new files with sensible defaults}
+\label{sec:33-mask}
+\index{umask@\texttt{umask}}
+New files don't necessarily inherit the exact mode of their
+directory. A process has a \FirstUse{file creation mask}, the
+bits removed from the mode requested at creation. \cmd|umask|
+prints or sets that mask. This is a filter, not subtraction;
+clearing a bit that was never requested cannot add it.
+Programs normally request up to \texttt{666} for ordinary
+data files and \texttt{777} for directories. The new mode
+depends on the program's request and the environment, not
+just these typical starting values.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-33/mask.tex}
+\caption{In this example the mask removes group and other access
+from the modes requested for new objects.}
+\label{fig:33-mask}
+\VisualDescription{Requested 666 and 777 pass through mask 077,
+producing 600 and 700 respectively.}
+\end{figure}
+
+\begin{terminal}
+umask
+( umask 077; mkdir ./private; printf '%s\n' demo > ./new.txt )
+ls -ld ./private ./new.txt
+umask
+\end{terminal}
+
+The parentheses run the commands in a subshell so they can
+change the mask without changing the interactive shell's
+original setting. On an ordinary local filesystem without
+extra inherited access rules, new \texttt{private} should
+be mode 700 and \texttt{new.txt} mode 600. The two plain
+\cmd|umask| outputs should match. Run it only once: the mode
+filter does not retroactively change an existing file, and
+rerunning the redirection could truncate it. Restoring the
+old mask does not restore modes of files created meanwhile.
+
+Linux ACLs, macOS ACLs and file flags, and BSD variants all
+have additional access mechanisms. If a normal file
+still refuses a write, check the exact error, parent path,
+and filesystem before changing a mode. A recursive
+\cmd|chmod| across an unfamiliar tree can remove required
+access or make confidential files readable, with no record of
+previous modes. Instead record the old mode, test one disposable
+copy, and make only the specific intended change. Do not
+attempt to work around system policy by adding administrative
+privileges or making everything writable.
+
+On macOS, permissions on the file and permission for the
+application are not always the same question. Privacy controls
+may restrict an app's access to locations such as Desktop,
+Documents, or removable volumes. A command run in one terminal
+app can therefore give a different result from a command run in
+another, without any change in the mode shown for the file.
+On macOS, the local \ManPage{ls}{1} documents \cmd|ls -le|
+for showing extended security information such as ACL entries.
+An ACL is a list of additional access rules on the object; the
+nine basic bits don't spell out that list. Use a private test
+directory outside protected folders to learn the basic rules,
+and then report the exact wording and location category of a
+real denial. Don't conclude from ``Operation not permitted''
+alone that the mode is wrong, and don't grant Full Disk Access
+just to make a practice example work.
+
+The difference also matters when sharing a copy. Moving a file
+to another folder on the same filesystem commonly preserves
+its mode, whereas copying can create a new file with defaults
+or preserve source permissions if the copy operation requests
+that behavior. A private directory is useful, but after making
+a file outside it, inspect the access on the new file and its
+enclosing directory rather than assuming that it is the same
+as the original. When using a network share or removable drive,
+server permissions, mount settings, or the filesystem format
+may also mean that visible mode bits don't act like those on
+your local home directory.
+
+\section{Investigate a failed save without trying it again}
+\label{sec:33-denied}
+If a file opens but won't save, copy the exact error into
+a private note and preserve any unsaved changes through the
+editor's Save As or recovery feature. Choose a new location
+you already control; check that the new version is readable
+before closing the editor. Then decide whether you meant to
+change the original or only make a personal copy. You might
+have read access to a shared original specifically so its
+contents can't be changed by accident. The appropriate
+outcome in that case is a personal working copy or a request
+to its owner, not a more permissive mode on the shared file.
+
+If the original is yours to edit, inspect it and its parent
+separately. The practice pair below is safe to repeat after
+the directory search bit has been restored:
+
+\begin{terminal}
+ls -l ./folder/budget.txt
+ls -ld ./folder .
+\end{terminal}
+
+The first line asks how the existing file is protected; the
+second looks at its directory and the current directory.
+The two operands to the second line request both modes
+without listing their contents. In a real investigation
+there can be more than two components. Start with a
+directory you know is accessible and inspect the next
+one along the path. A later operand that the command
+can't resolve does not invalidate the earlier listing.
+If a path goes through a symbolic link, consider also the
+directories on the target path. The link name doesn't
+give permission to bypass access checks on its target.
+
+Separate ``permission denied'' from ``read-only filesystem.''
+If the filesystem itself will not accept writes, mode
+changes cannot fix the destination. Likewise, an experiment
+in a private local directory does not establish the behavior
+of a cloud-synced or network-mounted folder. Testing with a
+new fictional file on the affected storage is useful only
+once you know you have permission to create things there,
+and when creating it won't conflict with other people's
+work. If the owner or policy is unclear, give the observed
+error and your intended action to the person responsible.
+
+\begin{exercise}{Show that read and write are separate}
+\label{ex:33-read}
+On \texttt{budget.txt}, remove owner write but keep owner read.
+Check both with a long listing and a read. Restore owner write.
+\end{exercise}
+\begin{solution}
+Run \cmd|chmod u-w ./folder/budget.txt| and
+\cmd|ls -l ./folder/budget.txt|. After the earlier mode
+practice, the file begins \texttt{-r--------};
+\cmd|cat ./folder/budget.txt| should succeed. Restore owner write with
+\cmd|chmod u+w ./folder/budget.txt|. This is not a reason to
+test on a real budget.
+\end{solution}
+
+\begin{exercise}{Close a doorway temporarily}
+\label{ex:33-door}
+Remove owner search on \texttt{folder}; explain why you can
+still list its mode but cannot open the inner file. Restore
+search and verify the file is readable again.
+\end{exercise}
+\begin{solution}
+Use \cmd|chmod u-x ./folder|, then \cmd|ls -ld ./folder|
+and \cmd|cat ./folder/budget.txt|. The long listing looks at
+the directory itself; opening the file needs search on that
+directory. Use \cmd|chmod u+x ./folder| to restore it,
+then repeat the read. No file content should change.
+\end{solution}
+
+\begin{exercise}{Use a mask without keeping it}
+\label{ex:33-mask}
+Use a mask of 077 only inside a subshell to make a new
+file called \texttt{extra.txt}. Confirm the owner access
+and check that your original mask did not change.
+\end{exercise}
+\begin{solution}
+Read the original with \cmd|umask|. Run the following in the
+practice directory and compare the final mask.
+\begin{terminal}
+( umask 077; printf '%s\n' practice > ./extra.txt )
+ls -l ./extra.txt
+umask
+rm -i ./extra.txt
+\end{terminal}
+Expect 600 in the basic mode on an ordinary local filesystem.
+The removal requests confirmation because \cmd|-i| was specified.
+Confirm only the practice file that you just made.
+\end{solution}
+
+At the end, check that \cmd|pwd| still shows the practice room.
+The following removes only the named practice files, with
+confirmation, and the empty subdirectories. \cmd|rmdir| refuses
+to remove a nonempty directory. \cmd|cd ..| returns to the parent
+where the relative \cmd|"$room"| pathname was originally saved.
+If you added files of your own, keep the practice room until
+you decide what to do with them.
+
+\begin{terminal}
+rm -i ./folder/budget.txt ./new.txt
+rmdir ./folder ./private
+cd .. && rmdir "$room"
+unset room
+\end{terminal}
+
+\begin{takeaways}
+\item Directory search and file read are both needed along an ordinary
+path to readable data.
+\item Inspect, record, change narrowly, and verify; a mode is not a backup.
+\item \texttt{umask} filters requested access at creation, not afterward.
+\end{takeaways}
+
+\begin{furtherreading}
+\ReadingItem{POSIX chmod}{Symbolic and numeric mode changes.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/chmod.html}
+\ReadingItem{POSIX umask}{Creation-mask syntax and effect.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/umask.html}
+\ReadingItem{FreeBSD Handbook: permissions}{Mode examples and directory semantics.}{https://docs.freebsd.org/en/books/handbook/basics/}
+\item \WebLink{https://support.apple.com/guide/mac-help/control-access-to-files-and-folders-on-mac-mchld5a35146/mac}{Apple: Control access to files and folders}. Privacy controls for macOS apps.
+\end{furtherreading}

@@ -1,0 +1,416 @@
+You asked an app to turn a folder of photos into a contact sheet. The
+window is still open, the progress bar hasn't moved, and the fan is
+running. Is the app working, waiting, or no longer doing anything?
+Closing the window is one possible response, but it answers none of
+those questions. We will look at what the operating system can tell us
+before asking anything to stop. Our practice target will be a timer
+that does no work and owns no data.
+
+\begin{objectives}
+\item Tell the difference between a command, a process, and a process ID.
+\item Inspect one process and its parent without disturbing either.
+\item Ask a practice process to stop, then check what happened.
+\end{objectives}
+
+\section{A process is not a name}
+\label{sec:31-identity}
+\index{process}
+\index{process ID}
+When you run \cmd|sleep 60|, the file containing the program is not
+itself asleep. Instead, there is a running instance of that program.
+That instance is a \FirstUse{process}. A second \cmd|sleep 60|
+can run at the same time without becoming part of the first one.
+Same instructions, two instances. The operating system assigns each
+an identifying number, called a process ID or PID. It is like the
+number assigned to a request rather than the name of the service
+fulfilling it. The number can be recycled after the request ends.
+
+A command line and a process are not interchangeable, either. The
+shell can change directories itself when you type \cmd|cd|; no
+external program is needed. Conversely, a line with a pipeline may
+start several processes. Even a single application can run separate
+processes for its interface, a helper, and the actual conversion work.
+A process may contain several threads, which are separate lines of
+execution within that process. Here we are identifying the process
+from the outside, not counting the activities inside it.
+
+Figure~\ref{fig:31-family} shows a shell starting two copies of one
+program. They have distinct PIDs but can have the same parent
+process ID, or PPID. A parent need not still be around. When it
+exits, the operating system can give its surviving children another
+parent. A snapshot of a process's parent is therefore evidence about
+the present, not a guaranteed family history.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-31/family.tex}
+\caption{One shell can start two instances of the same program. The
+numbers illustrate relationships; they are not examples to signal.}
+\label{fig:31-family}
+\VisualDescription{Shell PID 120 has arrows to timer PIDs 121 and
+122. Both timers show parent PID 120.}
+\end{figure}
+
+\section{Take a snapshot}
+\label{sec:31-snapshot}
+\index{ps@\texttt{ps}}
+Run the examples in an ordinary interactive \cmd|sh| (type \cmd|sh|
+to start one if you use a shell with different variable syntax).
+The process you create here is yours and has no files to save. Do
+not use printed example PIDs, a PID from another terminal, or a PID
+left in a variable from yesterday's practice.
+
+\begin{terminal}
+printf 'shell PID: %s\n' "$$"
+ps -p "$$" -o pid -o ppid -o comm
+\end{terminal}
+
+The shell replaces \cmd|$$| with its PID in this ordinary interactive
+shell. The two commands should identify the same number. In
+\cmd|ps|, \cmd|-p| selects by PID. Each \cmd|-o| requests a
+column: \cmd|pid| is the selected process, \cmd|ppid| is its
+parent, and \cmd|comm| identifies the command. Formatting and the
+reported command name can differ. Here is an illustrative result:
+
+\begin{terminaloutput}
+  PID  PPID COMMAND
+ 6702  6587 sh
+\end{terminaloutput}
+
+The prompt returning is not the shell exiting: the shell is simply
+ready for another command. \cmd|ps| has already taken its snapshot
+and exited. Try comparing a broader snapshot with that one:
+
+\begin{terminal}
+ps -e -o pid -o ppid -o comm | head -n 8
+\end{terminal}
+
+The selection \cmd|-e| asks for all processes \cmd|ps| can report in
+your environment; containers and local access rules can limit the
+view. \cmd|head -n 8| keeps the first eight lines including the
+header. This is a display limit, not a filter for importance. You
+may see a system process or a service first, and your shell may not
+appear at all. A short sample is useful for comparing formats, not
+for proving that something is absent.
+
+\begin{quicktable}{M{.94in}YY}
+\toprule
+Field & Question it answers & What it does not prove\\
+\midrule
+pid & Which instance did this row describe? &
+That the number will still refer to it later.\\
+ppid & Who was the parent at this snapshot? &
+Which app, window, or login originally started it.\\
+comm & What command identity does this view show? &
+Which document it was given, or that a similar row is expendable.\\
+args & What command and arguments can this view show? &
+That the text is complete, current, or safe to share.\\
+\bottomrule
+\end{quicktable}
+
+To see a line with arguments, try the next example on the timer you
+start. A trailing ampersand asks the shell to start the command and
+not wait for it before accepting another line. The shell replaces
+\cmd|$!| with the identifier of the most recent asynchronous command
+in this shell. Save it immediately; a new background command can
+change it. In this simple case it identifies the timer.
+
+\begin{terminal}
+sleep 120 &
+timer=$!
+printf 'my timer PID: %s\n' "$timer"
+ps -p "$timer" -o pid -o ppid -o args
+\end{terminal}
+
+You should see the timer's command, with its duration where the
+arguments are available. If it disappeared during the demonstration,
+start a new timer and save its PID again before proceeding; don't
+reuse the old number. A background launch can succeed in the shell's
+sense even when the command immediately fails to start. Inspecting the
+row is worth the extra line. The shell may also print a job number;
+that is its own label, not the PID.
+
+\begin{terminal}
+ps -p "$timer" -o pid -o ppid -o time -o comm
+\end{terminal}
+
+Here \cmd|time| is cumulative CPU time, not the time since the process
+started. An idle timer spends almost no time computing while it
+waits. The displayed resolution may be coarse. If a converter has
+used little CPU, it might be waiting for disk or input; it might also
+be finished between snapshots. A burst of CPU use does not prove
+that the output is getting better. Before deciding a process is hung,
+look for progress in the application, listen for an input request,
+and check evidence such as whether a destination file is still
+growing. No single field is a verdict.
+
+Suppose the timer row has a PPID that differs from the shell
+PID you printed. Check whether you launched the timer from
+another tab, put a wrapper around the launch, or copied a stale
+number. If you started it in this shell using the lines above,
+the shell is normally its parent. But it is easy to run
+\cmd|sh script.sh| and forget that a new interpreter is doing
+the launching. You can inspect the parent separately using
+the same \cmd|ps -p| and \cmd|-o| syntax. This is a diagnostic
+comparison, not a permission test and not a request to stop
+anything. When helping somebody else, ask them to compare
+the numbers locally rather than share the whole running
+process list.
+
+The newest visible row is not always the cause of a problem.
+An application might start a helper to show a progress window
+and run the real export in a second helper. CPU time for the
+window may stay unchanged throughout; the worker's CPU time
+may increase. If the worker disappears and the window stays,
+that tells you only that the worker is no longer in your view.
+The job might have completed, failed, or delegated its work.
+Check the application's own records before drawing a conclusion.
+You can have several useful observations and still not have
+safe grounds for acting on a particular PID.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-31/snapshots.tex}
+\caption{Two observations show the process at two instants, not
+what it did between them.}
+\label{fig:31-snapshots}
+\VisualDescription{A timeline marks two samples. Between them a
+region is labeled ``not observed''.}
+\end{figure}
+
+\section{A request is not a receipt}
+\label{sec:31-signals}
+\index{signal}
+\index{kill@\texttt{kill}}
+For a real application, prefer its own Cancel or Quit action. It
+knows which subtask to stop and may offer to save, wait for a write
+to finish, or keep the previous version. If you need to act from a
+shell, a \FirstUse{signal} is a notification sent by the operating
+system to a process. The \cmd|kill| command asks the system to send
+one. Despite the name, not all signals end a process, and not all
+requests to end one are carried out immediately.
+
+\begin{quicktable}{M{.82in}YY}
+\toprule
+Request & Usual purpose & Important limit\\
+\midrule
+TERM & Request termination; the default action is to terminate. &
+A program can handle it, ignore it, or have it temporarily blocked.\\
+INT & Interrupt work, commonly from the terminal interrupt key. &
+A program may handle the interrupt differently from TERM.\\
+KILL & Force termination when ordinary shutdown has failed. &
+The program cannot handle it and cannot run its own cleanup.\\
+Signal 0 & Ask whether the target can be signaled without sending a
+signal. & It cannot establish that this is the instance you meant.\\
+\bottomrule
+\end{quicktable}
+
+Here is the request to use on the practice timer. Run this only just
+after confirming the row is still that timer in this session. The
+example uses the symbolic name instead of a numeric signal code,
+and a single positive PID. Do not substitute zero, a negative
+number, or a command name: those have other meanings or are not a
+PID at all.
+
+\begin{terminal}
+kill -s TERM "$timer"
+printf 'request status: %s\n' "$?"
+\end{terminal}
+
+\cmd|-s TERM| specifies the signal. The request status is zero if
+the utility reports success; that is not confirmation that the
+program shut down gracefully. A nonzero status can follow from
+permission restrictions or from a process that exited already; read
+the error before doing anything else. Don't add administrative
+privileges to overcome the error. If something doesn't match the
+practice setup, let the timer finish on its own.
+
+\begin{terminal}
+wait "$timer"
+printf 'child status: %s\n' "$?"
+\end{terminal}
+
+\cmd|wait| asks the current shell to collect the status of its own
+child. Here it normally reports a nonzero status after termination
+by signal. Do not depend on a particular numeric value. If the
+timer finished naturally before the request, the child's status can
+instead be zero even when the request failed. Some shells print a
+separate ``Terminated'' notice. \cmd|wait| is not a general-purpose
+tool for processes from another shell; Chapter~\ref{ch:32} develops
+that boundary. If you have not sent the signal, waiting here may
+take up to the timer's remaining duration.
+
+\begin{terminal}
+ps -p "$timer" -o pid -o ppid -o comm
+unset timer
+\end{terminal}
+
+The old row is usually gone. A header without the row is not a
+crash. If a row appears, don't assume the timer resisted: the PID
+might have been assigned to something else. Dropping the variable
+is a small habit that discourages a future action on an old target.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-31/request.tex}
+\caption{Check the outcome separately from the signal request.}
+\label{fig:31-request}
+\VisualDescription{The shell asks the operating system to send a
+signal. It later checks the child status in a separate step.}
+\end{figure}
+
+\begin{dialoguebox}{Can I just use the strong one?}
+\Brian{Why not always send KILL? That sounds definitive.}
+\Stephen{It denies the program a chance to shut down cleanly.}
+\Brian{But you don't even know that TERM will finish the job.}
+\Stephen{Correct. TERM leaves the program an opportunity, not a guarantee.}
+\Brian{What if I ask politely and the bad output is already on disk?}
+\Stephen{Then termination won't roll it back. Check the output separately.}
+\Brian{So the first question is what I can afford to interrupt.}
+\Stephen{Yes; often the app's own Cancel is the better first request.}
+\DialogueConclusion{Stopping work does not undo it.}
+\end{dialoguebox}
+
+\section{When a real process is in doubt}
+\label{sec:31-recovery}
+Start by identifying what matters to preserve. If a large export
+can be stopped and redone, first verify that the old original is
+still intact. If an editor has an unsaved draft, prefer waiting or
+the application's recovery tools. If the process belongs to
+another account, a service, or a shared machine, stop and ask the
+owner; you may not be able to see who depends on it. A job that
+appears misbehaved to one person can be doing the work another
+person needs.
+
+A forced stop can leave a partial output file or skip saving
+settings. It cannot reverse changes already written. After an
+interruption, keep originals and any existing backup versions in
+place, inspect the destination before opening or replacing it, and
+save a new attempt under a different name. Some editors and other
+apps offer recovery on restart, but treat recovery as a possibility,
+not a plan. If your process is waiting on the storage system, even a
+forced stop may not disappear from the process list immediately.
+
+A listed process can also be finished but not yet collected by its
+parent. Some \cmd|ps| formats call this a zombie or annotate the
+command as defunct. It is not actively finishing your export, and
+sending it another signal cannot make its parent collect it. If the
+parent is not a practice shell you own, gather evidence rather than
+trying to kill the family tree.
+
+On Linux, both \cmd|ps -e| and the procps \cmd|ps ax| style are often
+seen. The latter's no-dash syntax belongs to another option style;
+it isn't a rule for forming new options. On macOS and the BSDs,
+local \ManPage{ps}{1} pages describe their own columns and defaults.
+The examples here use the POSIX selection and output syntax.
+Consult the local page before relying on process-state letters or
+adding Linux-specific columns to a script. Finally, don't share a
+full process listing casually: a command line can contain paths,
+hostnames, and values supplied by another program, possibly even
+credentials. Use fictional data when learning, and see
+Chapter~\ref{ch:36} for report hygiene.
+
+\section{Read the evidence in order}
+\label{sec:31-triage}
+Imagine you launched two exports from different windows. Both
+are conversions of the same type, and the process names in a
+list are identical. You care about which output each is writing,
+not which has the larger number. First check whether the windows
+offer a progress or cancellation control of their own. If they do,
+you don't need to map the PID to a task from outside: the app
+already has that connection. If they don't, the arguments may show
+the destination, but a program can take its destination from
+an open dialog or a configuration file rather than arguments.
+In that case, identical rows and similar family trees might
+not provide enough evidence to select a target. A different
+view may help you observe; it still does not authorize a stop.
+
+Think also about the order of observations. If you print the
+first timer's PID, leave for lunch, and return to an unchanged
+terminal display, you haven't confirmed that the timer still
+exists. The old screen is a record of an earlier snapshot.
+Take a new snapshot immediately before acting. Even with a
+fresh snapshot there is a gap: the process can exit and its
+PID can eventually be reused. This is why the exercise
+targets a recently started, long-running timer you created
+in that same shell, and why it tells you not to retry on a
+stale number. It is also why sampling a list and blindly
+signaling every matching row is a bad repair strategy.
+
+After a stop, check in the same order: what the app reports,
+what the known child reported if it was yours to wait for,
+and what you can independently verify about its result.
+For a contact sheet that might mean opening it in a viewer,
+counting the pages you expected, and checking that the original
+photos are where you left them. A displayed thumbnail could
+come from an older file at the same path; a fresh output
+name improves the comparison. Don't take a vanished process
+as evidence of either successful or unsuccessful export.
+
+\begin{exercise}{Find your shell, not somebody else's}
+\label{ex:31-shell}
+Print the shell PID, then ask for just the PID and command name
+columns of its row. Check which number matches. Make no changes.
+\end{exercise}
+\begin{solution}
+Run \cmd|printf '%s\n' "$$"| and
+\cmd|ps -p "$$" -o pid -o comm|. The PID in the selected row
+matches the first number; the command name need not be identical
+to the basename of your account's default shell. There is nothing
+to remove or stop.
+\end{solution}
+
+\begin{exercise}{Watch one timer finish}
+\label{ex:31-finish}
+Start an eight-second timer in the background, record its PID, and
+ask for both PID and PPID. Then collect its status without
+interrupting it. If it finishes before you inspect it, try again.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+sleep 8 &
+short_timer=$!
+ps -p "$short_timer" -o pid -o ppid
+wait "$short_timer"
+printf 'status: %s\n' "$?"
+unset short_timer
+\end{terminal}
+If you saw the row, its PID was the saved number. In the absence
+of interruption the timer exits successfully, so the status should
+be zero. Waiting collects the timer and the last line clears the
+variable.
+\end{solution}
+
+\begin{exercise}{Distinguish the two statuses}
+\label{ex:31-term}
+Repeat the timer practice with a new \cmd|sleep 120|. First
+identify the exact row, then send TERM and print both the request
+status and the status obtained by waiting. What does each measure?
+Clear the PID variable after collecting the child.
+\end{exercise}
+\begin{solution}
+Run the \cmd|sleep 120 &| and \cmd|timer=$!| lines, select the
+row with \cmd+ps -p "$timer" -o pid -o args+, and verify that
+it is the new timer. Run \cmd+kill -s TERM "$timer"+, print
+\cmd|"$?"| immediately with \cmd|printf|, then run
+\cmd|wait "$timer"| and again print \cmd|"$?"| immediately.
+The request may succeed (zero) while the child's status is nonzero
+because it ended by signal. End with \cmd|unset timer|. If the
+row had already vanished, skip the signal and just collect the
+child. Leave the practice \cmd|sh| with \cmd|exit| if you started one.
+\end{solution}
+
+\begin{takeaways}
+\item A command name belongs to a program or invocation; a PID selects
+an instance for a limited time.
+\item A process list is a snapshot. Confirm the target and prefer the
+app's own shutdown control before sending a signal.
+\item A signal request, the child's exit status, and file integrity are
+three different outcomes.
+\end{takeaways}
+
+\begin{furtherreading}
+\ReadingItem{POSIX ps}{Process selection and formatted output.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/ps.html}
+\ReadingItem{POSIX kill}{Signal names and target selection.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/kill.html}
+\ReadingItem{OpenBSD ps(1)}{An example of local fields and process state notation.}{https://man.openbsd.org/ps}
+\end{furtherreading}

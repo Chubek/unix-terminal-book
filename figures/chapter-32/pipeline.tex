@@ -1,0 +1,7 @@
+\begin{tikzpicture}
+\draw[dashed,rounded corners] (-3,-.6) rectangle (3,.7);
+\node[font=\small,anchor=west] at (-3,.94) {shell job};
+\node[utp node] (s) at (-1.9,0) {\texttt{sleep}};
+\node[utp node] (c) at (1.9,0) {\texttt{cat}};
+\draw[utp arrow] (s) -- node[above,font=\small] {pipe} (c);
+\end{tikzpicture}

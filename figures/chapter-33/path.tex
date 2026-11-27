@@ -1,0 +1,8 @@
+\begin{tikzpicture}
+\node[utp node] (a) at (-3.3,0) {outer\\directory};
+\node[utp node] (b) at (0,0) {\texttt{folder}};
+\node[utp node] (c) at (3.3,0) {\texttt{budget.txt}};
+\draw[utp arrow] (a) -- node[above,font=\small] {search} (b);
+\draw[utp arrow] (b) -- node[above,font=\small] {search} (c);
+\node[below=2mm of c,font=\small] {then read};
+\end{tikzpicture}

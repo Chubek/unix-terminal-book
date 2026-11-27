@@ -1,0 +1,7 @@
+\begin{tikzpicture}
+\node[utp node] (s) at (0,1.2) {shell: PID 120};
+\node[utp node] (a) at (-1.7,0) {timer: PID 121\\PPID 120};
+\node[utp node] (b) at (1.7,0) {timer: PID 122\\PPID 120};
+\draw[utp arrow] (s)--(a);
+\draw[utp arrow] (s)--(b);
+\end{tikzpicture}

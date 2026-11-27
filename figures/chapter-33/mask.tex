@@ -1,0 +1,7 @@
+\begin{tikzpicture}
+\node[utp node] (in) at (-3.4,0) {file: 666\\directory: 777};
+\node[utp node] (mask) at (0,0) {mask 077\\clear bits};
+\node[utp node] (out) at (3.4,0) {file: 600\\directory: 700};
+\draw[utp arrow] (in)--(mask);
+\draw[utp arrow] (mask)--(out);
+\end{tikzpicture}
