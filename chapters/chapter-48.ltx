@@ -123,7 +123,7 @@ created inside the tree being read. A create operation may
 replace an existing archive; do not rerun it over a prior
 successful delivery. Here \texttt{round-01.tar} is a new
 fixture name.
-\IndexCommand{tar}\IndexTerm{backup!restore drill}
+\index{tar@\texttt{tar}}\index{backup!restore drill}
 
 \begin{terminal}
 tar -cf ./round-01.tar ./source
@@ -268,7 +268,7 @@ local shell, compare it against the original with \cmd|cmp|.
 Use the archive that actually came back in the restore
 step; nothing on the remote host should extract into your
 active documents.
-\IndexCommand{sftp}
+\index{sftp@\texttt{sftp}}
 
 \begin{terminal}
 cmp ./round-01.tar ./remote-return/round-01.tar

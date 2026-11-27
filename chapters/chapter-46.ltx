@@ -97,7 +97,7 @@ of every file in your home directory. With two filename operands
 and \cmd|-n|, the output identifies which file contains each
 line. A teammate can go straight to the finding without trusting
 that your terminal scrollback is saved.
-\IndexTerm{workflow!notes search}\IndexCommand{grep}
+\index{workflow!notes search}\index{grep@\texttt{grep}}
 
 \begin{terminal}
 grep -Fin -e 'library' ./notes/monday.txt ./notes/thursday.txt
@@ -171,7 +171,7 @@ minus labels a line in the first file and a leading plus
 labels a line in the second. A leading space gives unchanged
 context. These markers are not part of the handoff. The
 commands below only read the inputs.
-\IndexCommand{diff}\IndexTerm{version comparison}
+\index{diff@\texttt{diff}}\index{version comparison}
 
 \begin{terminal}
 diff -u ./before.txt ./after.txt
@@ -248,6 +248,8 @@ without that context might mean two equal files, or an
 accidental comparison of one file with itself. The status
 does not distinguish those stories.
 
+Figure~\ref{fig:46-changes} ties each change label to the
+file it came from.
 \input{figures/chapter-46/changes.tikz}
 
 \begin{dialoguebox}{A successful difference}
