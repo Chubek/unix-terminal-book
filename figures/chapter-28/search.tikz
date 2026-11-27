@@ -1,0 +1,6 @@
+\begin{tikzpicture}[node distance=5mm]
+\node[utp node] (a) {First\\ Not here};
+\node[utp node,right=of a] (b) {Second\\ Found here};
+\node[utp node,right=of b,dashed] (c) {Third\\ Not needed};
+\draw[utp arrow] (a)--(b);
+\end{tikzpicture}

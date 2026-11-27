@@ -1,0 +1,7 @@
+\begin{tikzpicture}
+\node[utp node] (blank) at (0,1.8) {Assigned blank};
+\node[utp node] (plain) at (-2,0) {Without colon:\\ keep blank};
+\node[utp node] (fallback) at (2,0) {With colon:\\ supply Draft};
+\draw[utp arrow] (blank.south)--(plain.north);
+\draw[utp arrow] (blank.south)--(fallback.north);
+\end{tikzpicture}

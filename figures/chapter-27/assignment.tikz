@@ -1,0 +1,7 @@
+\begin{tikzpicture}[node distance=8mm]
+\node[utp node] (source) {Assign\\ \texttt{packet='Welcome packet'}};
+\node[utp node,below=of source] (store) {Stored in \texttt{packet}\\ \texttt{Welcome packet}};
+\node[utp node,below=of store] (use) {Expand and add suffix\\ \texttt{Welcome packet.txt}};
+\draw[utp arrow] (source)--(store);
+\draw[utp arrow] (store)--(use);
+\end{tikzpicture}

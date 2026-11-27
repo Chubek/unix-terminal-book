@@ -1,0 +1,444 @@
+The three attachments for your next tenants' meeting are named
+\texttt{Hall plan.txt}, \texttt{Hall plan (revised).txt}, and
+\texttt{Hall plan [draft].txt}. In a file manager you can click on a
+whole name. At the terminal you have to tell the shell where the name
+ends. And when a name contains brackets, you have to tell it whether
+those brackets describe a pattern or belong to the name. Both jobs are
+done by quoting. Neither job requires renaming the files.
+
+\begin{objectives}
+\item Pass a literal name as one argument, even if the name contains spaces.
+\item Choose between single quotes, double quotes and a backslash.
+\item Distinguish shell quoting from the rules of the command that receives the argument.
+\end{objectives}
+
+\section{See where the shell cuts}
+\label{sec:25-boundaries}
+\index{quoting}
+\index{arguments!boundaries}
+\index{printf@\texttt{printf}}
+
+In Chapter~\ref{ch:13} you met arguments, the separate pieces of
+information you hand to a command. A blank between unquoted words
+normally tells the shell to begin another word; a blank inside quotes
+can be part of a word. Try the following inside a fresh \texttt{sh}
+session. Type \texttt{sh} and press Enter to start one; type
+\texttt{exit} at the end to return to your usual shell. These first
+commands neither read nor write any files.
+
+\begin{terminal}
+printf '<%s>\n' Hall plan.txt
+printf '<%s>\n' 'Hall plan.txt'
+\end{terminal}
+
+The first argument to \texttt{printf} is its format: print a literal
+opening angle bracket, replace \texttt{\%s} with one supplied string,
+print a closing angle bracket, and end the line at \texttt{\textbackslash n}.
+For this format, \texttt{printf} repeats the operation for each
+remaining argument. The two commands above therefore print:
+
+\begin{terminaloutput}
+<Hall>
+<plan.txt>
+<Hall plan.txt>
+\end{terminaloutput}
+
+The brackets here are display marks, not part of the name. They even
+make a blank at the beginning or end of a value visible. This trick is
+more useful than \texttt{echo}, whose usual space-separated output can
+make two arguments look like one. One limitation: a name that contains
+a newline can produce more than one line of output inside its brackets.
+The display tells you about the boundaries, not everything about the
+bytes. For today's one-line names it is enough.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-25/boundaries.tikz}
+\caption{A blank can separate arguments or belong to an argument.}
+\label{fig:25-boundaries}
+\VisualDescription{The unquoted form feeds Hall and plan.txt into separate slots. The quoted form feeds the two words and their intervening space into a single slot.}
+\end{figure}
+
+Figure~\ref{fig:25-boundaries} shows what the receiving command sees.
+It does not have to guess where the name ends or strip off quote marks:
+the shell has already determined the boundaries and removed the marks
+used for quoting. This also explains a common surprise. If you get a
+message about a file named \texttt{Hall} rather than \texttt{Hall
+plan.txt}, the file may not be missing at all. The command was asked
+to open a different name. Correct the boundary before checking
+permissions or rebuilding the folder.
+
+\section{Three tools for the same blank}
+\label{sec:25-forms}
+
+All three lines below send the same argument. In the third line the
+backslash protects only the immediately following space; it does not
+make the rest of the word literal.
+
+\begin{terminal}
+printf '<%s>\n' 'Hall plan.txt'
+printf '<%s>\n' "Hall plan.txt"
+printf '<%s>\n' Hall\ plan.txt
+\end{terminal}
+
+\begin{quicktable}{p{1.1in}YY}
+\toprule
+Tool & What it protects & What still needs attention \\
+\midrule
+Single quotes & Everything between the two marks is literal to the shell. & A single quote cannot appear inside that pair, even after a backslash. \\
+Double quotes & Spaces and glob characters inside are protected from splitting and matching. & Dollar signs and backticks can still introduce substitutions; some backslashes still have a special role. \\
+Backslash outside quotes & Protects the next character; useful for one blank or one literal mark. & A backslash directly before a newline joins the lines rather than inserting a newline. \\
+\bottomrule
+\end{quicktable}
+
+Prefer single quotes when you know the exact text you want to pass.
+Double quotes are useful where you intend a substitution, such as
+looking up your home directory with \cmd|"$HOME"|. In that spelling the
+shell looks up the value and keeps the result together. In
+\cmd|'$HOME'| you pass five literal characters instead. Use an
+invented value for this demonstration so you do not have to show a
+real account path. The line beginning \texttt{meeting=} saves a value
+for the current session. The next chapter shows how substitution fits
+into the larger sequence; Chapter~\ref{ch:27} develops variables.
+
+\begin{terminal}
+meeting='Tuesday setup'
+printf '<%s>\n' '$meeting' "$meeting"
+\end{terminal}
+
+Expect \texttt{<\$meeting>} followed by
+\texttt{<Tuesday setup>}. The question to ask before each quote pair
+is not ``Which kind do I normally use?'' but ``Which characters do I
+want the shell to act on?'' The distinction matters for a title like
+\texttt{\$5 deposit}; the dollar sign belongs to the title, and single
+quotes say so. If you combine a variable with a literal price, leave
+the variable in double quotes and use single quotes around the
+price. The following example puts the two pieces side by side with
+no gap outside the quotes, which yields one argument:
+
+\begin{terminal}
+printf '<%s>\n' "$meeting"': $5 deposit'
+\end{terminal}
+
+The space after the colon is inside the second pair. Contrast
+\cmd|"$meeting" ': $5 deposit'|, where the unquoted blank between the
+pairs creates two arguments. The resulting lines from the two versions
+look similar if passed to a command that joins its arguments for
+display. The angle-bracket probe tells them apart.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-25/segments.tikz}
+\caption{Two adjacent quoted pieces form one word.}
+\label{fig:25-segments}
+\VisualDescription{The first piece supplies Tuesday setup from a variable. The second supplies a literal colon, space and price. With no unquoted space between the pieces, the shell joins them into one argument.}
+\end{figure}
+
+An empty quoted piece can be a whole argument in its own right. Use
+the following experiment to compare a missing argument with an
+empty one. This time never remove the final \texttt{end} marker:
+without any value arguments at all, \texttt{printf} would still
+apply the format with an empty string, hiding the difference.
+
+\begin{terminal}
+printf '<%s>\n' '' end
+printf '<%s>\n' end
+\end{terminal}
+
+The first run shows \texttt{<>} and \texttt{<end>}; the second
+shows only \texttt{<end>}. This distinction comes up with optional
+fields. Leaving out a second argument may tell a command to use its
+usual value, while supplying an empty one may explicitly request a
+blank. The exact decision belongs to the receiving command.
+
+\section{When the name includes a quote}
+
+If you want to print \texttt{Marta's notes.txt}, you can wrap
+it in double quotes, because no dollars or substitutions are needed
+in this example and the apostrophe has no special role inside double
+quotes. A second solution is to put both halves in single quotes and
+insert the apostrophe with a backslash \emph{outside} those quotes.
+The latter looks busier but is useful when the rest must stay
+literal, such as a name with both a dollar and an apostrophe:
+
+\begin{terminal}
+printf '<%s>\n' "Marta's notes.txt"
+printf '<%s>\n' 'Marta'\''s $5 notes.txt'
+\end{terminal}
+
+Read the second spelling as three pieces: \cmd|'Marta'|,
+\cmd|\'|, and \cmd|'s $5 notes.txt'|. There is no separating
+unquoted space. Just as with Figure~\ref{fig:25-segments}, the result
+is one argument. A plain apostrophe and a typographic right quote
+may appear interchangeable in a printed announcement, but the shell
+recognizes only the straight ASCII punctuation as quoting syntax.
+If pasting from a word processor gives a puzzling error, retype the
+quote marks directly at the prompt.
+
+Missing the closing quote has a different symptom: the shell often
+shows a continuation prompt, such as \texttt{>}, instead of running
+the command. The open quote could hold further lines, so Enter does
+not finish the command. If you did not intend a newline in the
+argument, use \KeyChord{Ctrl}{C} to abandon the input and start over.
+A continuation prompt is not an instruction to type another
+\texttt{>} on the next line.
+
+\begin{dialoguebox}{The file has no quotes}
+\Brian{The flyer doesn't have quote marks in its name. Won't adding them make the shell look for a different file?}
+\Stephen{Not if you use them as quoting syntax. They tell the shell which characters belong in one argument.}
+\Brian{But I just printed a name with an apostrophe in it. The apostrophe survived.}
+\Stephen{Because another layer protected it. A single quote inside double quotes is data, not the start of another quoted section.}
+\Brian{So if I want a literal double quote, I can protect it with single quotes?}
+\Stephen{Yes. Or escape that one character outside quotes. The point is to decide which marks the shell reads as instructions and which it passes on.}
+\DialogueConclusion{Quoting marks and quoted data are different.}
+\end{dialoguebox}
+
+\section{Read a fixture by its exact name}
+\label{sec:25-fixture}
+
+Start with a new practice directory. The \texttt{-d} option of
+\texttt{mktemp} asks for a directory rather than a file; this
+convenient form is available on common GNU and BSD implementations.
+The first line stores the pathname printed by the utility. Use the
+lines individually: proceed only if the first command succeeds and
+the second prints the new practice directory. If \texttt{mktemp}
+is absent or reports an error, stop and make a fresh practice folder
+with the method in Chapter~\ref{ch:12} instead. Never practice the
+file-writing lines in a folder with real documents.
+
+\begin{terminal}
+practice=$(mktemp -d)
+cd "$practice" && pwd
+\end{terminal}
+
+Here \cmd|$(...)| captures the command's standard output, and
+\cmd|&&| runs the second command only if the first succeeds.
+Create two files with different contents, then try both reads.
+The \texttt{>} writes the left command's output to the named file;
+an existing file would be truncated. That is why the empty
+practice directory matters. Stop if any creation command fails.
+
+\begin{terminal}
+printf '%s\n' 'Send for comments' > 'Hall [draft].txt'
+printf '%s\n' 'Approved' > Hall\ d.txt
+cat 'Hall [draft].txt'
+cat Hall\ [draft].txt
+\end{terminal}
+
+The quoted read prints \texttt{Send for comments}. The second
+read prints \texttt{Approved}. It protects the space but leaves the
+brackets active, so the shell matches one character from the
+bracket expression (in this directory, \texttt{d}). The output
+would change if you added \texttt{Hall a.txt}. If there were no
+matches, a POSIX shell normally leaves the original pattern
+unchanged, which would make this example appear to work by accident.
+Other interactive shells may stop on a nonmatching glob. Build
+tests with both the name you want and plausible alternatives;
+success in an almost-empty folder can be misleading.
+
+\begin{terminal}
+grep -F '[draft]' <<'SIGNS'
+Hall [draft]
+Hall d
+SIGNS
+\end{terminal}
+
+In that optional read-only example, \cmd|<<'SIGNS'| supplies the
+lines beneath it as standard input up to, but not including, the
+line containing just \texttt{SIGNS}. This is a \emph{here document}.
+Quoting the delimiter also prevents substitutions within this
+input. The quotes around \cmd|'[draft]'| protect the brackets from
+the shell; \texttt{-F} separately tells \texttt{grep} to interpret
+its operand as fixed text rather than as a regular expression.
+Expected output: \texttt{Hall [draft]}. Those protections are
+independent. If you remove \texttt{-F}, the quoted operand remains
+one argument but \texttt{grep} matches one letter from the
+bracket expression. Chapter~\ref{ch:19} covers that second language.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-25/layers.tikz}
+\caption{The shell and the utility interpret different things.}
+\label{fig:25-layers}
+\VisualDescription{First the shell turns a quoted token into one bracketed argument. Next grep interprets that argument: with the fixed-string option, square brackets are plain text.}
+\end{figure}
+
+Figure~\ref{fig:25-layers} is a general debugging tool. If the
+wrong files are found, ask who selected them. If the right files
+are read but the wrong lines match, ask what the search utility
+does with its pattern. If a name begins with a hyphen, quoting
+it does not prevent the utility from mistaking it for an option.
+A relative file path beginning with \texttt{./} makes the first
+character a dot instead. Try the following in your fixture only:
+
+\begin{terminal}
+printf '%s\n' 'This is a filename' > './-n'
+cat './-n'
+\end{terminal}
+
+\begin{quicktable}{p{1.3in}YY}
+\toprule
+Symptom & Layer to check & Useful first change \\
+\midrule
+Two unexpected operands & Shell word boundaries & Quote the whole pathname or inspect it with the argument probe. \\
+A different matching file & Shell globbing & Quote the bracket or wildcard characters you intend literally. \\
+Correct pattern text, wrong matches & Search utility & Request fixed strings when no regular expression is intended. \\
+A file looks like an option & Receiving utility & Try the pathname with a leading dot-slash. \\
+\bottomrule
+\end{quicktable}
+
+One more layer is sometimes present: a command can pass text to
+\emph{another} shell. Quoting the first shell sees cannot settle
+what the second shell will do if that shell receives a string to
+interpret anew. This is one reason to avoid constructing command
+strings from filenames. When you just want to pass a filename to
+a utility you already know, supply it as its own argument instead.
+Chapter~\ref{ch:30} puts that design to work.
+
+\section{Use a format for display and quotes for data}
+\label{sec:25-format}
+
+The first operand to \texttt{printf} is a tiny language all its
+own. A title containing a percent sign is ordinary text to the
+shell, but has a special meaning if put where \texttt{printf}
+expects its format. Here are two safe commands to illustrate the
+distinction. Neither touches the fixture files.
+
+\begin{terminal}
+title='100% ready'
+printf '%s\n' "$title"
+printf 'Flyer status (%s)\n' "$title"
+\end{terminal}
+
+The first prints \texttt{100\% ready}, and the second wraps
+that text in a longer sentence. The title is data both times.
+If you instead choose \cmd|printf "$title"|, the shell still
+preserves the title as one argument, but the receiving utility
+may see a malformed format or print something different.
+The correct remedy is not another pair of quotes. It is to put
+the user's text after a format you chose. This is the same
+separation you saw with \texttt{grep}, where requesting fixed
+strings was a decision at the utility layer. A good read-only
+probe makes both decisions explicit: pass one string, display
+it as one string.
+
+Now suppose you have a file name from a message and want to
+use it as a redirection destination. In the following read-only
+example the destination goes in the opposite direction:
+\texttt{<} opens the selected file as standard input for
+\texttt{cat}. This lets you identify the argument to
+\texttt{cat} separately from the name opened by the shell.
+
+\begin{terminal}
+draft='Hall [draft].txt'
+cat < "$draft"
+\end{terminal}
+
+Expect \texttt{Send for comments}, as earlier. This time
+\texttt{cat} receives no filename argument; the shell opens
+the selected file and connects it to \texttt{cat}'s input.
+The command reads the same bytes as before. If the name is
+wrong, the shell can report a redirection error before
+\texttt{cat} even starts. For an output redirection with
+\texttt{>}, the corresponding implication is more important:
+the shell may already have emptied the selected existing file
+before you know whether the command can do its job. Test your
+spelling with the argument probe first, write to a new name
+in a new directory, and compare the result before deciding
+what, if anything, to replace.
+
+In practice you will often get an exact name by pressing
+Tab for completion rather than typing every punctuation
+mark. A completion system may insert a backslash before
+the blanks instead of quoting the entire name. Read the
+completed command as written. Adding another set of quotes
+around a backslash-escaped path could turn some of the
+backslashes themselves into data. If editing the result is
+more trouble than starting over, erase that operand and
+write one plain quoted pathname. You do not need to keep
+the particular syntax your completion system chose.
+
+\begin{commandcard}{printf}
+\CommandField{Use}{Display each argument without interpreting it as a format.}
+\CommandSyntax|printf '<%s>\n' "$value"|
+\CommandField{Check}{An empty string has an empty bracket pair; a newline in the value can span more than one visible line.}
+\end{commandcard}
+
+\section{Exercises and cleanup}
+
+\begin{exercise}{Make two words one argument}
+\label{ex:25-blank}
+Print one argument for the name \texttt{Main hall.txt} using
+each of the three quoting tools. You should see exactly one pair
+of angle brackets per command. No files are needed.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+printf '<%s>\n' 'Main hall.txt'
+printf '<%s>\n' "Main hall.txt"
+printf '<%s>\n' Main\ hall.txt
+\end{terminal}
+Each run prints \texttt{<Main hall.txt>}. There is nothing to
+remove.
+\end{solution}
+
+\begin{exercise}{Keep both special marks}
+\label{ex:25-price}
+Print \texttt{Marta's \$5 notes.txt} as one argument. Change the
+double-quoted example for Marta's notes rather than using the
+three-piece answer above. The amount and apostrophe must survive.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+printf '<%s>\n' "Marta's \$5 notes.txt"
+\end{terminal}
+Within double quotes, a backslash before the dollar sign stops it
+from introducing an expansion. The backslash is not printed. No
+files or variables are created.
+\end{solution}
+
+\begin{exercise}{Separate a glob from a literal read}
+\label{ex:25-brackets}
+In your practice directory, predict which line changes if
+\texttt{Hall d.txt} is renamed to \texttt{Hall a.txt}. Then test
+the pattern with the argument probe instead of reading the file.
+Under both names the literal read should still return the draft.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+printf '<%s>\n' Hall\ [draft].txt
+mv './Hall d.txt' './Hall a.txt'
+printf '<%s>\n' Hall\ [draft].txt
+cat 'Hall [draft].txt'
+mv './Hall a.txt' './Hall d.txt'
+\end{terminal}
+The probe changes from \texttt{<Hall d.txt>} to \texttt{<Hall
+a.txt>}. Both letters are in the bracket expression. Move the
+fixture back, as shown, so it matches the cleanup list.
+\end{solution}
+
+To clean up, first use \texttt{pwd} and confirm that it is the
+directory printed by setup. The list below is explicit: it does
+not match anything else. The \texttt{-i} option asks for confirmation
+before each removal. Then leave the practice directory before
+asking \texttt{rmdir} to remove it; that command refuses to remove
+it if anything remains. If a removal fails or was declined, inspect
+the practice directory before deciding what remains to be removed.
+
+\begin{terminal}
+pwd
+rm -i './Hall [draft].txt' './Hall d.txt' './-n'
+cd / && rmdir "$practice"
+exit
+\end{terminal}
+
+\begin{takeaways}
+\item Quote literal filenames, and use double quotes around substitutions that should produce one argument.
+\item Adjacent pieces make one word unless you separate them outside the quotes.
+\item Quoting protects against shell interpretation, not interpretation by the receiving command.
+\end{takeaways}
+
+\begin{furtherreading}
+\ReadingItem{POSIX Shell Command Language, sections 2.2 and 2.7}{Quoting and here-document rules}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/V3_chap02.html}
+\ReadingItem{POSIX grep}{Fixed-string search and pattern operands}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/grep.html}
+\end{furtherreading}

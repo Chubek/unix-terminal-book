@@ -1,0 +1,10 @@
+\begin{tikzpicture}
+\node[utp node] (raw) at (0,1.3) {\texttt{Hall plan.txt}};
+\node[utp node] (quoted) at (0,-1.3) {\texttt{'Hall plan.txt'}};
+\node[utp node] (first) at (4.8,1.9) {\texttt{Hall}};
+\node[utp node] (second) at (4.8,0.6) {\texttt{plan.txt}};
+\node[utp node] (whole) at (4.8,-1.3) {\texttt{Hall plan.txt}};
+\draw[utp arrow] (raw.east)--(first.west);
+\draw[utp arrow] (raw.east)--(second.west);
+\draw[utp arrow] (quoted)--(whole);
+\end{tikzpicture}

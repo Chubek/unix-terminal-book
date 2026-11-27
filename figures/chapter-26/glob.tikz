@@ -1,0 +1,7 @@
+\begin{tikzpicture}
+\node[utp node] (match) at (0,0) {\texttt{./*.txt}};
+\node[utp node] (long) at (4.6,0.7) {\texttt{./Long title.txt}};
+\node[utp node] (short) at (4.6,-0.7) {\texttt{./Short.txt}};
+\draw[utp arrow] (match.east)--(long.west);
+\draw[utp arrow] (match.east)--(short.west);
+\end{tikzpicture}

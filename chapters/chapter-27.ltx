@@ -1,0 +1,389 @@
+There are two versions of the welcome letter for your club, named
+\texttt{Welcome packet.txt} and \texttt{Welcome packet.pdf}.
+For the next event, you will have a different pair with a
+different base name. Instead of editing every command line each
+time, keep the shared piece of text in one place. It is easy to
+change a value; the trick is to preserve what the value means,
+especially when it is empty or supplied by someone else.
+
+\begin{objectives}
+\item Assign, retrieve and remove a shell variable without creating a file.
+\item Tell the difference between an unset variable and an assigned empty one.
+\item Pass several existing arguments on without destroying their boundaries.
+\end{objectives}
+
+\section{Give the repeated part a name}
+\label{sec:27-assignment}
+\index{shell variables}
+\index{parameter expansion}
+
+Start a fresh \texttt{sh} and type the lines below. No files are
+needed: printing prospective paths is enough to test the names.
+An assignment, \texttt{name=value}, stores text under a name;
+the dollar sign means to look that name up later. Use letters,
+digits and underscores in ordinary portable variable names,
+starting with a letter or underscore. Names are case-sensitive.
+Use a lower-case, descriptive name for this temporary exercise
+to avoid confusing it with a conventional setting such as
+\texttt{PATH}.
+
+\begin{terminal}
+packet='Welcome packet'
+printf '<%s>\n' "${packet}.txt" "${packet}.pdf"
+packet='Volunteer guide'
+printf '<%s>\n' "${packet}.txt" "${packet}.pdf"
+\end{terminal}
+
+The first output has \texttt{Welcome packet} twice, with the two
+extensions. The second has \texttt{Volunteer guide} instead.
+The earlier output does not change when you reassign the
+variable. And no file gains or loses a name: assigning only
+changes what the shell will supply the next time it expands
+the variable.
+
+Keep the equals sign next to both the variable name and its
+value. In an assignment, \texttt{packet='Welcome packet'} is
+one shell word. If you write \texttt{packet = 'Welcome packet'},
+the shell instead sees a command named \texttt{packet} with
+two arguments. A missing-command error here does not mean the
+shell needs an addon for variables. It means the line was
+read as a different kind of instruction. Likewise,
+\texttt{\$packet} on the left would ask the shell to look up
+the old value when you meant to name the place to store a new
+one.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-27/assignment.tikz}
+\caption{Assignment changes a stored value; expansion retrieves it.}
+\label{fig:27-assignment}
+\VisualDescription{An assignment arrow points to the variable packet, whose value is Welcome packet. A separate arrow leads from that value to a displayed path with a text extension.}
+\end{figure}
+
+Figure~\ref{fig:27-assignment} separates the two actions. The
+variable is not itself a path or a document. Nothing prevents
+you assigning a path that does not exist, or later using the same
+value as a heading. A clearer name such as \texttt{packet\_stem}
+lets you remember why the value is there.
+
+\section{Put a fence around the name}
+\label{sec:27-braces}
+
+When the next character cannot be part of a variable name, as
+with the dot in \cmd|"$packet.txt"|, the shell stops reading the
+name there. But an underscore \emph{can} be part of a name.
+The braces in \cmd|"${packet}_notes.txt"| explicitly bound the
+lookup. Compare the middle arguments here. Start with an unset
+\texttt{packet\_notes} so you know what to expect.
+
+\begin{terminal}
+unset packet_notes
+printf '<%s>\n' "$packet.txt" "$packet_notes.txt"
+printf '<%s>\n' "${packet}_notes.txt"
+\end{terminal}
+
+After the reassignment above, expect
+\texttt{<Volunteer guide.txt>}, \texttt{<.txt>} and
+\texttt{<Volunteer guide\_notes.txt>}. In the second argument
+the shell looks for \texttt{packet\_notes}, not for
+\texttt{packet} plus a suffix. This typo can produce a
+plausible output path rather than an immediate error, because
+in the ordinary session an unset variable expands to nothing.
+Display the fully assembled path before giving it to an
+operation that creates or modifies a file.
+
+\begin{quicktable}{p{1.5in}YY}
+\toprule
+Spelling & Shell action & Common confusion \\
+\midrule
+\texttt{packet=letters} & Assign the word letters & Do not insert spaces around the equals sign. \\
+\texttt{"\$packet"} & Expand the value as one argument & Do not add a dollar sign on the left of an assignment. \\
+\texttt{"\$\{packet\}\_notes"} & Look up packet and append a suffix & Braces mark the name, not the boundary of an entire argument. \\
+\texttt{unset packet} & Remove the variable & Does not remove any file or retract earlier command output. \\
+\bottomrule
+\end{quicktable}
+
+The braces identify the parameter, while the double quotes
+identify a protected shell word. Both have jobs; neither
+replaces the other. \cmd|${packet}_notes.txt| without the quotes
+can split a value containing a space, even though the name
+of the variable is now unambiguous. Revisit Figure~\ref{fig:26-order}
+if it is surprising that a correctly identified value can
+still yield several arguments.
+
+\section{A blank can be a deliberate choice}
+\label{sec:27-empty}
+\index{variables!empty and unset}
+
+A club convention might say: ``Add a distribution remark
+unless the editor explicitly leaves it blank.'' In that case,
+you need a third possibility besides text and no text: nobody
+made a decision yet. An unset variable can represent that
+third state. An assigned empty one represents the deliberate
+blank. Both ordinarily look the same if you simply print
+\cmd|"$remark"|.
+
+\begin{terminal}
+unset remark
+printf '<%s>\n' "${remark-Draft}" "${remark:-Draft}"
+remark=''
+printf '<%s>\n' "${remark-Draft}" "${remark:-Draft}"
+remark='For volunteers'
+printf '<%s>\n' "${remark-Draft}" "${remark:-Draft}"
+\end{terminal}
+
+Watch the difference when the assignment leaves an empty
+string. Without the colon, the default is used only when
+the variable is unset. With the colon, the default is used
+when it is unset \emph{or empty}. These spellings supply a
+value for that expansion; neither changes the variable.
+It is fine to begin by remembering only the case you need.
+Choose based on whether the blank should be honored, not
+on which punctuation looks more familiar.
+
+\begin{quicktable}{YYY}
+\toprule
+State of remark & \texttt{\$\{remark-Draft\}} & \texttt{\$\{remark:-Draft\}} \\
+\midrule
+Unset & Draft & Draft \\
+Assigned the empty string & Empty string & Draft \\
+Assigned For volunteers & For volunteers & For volunteers \\
+\bottomrule
+\end{quicktable}
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-27/defaults.tikz}
+\caption{The two defaulting expressions diverge for an assigned blank.}
+\label{fig:27-defaults}
+\VisualDescription{From an empty but assigned remark, the no-colon branch preserves an empty string and the colon branch chooses Draft.}
+\end{figure}
+
+Figure~\ref{fig:27-defaults} shows where the editor's explicit
+blank matters. Suppose you are printing a label with and
+without a draft warning. If someone deliberately chose to
+remove the warning from the final label, using the colon
+would silently restore it. In contrast, if the value were the
+name of a required file, an empty name would not be usable
+and you might choose to reject it or substitute a documented
+default. The two forms give you a choice; neither knows why
+the value is blank.
+
+\begin{dialoguebox}{Nothing, on purpose}
+\Brian{If both print nothing, why keep an empty variable at all?}
+\Stephen{Sometimes nothing means nobody picked a value, so we might supply a default.}
+\Brian{That's exactly my objection. I picked a blank line. Why should a default undo it?}
+\Stephen{It shouldn't, given that rule. We need to distinguish an assigned blank from a missing assignment.}
+\Brian{And if the blank is an unusable filename rather than a line of text?}
+\Stephen{Then the rule can change. The shell offers both tests; only the person designing the task knows which state is meaningful.}
+\DialogueConclusion{A chosen blank is not a missing choice.}
+\end{dialoguebox}
+
+\section{Keep a group of arguments intact}
+\label{sec:27-position}
+\index{positional parameters}
+\index{set@\texttt{set}}
+
+The parameters numbered \texttt{1}, \texttt{2}, and so on
+are the shell's positional parameters. A script gets these
+from the arguments used to invoke it, after the script's own
+name. To experiment without writing a script, \cmd|set --|
+replaces the list with whatever follows that marker. Use the
+fresh \texttt{sh} session, because this changes that shell's
+existing list. The marker ends option processing for
+\texttt{set}; a following argument beginning with a hyphen
+would still go in the list.
+
+\begin{terminal}
+set -- 'Welcome packet.txt' '' 'Volunteer guide.pdf'
+printf 'Count: %s\n' "$#"
+printf 'First: <%s>\n' "$1"
+printf 'Again: <%s>\n' "$@"
+\end{terminal}
+
+\cmd|$#| gives the count, so the first line of output is
+\texttt{Count: 3}. \cmd|"$1"| expands to the first argument
+only, and \cmd|"$@"| gives one argument per position, including
+the empty one. The last display therefore puts \texttt{Again:}
+before each of three bracket pairs, the middle one empty.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-27/forward.tikz}
+\caption{Quoted at-sign expansion preserves the argument slots.}
+\label{fig:27-forward}
+\VisualDescription{Three input slots labeled first, empty and third feed three corresponding output slots. The empty slot is retained, not skipped.}
+\end{figure}
+
+Contrast \cmd|"$*"|, which generally joins the values into
+one argument with a separator (a space under the default
+settings). It can be useful for a display where the original
+boundaries are intentionally discarded. It is wrong for
+passing a group of names to another command unchanged. You
+could not reliably recover the empty argument or the spaces
+in the original names from the joined display. Compare both
+ways safely using a final marker so that even an empty list
+is distinguishable:
+
+\begin{terminal}
+printf '<%s>\n' "$*" end
+printf '<%s>\n' "$@" end
+set --
+printf '<%s>\n' "$@" end
+\end{terminal}
+
+The first run gives a line with both filenames inside a
+single pair, then \texttt{<end>}; the second gives three
+separate argument lines before \texttt{<end>}; the final run
+gives only \texttt{<end>}. The clearing line supplies zero
+positional arguments. Include \cmd|"$@"| as a whole word when
+you want this behavior, not as a fragment of a larger word.
+Chapter~\ref{ch:30} uses it to iterate through a group's
+documents. For position ten and higher, write braces around
+the whole number: \cmd|"${10}"|. Without them, \cmd|"$10"|
+looks up position one and appends a zero.
+
+\section{Keep the choices separate}
+\label{sec:27-workflow}
+
+Think of a small convention for the club folders. All packet
+files share a stem. The supplied suffix distinguishes a
+notes file from a print file. The optional credit is the
+editor's choice. It is possible to jam all of that into one
+variable and split it later, but doing so discards the very
+distinctions you are trying to preserve. Start the prospective
+display with two variables and one literal suffix instead:
+
+\begin{terminal}
+packet='June packet'
+unset credit
+printf 'File: <%s>\nCredit: <%s>\n' "${packet}_print.pdf" "${credit-Committee}"
+credit=''
+printf 'File: <%s>\nCredit: <%s>\n' "${packet}_print.pdf" "${credit-Committee}"
+\end{terminal}
+
+The format now has two \texttt{\%s} slots, in order. Both
+runs name the same file. Only the credit changes, from
+\texttt{Committee} to empty. To change the print label
+for both you would change the common format, not the
+values. This preview is a quick way to catch a
+logical mistake: if changing a credit also changes the
+pathname, revisit which variable supplies the path.
+
+A script can also get values from its caller. The first
+positional parameter does not require the caller to know a
+particular variable name or modify their shell. Suppose an
+optional remark is supplied as the first argument. Set the
+positional list once without the remark, once with an
+explicitly empty remark, and once with a nonempty value:
+
+\begin{terminal}
+set --
+printf 'Remark: <%s>\n' "${1-Rehearsal}"
+set -- ''
+printf 'Remark: <%s>\n' "${1-Rehearsal}"
+set -- 'Bring a pencil'
+printf 'Remark: <%s>\n' "${1-Rehearsal}"
+set --
+\end{terminal}
+
+The outputs contain \texttt{Rehearsal}, blank and
+\texttt{Bring a pencil}, in that order. The syntax
+you used for a named parameter also works for a
+numbered one. If the task instead requires one actual
+path, count and validate the inputs rather than trying
+to put a fake path in the empty slot. The preview
+script in Chapter~\ref{ch:30} uses exactly this kind of
+count, then checks each supplied value.
+
+When deciding whether to store anything at all, ask where
+it will next be used. If the name appears once and is not
+expected to vary, a literal quoted pathname can be shorter
+and clearer. If three lines depend on the same part and the
+part changes together, a well-named variable avoids three
+separate edits. If there are already several arguments with
+meaningful boundaries, retain the argument list rather
+than joining values into one variable. None of the three
+choices is the universal rule. The aim is to make the
+relationship between the values and their uses visible
+in the command.
+
+A forgotten assignment does not necessarily yield an
+obvious shell error: quotation can turn the empty
+expansion into one empty argument. That is useful
+when the blank is intentional and dangerous when a task
+requires a value. Before a write, compare the displayed
+path with your intention and check the working directory.
+Confirming that the shell produced one argument is a
+necessary check, not a guarantee that it is the intended
+argument.
+
+\section{Exercises and cleanup}
+
+\begin{exercise}{Build a suffix without changing the value}
+\label{ex:27-suffix}
+Set \texttt{stem} to \texttt{April packet}, then print
+\texttt{April packet\_print.pdf} and the unchanged stem.
+Do not create either file.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+stem='April packet'
+printf '<%s>\n' "${stem}_print.pdf" "$stem"
+unset stem
+\end{terminal}
+Expect two lines, the first with the full suffix and the
+second still \texttt{<April packet>}. The last line removes
+the practice variable.
+\end{solution}
+
+\begin{exercise}{Honor the editor's blank}
+\label{ex:27-default}
+Set \texttt{credit} to an empty string. Show that your
+chosen default \texttt{Anonymous} applies when the variable
+is unset but not when it is explicitly empty.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+credit=''
+printf '<%s>\n' "${credit-Anonymous}"
+unset credit
+printf '<%s>\n' "${credit-Anonymous}"
+\end{terminal}
+Expect \texttt{<>} then \texttt{<Anonymous>}. The unset on the
+third line supplies the second test and also cleans up the
+variable.
+\end{solution}
+
+\begin{exercise}{Forward a short list}
+\label{ex:27-forward}
+Put \texttt{-first}, an empty argument, and
+\texttt{Last name} in the positional parameters. Print the
+count, then the individual values. Keep the initial hyphen.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+set -- '-first' '' 'Last name'
+printf '%s\n' "$#"
+printf '<%s>\n' "$@"
+set --
+\end{terminal}
+Expect \texttt{3}, then \texttt{<-first>}, \texttt{<>}, and
+\texttt{<Last name>}. The last line restores an empty list
+in the practice shell.
+\end{solution}
+
+Exit the fresh \texttt{sh} to discard the remaining shell
+variables. There were no files to delete. What other
+programs get to see those values while the shell is running
+is the subject of Chapter~\ref{ch:28}.
+
+\begin{takeaways}
+\item Assign with an unspaced equals sign, expand with a dollar sign, and use braces to mark the name when appending a suffix.
+\item Decide whether a blank should be honored before choosing a defaulting expression.
+\item Use \texttt{"\$@"} as a whole word to preserve the existing argument boundaries.
+\end{takeaways}
+
+\begin{furtherreading}
+\ReadingItem{POSIX Shell Command Language, sections 2.5 and 2.6}{Parameters, variables, special parameters and parameter expansion}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/V3_chap02.html}
+\end{furtherreading}

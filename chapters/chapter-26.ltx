@@ -1,0 +1,400 @@
+You have promised to send the titles of your reading group's text
+notes. It seems economical to keep \texttt{*.txt} in a variable and
+paste it into a command; after all, typing that pattern directly
+worked. But there is a difference between supplying the pattern,
+supplying the literal characters \texttt{*.txt}, and asking the shell
+to print each matching name. The difference lies in what the shell
+does between reading the command and running it.
+
+\begin{objectives}
+\item Predict the usual expansion stages for an ordinary POSIX shell argument.
+\item Tell the difference between a home-directory shortcut, a variable lookup and captured output.
+\item Preserve an argument boundary or deliberately match filenames without guessing.
+\end{objectives}
+
+\section{Change one layer at a time}
+\label{sec:26-order}
+\index{expansion}
+\index{field splitting}
+\index{pathname expansion}
+
+The examples here use a fresh \texttt{sh} session. Type each setup
+line individually and stop if the first reports an error or the
+second does not print the new directory. \texttt{mktemp -d} is a
+common GNU/BSD convenience, not a POSIX requirement; if unavailable,
+use Chapter~\ref{ch:12}'s procedure for making a new, empty folder
+and record its full path in \texttt{practice}. Each redirection
+creates one fixture; use these only in that new folder.
+
+\begin{terminal}
+practice=$(mktemp -d)
+cd "$practice" && pwd
+printf '%s\n' 'Friday selection' > 'Long title.txt'
+printf '%s\n' 'Tuesday selection' > Short.txt
+\end{terminal}
+
+In Chapter~\ref{ch:25}, quotes protected spaces and brackets. Now
+consider the other side of that protection: the shell normally
+transforms some words before handing them to the command. The
+general name for these transformations is \emph{expansion}. For
+ordinary arguments in \texttt{sh}, the main stages are shown in
+Figure~\ref{fig:26-order}. Some special contexts (including
+assignments and redirection operands) have their own rules.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-26/order.tikz}
+\caption{The usual expansion stages for ordinary POSIX shell words.}
+\label{fig:26-order}
+\VisualDescription{Value-producing expansions come first. Field splitting may produce multiple words. Pathname expansion can then match filenames. The shell removes the syntax quotes last.}
+\end{figure}
+
+The quotes still guide earlier stages even though quote removal is
+listed last. Think of the shell marking which parts are protected
+while reading the line. It does not temporarily forget the quotes
+and match all the stars, then take the quote marks off at the end
+and hope for the best. Conversely, a quote character \emph{from a
+value} was not used to read the command line. It is not a new
+quoting instruction.
+
+\begin{terminal}
+pattern='*.txt'
+printf '<%s>\n' "$pattern"
+printf '<%s>\n' $pattern
+printf '<%s>\n' ./*.txt
+\end{terminal}
+
+The first command prints \texttt{<*.txt>} once. The unquoted
+expansion in the second command leaves the star eligible for
+pathname expansion and prints two names. The third prints the
+same names with \texttt{./} prefixed, providing a useful clue
+that each is an actual relative pathname. The order of the two
+names can depend on the locale, which is the operating
+environment's set of rules governing things like sorting and
+character interpretation. To check correctness here, look at
+membership and boundaries rather than order.
+
+Notice the long title appears as one line between one set of
+brackets in the last two runs. Splitting does not start over
+after the shell has produced matching names. Put another way,
+splitting answers whether a \emph{value} supplies multiple fields;
+pathname expansion answers which existing names match a
+\emph{pattern}. They are separate decisions. This makes the
+direct \cmd|./*.txt| preferable to an unquoted stored pattern
+when you can write the pattern directly.
+
+\begin{quicktable}{p{1.25in}YY}
+\toprule
+Source in the command & Main action & Typical result \\
+\midrule
+Bare tilde at the start & Substitute a home directory & A home path, not a search through the working directory \\
+\texttt{\$\{name\}} & Substitute a stored value & One protected argument if surrounded by double quotes \\
+\texttt{\$(command)} & Capture standard output & Text with final newlines stripped \\
+Unquoted glob & Match names after splitting & Zero or more matches, or a shell-specific no-match result \\
+\bottomrule
+\end{quicktable}
+
+\section{The home shortcut has a place}
+\label{sec:26-tilde}
+\index{tilde expansion}
+
+Try this locally without posting the output: the first two
+arguments will usually print the same home directory, while the
+last prints a literal tilde. The unquoted tilde is written at the
+start of a word, where the shell recognizes it as a shortcut.
+Quotes before the tilde defeat that recognition.
+
+\begin{terminal}
+printf '<%s>\n' ~ "$HOME" "~"
+printf '<%s>\n' ~/'Reading group'
+\end{terminal}
+
+The second command appends a protected space-containing suffix.
+It need not name a real folder because \texttt{printf} only
+prints the argument. \cmd|"$HOME/Reading group"| is an everyday
+alternative that keeps the entire argument quoted. Sometimes a
+tool's configuration file accepts a tilde in paths too; that is
+a feature of that tool, not a guarantee the shell makes on its
+behalf. And writing \cmd|'~/Reading group'| does not ask the
+shell to expand the tilde later. It passes a relative string
+beginning with \texttt{\textasciitilde}.
+
+\section{Capture text, not a set of names}
+\label{sec:26-capture}
+\index{command substitution}
+
+You used \cmd|$(mktemp -d)| to get a new directory path instead
+of manually copying it from the terminal. The shell runs the
+command inside \cmd|$(...)| and substitutes its standard output,
+dropping all trailing newline characters. It does not capture
+standard error unless you arrange a redirection. Compare these
+two displays:
+
+\begin{terminal}
+printf '<%s>\n' "$(printf 'queue\n\n')"
+printf '<%s>\n' "$(printf 'first\nsecond\n')"
+\end{terminal}
+
+The first prints one line, \texttt{<queue>}. The second prints
+two visible lines across one argument: the opening bracket and
+\texttt{first} are on line one; \texttt{second} and the closing
+bracket are on line two. The internal newline survives. If the
+output must preserve the exact byte stream, including its
+trailing newlines, save it to a new file instead of a variable.
+Shell variables are not arbitrary binary containers either.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-26/notes.tikz}
+\caption{A quoted capture preserves internal newlines, not trailing ones.}
+\label{fig:26-notes}
+\VisualDescription{A command emits first, a newline, second and a final newline. Capture removes the final newline. Double quotes preserve the internal newline in one argument.}
+\end{figure}
+
+As Figure~\ref{fig:26-notes} suggests, capture can produce one
+piece of text containing multiple line breaks. Double quotes
+will not reconstruct separate filenames from that text. In the
+other direction, unquoting a capture to get separate words
+does not reconstruct a file list either: it splits at whitespace
+under the default settings, and star or question-mark characters
+in those words may be matched as patterns. A direct glob gives
+each resulting filename its own argument. That is why a glob is
+the right tool for gathering names in the current directory,
+while a quoted capture is right for collecting, say, one line
+of text from a fixture.
+
+\begin{terminal}
+title=$(cat 'Long title.txt')
+printf '<%s>\n' "$title"
+printf '<%s>\n' $title
+\end{terminal}
+
+The first display is \texttt{<Friday selection>}. The second
+has one bracketed word per line. The same file was opened
+both times; the second display causes a split only when
+\texttt{title} is read back as an unquoted argument. A shell
+assignment by itself, such as \cmd|title=$(cat ...)|, is not an
+ordinary argument and does not split the result this way.
+Keeping the display quoted is sensible even if the current
+value has no spaces: the habit is about the boundary, not
+one day's input.
+
+\section{Make a prediction before expanding}
+\label{sec:26-predict}
+
+The default separators for field splitting are space, tab
+and newline. This is not the same as the blanks separating
+words while the shell initially reads your line. A value may
+contain a space that never appeared in the command source;
+that space can still split an unquoted expansion. \texttt{IFS}
+is the shell parameter that controls splitting. Leave it alone
+in this chapter: changing it globally would make ordinary
+examples harder to predict for the sake of a special case.
+
+\begin{terminal}
+label="'two words'"
+printf '<%s>\n' $label
+printf '<%s>\n' "$label"
+\end{terminal}
+
+The first run shows \texttt{<'two>} and \texttt{<words'>};
+the stored apostrophes did not protect the blank. The second
+prints the whole value, including the two apostrophes. The
+value passed through the shell is not fresh shell source:
+the apostrophes were generated too late to be recognized as
+quoting syntax. Instead of forcing a second interpretation,
+choose the intended boundaries when building the first command.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-26/glob.tikz}
+\caption{The glob creates argument slots after splitting has finished.}
+\label{fig:26-glob}
+\VisualDescription{One unquoted pattern leads to two matched pathnames, each in a separate slot. Long title.txt retains its space inside one slot.}
+\end{figure}
+
+\begin{dialoguebox}{A list that is not a list}
+\Brian{The directory listing gives me one title per line. Can't I capture it and use it as a list of names?}
+\Stephen{For the two simple names you first tried, it might seem to work.}
+\Brian{One of mine is Long title. Doesn't putting each name on its own line solve that?}
+\Stephen{No. Ordinary field splitting can split at the space too. And the newline itself could occur in a filename.}
+\Brian{Then quote the output? At least no name gets split.}
+\Stephen{True, but now all the names are in one argument. A direct glob gives you separate arguments without squeezing them into text first.}
+\DialogueConclusion{A text stream is not an argument list.}
+\end{dialoguebox}
+
+\begin{quicktable}{YY}
+\toprule
+What you intend & What to write in this fixture \\
+\midrule
+One filename with a known spelling & \texttt{'./Long title.txt'} \\
+One stored name whose value may change & \texttt{"\$name"} after assigning the name \\
+All visible text filenames as separate arguments & \texttt{./*.txt}; check what happens when no names match \\
+The characters of a filename pattern for a utility that interprets it & \texttt{'*.txt'}, for example as an operand to \texttt{find -name} \\
+\bottomrule
+\end{quicktable}
+
+An unmatched POSIX shell pattern normally remains unchanged.
+Try this harmless probe for a deliberately absent suffix:
+
+\begin{terminal}
+printf '<%s>\n' ./*.bak
+\end{terminal}
+
+The result \texttt{<./*.bak>} is not evidence that a backup
+exists. By contrast, the ordinary native Zsh default is an
+error on this unmatched pattern. A typical interactive Bash
+normally keeps the word as written, but its settings can
+change that behavior. Run these chapter examples under
+\texttt{sh} and see Chapter~\ref{ch:29} before moving a script
+to a different language.
+
+\section{Assemble a reliable preview}
+\label{sec:26-preview}
+
+The reading group wants every visible text note whose name
+starts with a known prefix. Use a sample prefix, not a new
+pattern to be interpreted from a message. First print the
+prefix literally; then join that protected prefix to an
+unquoted star. The prefix could later contain brackets or a
+space; only the star outside the quotes should be active.
+
+\begin{terminal}
+prefix='Long '
+printf 'Prefix: <%s>\n' "$prefix"
+printf 'Candidate: <%s>\n' ./"$prefix"*.txt
+\end{terminal}
+
+You should see the blank before the first closing bracket,
+then a result line for \texttt{./Long title.txt}. A blank
+is part of this prefix. Had you copied it into another line
+outside quotes, it would have ended the shell word instead.
+If the candidate looks wrong, inspect the first output
+before editing the second command. It is easier to discover
+that the prefix is empty by looking for \texttt{<>} than by
+guessing from a surprisingly long list of matched filenames.
+
+Change the prefix to \texttt{Early } and repeat the second
+line. In the unmodified fixture the shell leaves the unmatched
+pattern word intact. A candidate line is consequently not
+the same as confirmation that a file exists. Run this probe
+as a separate experiment in the named setup directory:
+
+\begin{terminal}
+prefix='Early '
+printf 'Candidate: <%s>\n' ./"$prefix"*.txt
+test -f './Early *.txt'
+printf 'Is that exact name a file? %s\n' "$?"
+\end{terminal}
+
+The candidate text contains the original star and the test
+reports one. The test is quoted to ask about that exact
+name. Don't detect an unmatched glob by searching the result
+for a star: the characters legal in a filename include a
+literal star. A future script can test the candidate's type
+directly instead. A preview that mistakes a placeholder for a
+real file is inconvenient; feeding that same result into a
+write operation would be a worse mistake.
+
+When you troubleshoot a complicated expression, keep the
+order shown earlier in view and change only one element at
+a time. Read the unexpanded source first: what was inside
+quotes before any substitution? Look at the variable
+value second: is it the single intended word, possibly
+with embedded spaces? Third, check whether any unquoted
+part is allowed to split or match. Finally, distinguish
+what the command receives from what it later prints.
+You can replace the command with the bracket probe for
+that final inspection. None of these steps requires changing
+the filenames to avoid spaces or switching your default
+interactive shell. The expression should state which pieces
+are data and which characters are instructions.
+
+One other convenience differs among shells: in Bash and
+native Zsh, brace expansion can generate literal alternatives
+before pathname matching, as in \texttt{\{first,second\}.txt}.
+That spelling is not the mechanism this book uses to produce
+a portable two-argument list. Write \texttt{first.txt
+second.txt} when you mean two fixed names, regardless of
+whether either exists. Do not confuse generating strings
+with browsing what is on disk; a literal alternative can be
+produced even when nothing with that name was ever created.
+
+\section{Exercises and cleanup}
+
+\begin{exercise}{Let the shell match only the suffix}
+\label{ex:26-suffix}
+Assign the word \texttt{Long title} to \texttt{stem}, then
+print the result of matching that exact stem followed by a
+wildcard suffix. Leave the star active without exposing the
+blank inside the stem.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+stem='Long title'
+printf '<%s>\n' ./"$stem".*
+unset stem
+\end{terminal}
+Expect \texttt{<./Long title.txt>}. The quote marks protect the
+expanded stem but not the star outside the pair. \texttt{unset}
+removes the practice variable, not the file.
+\end{solution}
+
+\begin{exercise}{Predict the number of arguments}
+\label{ex:26-lines}
+Capture the two lines \texttt{one} and \texttt{two}. Predict
+the visible brackets if the expansion is quoted and if it is
+unquoted. Do not change \texttt{IFS}.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+value=$(printf 'one\ntwo\n')
+printf '<%s>\n' "$value"
+printf '<%s>\n' $value
+unset value
+\end{terminal}
+The quoted form prints one pair of brackets across two lines.
+The unquoted form prints two pairs, one on each line. There
+are no extra files to remove.
+\end{solution}
+
+\begin{exercise}{Confirm what a failed match means}
+\label{ex:26-nomatch}
+In the disposable practice directory, determine whether the
+unchanged \texttt{./*.bak} text names a regular file. The
+option \texttt{-f} of \texttt{test} checks for a regular file.
+Display its exit status immediately with \cmd|$?|: zero
+means yes, and one means no.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+test -f './*.bak'
+printf 'Status: %s\n' "$?"
+\end{terminal}
+Expect \texttt{Status: 1}. Quoting is correct because this
+check asks about the literal name reported by the probe, not
+whether some other name matches. No files are created.
+\end{solution}
+
+Confirm the working directory with \texttt{pwd}. Remove only
+the two known fixtures; \texttt{rm -i} asks before removing
+each one. If you made additional fixtures, inspect their
+names rather than switching to a wildcard for cleanup.
+
+\begin{terminal}
+pwd
+rm -i './Long title.txt' './Short.txt'
+cd / && rmdir "$practice"
+exit
+\end{terminal}
+
+\begin{takeaways}
+\item For ordinary POSIX shell arguments, splitting precedes pathname expansion.
+\item Command substitution captures text and drops trailing newlines.
+\item Quote expansions that should supply one argument; leave only deliberate glob characters active.
+\end{takeaways}
+
+\begin{furtherreading}
+\ReadingItem{POSIX Shell Command Language, section 2.6}{Word expansion, splitting and pathname generation}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/V3_chap02.html}
+\ReadingItem{Zsh Manual}{Native filename generation and no-match behavior}{https://zsh.sourceforge.io/Doc/Release/Expansion.html}
+\end{furtherreading}

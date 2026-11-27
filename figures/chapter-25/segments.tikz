@@ -1,0 +1,7 @@
+\begin{tikzpicture}
+\node[utp node] (value) at (-1.65,1.4) {\texttt{Tuesday setup}};
+\node[utp node] (suffix) at (1.65,1.4) {\texttt{: \$5 deposit}};
+\node[utp node] (joined) at (0,0) {\texttt{Tuesday setup: \$5 deposit}};
+\draw[utp arrow] (value.south) -- (joined.north west);
+\draw[utp arrow] (suffix.south) -- (joined.north east);
+\end{tikzpicture}

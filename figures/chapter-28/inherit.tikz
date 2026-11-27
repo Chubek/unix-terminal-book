@@ -1,0 +1,6 @@
+\begin{tikzpicture}
+\node[utp node] (private) at (0,1.4) {Working note\\ shell-only};
+\node[utp node] (label) at (0,0) {Kitchen items\\ exported};
+\node[utp node] (child) at (5,0) {Child receives\\ Kitchen items};
+\draw[utp arrow] (label)--(child);
+\end{tikzpicture}

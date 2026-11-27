@@ -1,0 +1,7 @@
+\begin{tikzpicture}
+\foreach \x/\word in {-2/first,0/empty,2/third} {
+  \node[utp node,minimum width=1.6cm] (from) at (\x,1.2) {\word};
+  \node[utp node,minimum width=1.6cm] (to) at (\x,0) {\word};
+  \draw[utp arrow] (from)--(to);
+}
+\end{tikzpicture}

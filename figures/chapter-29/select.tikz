@@ -1,0 +1,8 @@
+\begin{tikzpicture}
+\node[utp node] (explicit) at (0,1.5) {\texttt{sh script.sh}};
+\node[utp node] (direct) at (0,0) {\texttt{./script.sh}};
+\node[utp node] (sh) at (5.5,1.5) {Explicitly select \texttt{sh}};
+\node[utp node] (shebang) at (5.5,0) {Use shebang path};
+\draw[utp arrow] (explicit)--(sh);
+\draw[utp arrow] (direct)--(shebang);
+\end{tikzpicture}
