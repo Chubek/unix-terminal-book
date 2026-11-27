@@ -20,7 +20,7 @@ cp -i ./errands.txt ./errands-original.txt
 cat ./errands.txt
 \end{terminal}
 
-As before, the greater-than sign writes to the specified path, so use the exact fixture name in the new directory. Here, \cmd|printf| uses the same string-and-line-break format for both text operands. \cmd|cp -i| creates a copy to return to if the edit goes wrong; don't confirm an unexpected overwrite. \IndexCommand{cat} The \cmd|cat| command reads the named file and writes its bytes to your terminal. It is suitable for these two short text lines, not for dumping arbitrary or binary files to the screen. The displayed text is file content, not more commands to run.
+As before, the greater-than sign writes to the specified path, so use the exact fixture name in the new directory. Here, \cmd|printf| uses the same string-and-line-break format for both text operands. \cmd|cp -i| creates a copy to return to if the edit goes wrong; don't confirm an unexpected overwrite. The \IndexCommand{cat} command reads the named file and writes its bytes to your terminal. It is suitable for these two short text lines, not for dumping arbitrary or binary files to the screen. The displayed text is file content, not more commands to run.
 
 \begin{terminaloutput}
 Buy oats
@@ -36,7 +36,7 @@ file ./errands.txt
 For this fixture, expect a description of text, often ``ASCII text.'' Other systems may use different wording. This tells you which program is a plausible next step; it does not check that every item on the list is correct.
 
 \section{The editor has a working copy}
-\IndexTerm{editor buffer}
+\index{editor buffer}
 An editor generally reads the disk file into a \FirstUse{buffer}: the text you see and change in the editor. Changes can remain in that buffer before a save. A write updates the disk file; mere cursor movement or typing into a modified buffer need not do so. On reopening, you usually see whatever was last written. Figure~\ref{fig:11-buffer} shows the direction of each operation. It deliberately leaves out optional recovery files, editor backups, and external modifications. None is a reason to assume a lost change can always be recovered.
 
 \begin{figure}[htbp]
@@ -56,7 +56,7 @@ command -v nano
 Use the editor available to you. \cmd|vi| is the standardized screen editor interface, but the name can lead to an implementation such as Vim or nvi. \cmd|nano| is an optional program, with a comparatively explicit shortcut display in its usual configuration. It may be missing or packaged separately on Linux, macOS, FreeBSD, OpenBSD, and NetBSD. Don't assume availability based on the OS name alone, and don't install an editor just to complete the exercises when the other one is present. These instructions use default or conventional key bindings; if an editor reacts in a surprising way, keep the practice original and check the documentation instead of experimenting on a real file.
 
 \section{One controlled edit in vi}
-\IndexCommand{vi}
+\index{vi@\texttt{vi}}
 Open the practice file. This shell command is the only line in this example to type at a shell prompt:
 
 \begin{terminal}
@@ -92,7 +92,7 @@ cmp ./errands-original.txt ./errands.txt
 Expect the three lines, then a difference report from \cmd|cmp|. The report may refer to the shorter file ending first because the original's bytes are the prefix of the longer file. The result is intentional: the original stayed put, and the edited copy now contains the new errand.
 
 \section{The same decision with nano}
-\IndexCommand{nano}
+\index{nano@\texttt{nano}}
 Use a fresh copy so that the exercise works whether or not you tried \cmd|vi|. If the destination already exists, stop rather than overwriting it. Run the editor only if it was found earlier.
 
 \begin{terminal}

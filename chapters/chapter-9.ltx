@@ -9,13 +9,18 @@ A housing cooperative has sent you three folders of meeting records. You want th
 
 \input{figures/chapter-9/search.tikz}
 \section{Draw a boundary before you search}
-\IndexCommand{find}
-Use a spare local \cmd|/bin/sh| shell. Choose a writable parent directory and check \cmd|pwd|. Make the new practice root first and stop if it fails; don't continue in a directory that already existed. Replace only the practice root name if necessary. Type the lines separately and proceed with the fixture only if \cmd|cd| succeeded and \cmd|pwd| ends in the fresh name. Unlike the cooperative's real folders, this tree contains only short names and empty regular files.
+\index{find@\texttt{find}}
+Use a spare local \cmd|/bin/sh| shell. Choose a writable parent directory and check \cmd|pwd|. Type the lines separately. If \cmd|mkdir| fails, stop rather than continuing in an existing directory. Choose a new practice root name if necessary and use it throughout.
 
 \begin{terminal}
 mkdir ./utp-09-records
 cd ./utp-09-records
 pwd
+\end{terminal}
+
+Stop if \cmd|cd| failed or if \cmd|pwd| does not show the fresh directory inside the parent you just checked. Only then make the fixture below. The \cmd|-p| option tells \cmd|mkdir| to create missing parent directories along the requested paths. Here all three paths have the same parent, \cmd|./records|. Unlike the cooperative's real folders, this tree contains only short names and empty regular files.
+
+\begin{terminal}
 mkdir -p ./records/april ./records/may ./records/.drafts
 touch ./records/april/agenda.txt ./records/may/agenda.txt
 touch './records/may/Final Agenda.txt' ./records/.drafts/agenda.txt
@@ -42,7 +47,7 @@ Compare the names in the result against Figure~\ref{fig:9-boundary}. Your output
 An explicit starting path is a safety and relevance choice. \cmd|find . -print| is fine when you're already at the confirmed root of a small project. It is not interchangeable with \cmd|find ./records -print| if sibling directories exist. Starting at the filesystem root can visit huge trees and encounter unreadable directories, external storage, or unrelated private filenames. Start with the smallest directory likely to contain what you want; widen the scope only when you can explain why. If real output is too voluminous, interrupt with \KeyChord{Ctrl}{C}; it is a read-only example, so interrupting it stops the search rather than undoing file work.
 
 \section{Match the last component}
-\IndexTerm{filename pattern}
+\index{filename pattern}
 The \cmd|-name| test compares just the last path component against a pattern. To seek an exact spelling, give that spelling without a wildcard:
 
 \begin{terminal}
@@ -92,7 +97,7 @@ Element & What it controls & What it does not control\\
 \end{quicktable}
 
 \section{Keep the star for the right reader}
-Before \cmd|find| sees any words, your shell reads the command line. An unquoted \cmd|*.txt| can match names in the working directory and be turned into literal operands. Some shells stop with an error if nothing matches; others can leave it untouched or remove it under particular settings. None of these outcomes is the intended input. With \cmd|'*.txt'|, the shell strips the quotes and passes the five literal characters inside, including the asterisk. \cmd|find| interprets that asterisk separately for each name it encounters in the search. Figure~\ref{fig:9-quotes} compares the two routes.
+Before \cmd|find| sees any words, your shell reads the command line. An unquoted \cmd|*.txt| can match names in the working directory and be turned into literal operands. POSIX \cmd|sh| leaves an unmatched pattern unchanged, so an unquoted search can appear to work as long as nothing matches in the working directory. Don't rely on that accident: a file added here can change it, and other shells or settings can report an error or drop the pattern. With \cmd|'*.txt'|, the shell strips the quotes and passes the five literal characters inside, including the asterisk. \cmd|find| interprets that asterisk separately for each name it encounters in the search. Figure~\ref{fig:9-quotes} compares the two routes.
 
 \begin{figure}[htbp]
 \centering\UTPNineQuotes
@@ -113,7 +118,7 @@ find ./records -type f -name '*.txt' -print
 The final search still reports the four intended files and never reports the top-level sample because the sample is outside \cmd|./records|. This is a useful diagnostic pattern: if a search works in one directory and fails in another, check whether what you passed was a fixed search expression or an unquoted pattern the shell expanded before the search.
 
 \section{Inspect a result before deciding what to do}
-Suppose you want an exact name that is not present. \cmd|find| ordinarily succeeds when it searches successfully and finds no matches. The status reports whether the walk encountered errors, not how many names passed. Compare two safe queries:
+Suppose you want an exact name that is not present. \cmd|find| ordinarily succeeds when it searches successfully and finds no matches. The exit status, a numeric result, reports whether the walk encountered errors, not how many names passed. In \cmd|sh|, \cmd|$?| is that status for the last command; print it immediately before any other command replaces it. Compare two safe queries:
 
 \begin{terminal}
 find ./records -type f -name 'agenda-final.txt' -print

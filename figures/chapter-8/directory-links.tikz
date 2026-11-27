@@ -4,11 +4,11 @@
 \node[utp node] (b) at (-1.7,-1.2) {forms};
 \node[utp node] (c) at (1.7,-1.2) {events};
 \node[utp node] (d) at (.65,-2.4) {june};
-\node[utp node] (e) at (2.75,-2.4) {july};
+\node[utp node] (e) at (2.75,-2.4) {july\\(next step)};
 \draw[utp arrow] (a)--(b);
 \draw[utp arrow] (a)--(c);
 \draw[utp arrow] (c)--(d);
-\draw[utp arrow] (c)--(e);
+\draw[utp arrow,dashed] (c)--(e);
 \end{tikzpicture}}
 \newcommand{\UTPEightHard}{%
 \begin{tikzpicture}

@@ -9,7 +9,7 @@ Someone sends you a terminal tip: ``Use the option that keeps the old file.'' Yo
 
 \input{figures/chapter-10/documentation.tikz}
 \section{Open and leave one page}
-\IndexCommand{man}
+\index{man@\texttt{man}}
 At the prompt of a spare local \cmd|/bin/sh| shell, open the manual for the familiar copy command:
 
 \begin{terminal}
@@ -61,7 +61,7 @@ SEE ALSO & Which related documentation may help? & Is there a page for moving in
 \end{quicktable}
 
 \section{When names collide, add a section}
-\IndexTerm{manual sections}
+\index{manual sections}
 Manuals commonly group entries into numbered sections. A reference like \ManPage{printf}{1} means the entry named \cmd|printf| in section 1, which commonly describes user commands. \ManPage{printf}{3} refers to an entry in section 3, which commonly describes library functions used by programs. The parentheses and number are conventional documentation notation, not literal shell input. To choose a section on common Linux, macOS, and BSD manual systems, give its number as a separate argument:
 
 \begin{terminal}
@@ -81,7 +81,7 @@ Quit the first viewer before entering the second line. Section 1 should discuss 
 Figure~\ref{fig:10-section} distinguishes two kinds of choice: the section of a local manual page, and the implementation you are actually invoking. They are not the same problem. The section number won't by itself distinguish a command built into the shell from a separate executable whose name happens to be the same.
 
 \section{Search by the job, then inspect command identity}
-\IndexCommand{apropos}
+\index{apropos@\texttt{apropos}}
 If you only remember a purpose, search the descriptions. Quoting keeps the phrase \cmd|copy files| together as one argument. These commands usually consult the same local manual metadata, but their exact match rules can vary; run them separately rather than expecting identical output on every installation.
 
 \begin{terminal}

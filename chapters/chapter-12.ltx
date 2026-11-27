@@ -9,8 +9,8 @@ You have finished a trip plan and want to clear away drafts. A list of four simi
 
 \input{figures/chapter-12/safety.tikz}
 \section{Give the practice a boundary}
-\IndexCommand{mktemp}
-\IndexTerm{practice directory}
+\index{mktemp@\texttt{mktemp}}
+\index{practice directory}
 A folder made for practice is not a special kind of filesystem. It is an ordinary directory with three advantages: the contents are known, the paths are explicit, and none of the sample data matters. A temporary directory also is not a secure sandbox. Commands can still reach outside it if you give them other paths. Always check the working directory and use exact names you meant to make there.
 
 Use a spare local \cmd|/bin/sh| shell and request a fresh directory. Run the first line alone. If it prints an error, stop and don't try the \cmd|cd| line. Run the next line to see the result: it must be a nonempty absolute path, beginning with \cmd|/|, with a final name beginning \cmd|utp-12.|. If it isn't, stop and use the plain \cmd|mkdir| alternative below. \cmd|mktemp| and its \cmd|-d| form are common on GNU/Linux and contemporary macOS and BSD, not a POSIX utility requirement. If it isn't available, that is another reason to use the fallback.
@@ -105,7 +105,7 @@ rmdir one folder & You intend to remove only an empty directory. & Refuses a non
 \end{quicktable}
 
 \section{Remove one known name}
-\IndexCommand{rm}
+\index{rm@\texttt{rm}}
 The standard \cmd|rm| utility removes names. It does not put files in a desktop Trash or Recycle Bin by default. The \cmd|-i| option asks before removal; don't assume a plain \cmd|rm| will challenge you. In a protected shared location the system may refuse your request; don't look for a way to make it stronger. This demonstration uses a single literal path in a freshly created private or personal practice directory. Do not use a wildcard or any recursive or force option. Inspect the listed name first and remove it only if it is the scratch sample you just read.
 
 \begin{terminal}

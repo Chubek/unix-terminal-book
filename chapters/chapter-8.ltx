@@ -8,7 +8,7 @@ You volunteer at a repair café, where each event has its own notes but the same
 
 \input{figures/chapter-8/directory-links.tikz}
 \section{Build a place for each kind of work}
-\IndexCommand{mkdir}
+\index{mkdir@\texttt{mkdir}}
 Use a spare local \cmd|/bin/sh| shell. Choose a writable parent, such as your home directory, and check it with \cmd|pwd|. Type the lines separately; if the first name exists or its creation fails for any reason, stop and choose a fresh practice name. Don't continue inside an existing directory. Make sure \cmd|cd| succeeds and \cmd|pwd| ends in your new directory's name before continuing. The other examples begin inside the directory you create.
 
 \begin{terminal}
@@ -25,9 +25,9 @@ The last listing shows \cmd|june| together with \cmd|.| and \cmd|..|. There is n
 
 \begin{figure}[htbp]
 \centering\UTPEightTree
-\caption{The repair café tree distinguishes siblings from children.}
+\caption{The repair café tree shows the planned July branch alongside June.}
 \label{fig:8-tree}
-\VisualDescription{Forms and events are children of the practice directory. June and July are children of events.}
+\VisualDescription{Forms and events are children of the practice directory. June is already a child of events; July will be another child after the next command.}
 \end{figure}
 
 Try building the July branch in one step. The \cmd|-p| option tells \cmd|mkdir| to create missing parents as needed and to accept an already existing directory at the final path. It does not say that the path was new when you typed the command. We used plain \cmd|mkdir| for the practice root precisely because it should fail rather than quietly reuse someone else's files.
@@ -41,7 +41,7 @@ ls -a ./events/july
 Use \cmd|pwd| if you lose track of where these commands are relative to. As Figure~\ref{fig:8-tree} shows, ``July'' alone doesn't tell you from which level to start. When building an ordinary directory hierarchy in a personal working area, naming the full branch from a known base helps avoid two common mistakes: placing a directory at the wrong depth and creating a duplicate far from the one you intended to use. If a component is a regular file instead of a directory, \cmd|mkdir -p| still cannot traverse it as a directory; read the diagnostic rather than treating the option as a general repair.
 
 \section{An empty directory is an easy test}
-\IndexCommand{rmdir}
+\index{rmdir@\texttt{rmdir}}
 If the July work is canceled, test removal on the directory that contains \cmd|check-in|. Unlike a recursive removal, \cmd|rmdir| refuses a directory that still holds entries besides its own dot and dot-dot. In this practice case the first command fails intentionally; exact wording varies. Inspect what was left, then work from child to parent:
 
 \begin{terminal}
@@ -67,8 +67,8 @@ rmdir ./name & Remove one empty directory. & Refuses a nonempty one; other error
 \end{quicktable}
 
 \section{Two names for one underlying file}
-\IndexCommand{ln}
-\IndexTerm{hard link}
+\index{ln@\texttt{ln}}
+\index{hard link}
 Construct a practice master and add another name for it. Use the \cmd|printf| recipe from Chapter~\ref{ch:7} only with this fresh file. With no option, \cmd|ln| makes a \FirstUse{hard link}: it inserts another directory entry for the existing file. This is different from copying. In Figure~\ref{fig:8-hard}, neither name points to the other name; they both refer to the same file. The word ``original'' describes which name existed first, not a special job the first name retains afterward.
 
 \begin{terminal}
@@ -97,7 +97,7 @@ cmp ./forms/intake-master.txt ./events/june/intake-same.txt
 If the destination already exists, refuse the move and inspect. Otherwise, the renamed entry and the June entry still refer to the same file. The comparison is silent, as expected, but \cmd|cmp| alone wouldn't tell you that the names share a file: two independent copies might also have equal bytes. Hard links normally require the names to be on the same filesystem and are not a way for ordinary users to link directories. If a volume or filesystem doesn't support your planned link, don't try to force it. Make a verified copy if independent contents are appropriate, or use a symbolic link where the arrangement and filesystem permit it.
 
 \section{A symbolic link stores a route}
-\IndexTerm{symbolic link}
+\index{symbolic link}
 With \cmd|ln -s|, the new entry is a \FirstUse{symbolic link}, often shortened to \emph{symlink}. It carries the target path as text, not the target file's contents or the same underlying file identity. The two operands deserve separate attention. In the next command, the second operand describes where the new link will be created, relative to your working directory; the first describes what route the link stores. Because the stored route is relative, it will be interpreted from the directory \emph{containing the link}, namely \cmd|events/june|. Two \cmd|..| steps get back to the practice root and then \cmd|forms| leads to the master.
 
 \begin{terminal}
@@ -185,6 +185,8 @@ ln -s & Stored path; can lead to another filesystem or a directory. & Can leave 
 \end{dialoguebox}
 
 \section{Practice and clean up}
+The repository listing \texttt{check-links.sh} in the Chapter 8 listings is a verifier for these examples, not a step to run in this exercise. It makes and removes its own separate fixture.
+
 Stay in this chapter's practice root. Clean up an exercise link with \cmd|rm -i| and its exact path, omitting a trailing slash; the link name is removed, not the file or directory it leads to. First read the listing and respond only for the link you made. When all exercises are over, the worked examples leave two entries in \cmd|./events/june|, named \cmd|intake-way.txt| and \cmd|intake-same.txt|, and the master \cmd|./forms/intake-master.txt|. If you made the link to the forms directory, you also have \cmd|./events/current-forms|. Remove those entries individually with interactive removal; this permanently removes the practice names. Use \cmd|rmdir| on \cmd|./events/june|, then \cmd|./events| and \cmd|./forms|, only if empty. Leave with \cmd|cd ..| and remove only your empty practice root. Use no recursive removal, and keep the folder if anything about its contents is uncertain.
 
 \begin{exercise}{A branch with two levels}

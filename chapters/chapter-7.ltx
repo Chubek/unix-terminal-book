@@ -24,7 +24,7 @@ The word \cmd|mkdir| asks for a directory; the quoted path on the last line name
 The single quotes around the path tell the shell to keep the two words of the name together. The quotes are not in the filename. The leading \cmd|./| means that this is an address in the current directory. It also prevents a name that begins with a hyphen from being read as an option. This is more than a precaution for fictional filenames: files downloaded from other people don't follow the naming rules you would choose.
 
 \section{A new name with the same content}
-\IndexCommand{cp}
+\index{cp@\texttt{cp}}
 An \FirstUse{operand} is an item a command works on. In our first copy, the path of the original and the path to create are the two operands; their order matters. Say them aloud as ``from'' and ``to'' when checking a command line. Use two distinct paths and pick a destination that does not exist. Inspect the practice directory before and after:
 
 \begin{terminal}
@@ -76,7 +76,7 @@ cmp FROM TO & Read only; no edit. & Read only; no edit. Checks bytes rather than
 \end{quicktable}
 
 \section{Tell the copies apart, then compare them}
-\IndexCommand{file}
+\index{file@\texttt{file}}
 Files with the same suffix do not necessarily contain the same kind of material. \cmd|file| inspects a pathname and, for regular files, can use features of the contents to report a likely type. It does not open the document in its normal application, and it is not a security check. A wrongly named PDF may still be identified as a PDF; text could be identified broadly without telling you which application made it. Implementations and their data files may describe the same content differently. Try the practice original and the directory:
 
 \begin{terminal}
@@ -85,7 +85,7 @@ file './rota original.txt' ./outbox
 
 On a system that describes the practice line as ASCII text, the first result includes the file name, a colon, and that description. The second result describes a directory rather than text. A report such as ``data'' means the utility did not give a more specific classification; it is not a cue to run or open an unknown file. This command can help you choose a sensible reader or tell a colleague that a presumed document is really an archive, but it gives no guarantee that all bytes inside conform to a format.
 
-\IndexCommand{cmp}
+\index{cmp@\texttt{cmp}}
 To verify copying, use \cmd|cmp|. It asks whether the bytes match in order, not whether the content \emph{looks} the same when rendered. Try a matching pair:
 
 \begin{terminal}
@@ -114,7 +114,7 @@ The comparison should report a difference and return 1. A comparison implementat
 \end{quicktable}
 
 \section{Rename or move without losing track}
-\IndexCommand{mv}
+\index{mv@\texttt{mv}}
 In the next command the destination's parent already exists. The source is still the working copy; the original remains in the practice directory. Moving replaces the \emph{source name}, while copying leaves the source name alone. This difference is easy to miss when a file manager follows a selected item as it moves. The shell's working directory does not follow a file. After the move, the relative path beginning with \cmd|./outbox/| is how you find it from here.
 
 \begin{terminal}
