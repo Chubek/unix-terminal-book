@@ -1,0 +1,23 @@
+\newcommand{\UTPSevenCopy}{%
+\begin{tikzpicture}
+\node[utp node] (a) {\texttt{rota original.txt}\\still present};
+\node[utp node,right=11mm of a] (b) {\texttt{rota working.txt}\\independent copy};
+\draw[utp arrow] (a)--(b);
+\end{tikzpicture}}
+\newcommand{\UTPSevenDestination}{%
+\begin{tikzpicture}
+\node[utp node] (a) {Directory operand\\\texttt{outbox}};
+\node[utp node,right=8mm of a] (b) {New file operand\\\texttt{outbox/week 1.txt}};
+\node[utp node,below=6mm of a] (c) {\texttt{outbox/rota original.txt}};
+\node[utp node,below=6mm of b] (d) {\texttt{outbox/week 1.txt}};
+\draw[utp arrow] (a)--(c);
+\draw[utp arrow] (b)--(d);
+\end{tikzpicture}}
+\newcommand{\UTPSevenMove}{%
+\begin{tikzpicture}
+\node[utp node] (a) {Before\\working name here};
+\node[utp node,right=9mm of a] (b) {After\\no working name here};
+\node[utp node,below=6mm of b] (c) {After\\ready name in outbox};
+\draw[utp arrow] (a)--(b);
+\draw[utp arrow] (a)--(c);
+\end{tikzpicture}}

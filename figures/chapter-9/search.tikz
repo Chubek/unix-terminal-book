@@ -1,0 +1,38 @@
+\newcommand{\UTPNineBoundary}{%
+\begin{tikzpicture}
+\node[utp node] (r) at (0,0) {practice root};
+\node[utp node,thick] (s) at (0,-1.1) {records (start here)};
+\node[utp node] (a) at (-2.3,-2.25) {april};
+\node[utp node] (m) at (0,-2.25) {may};
+\node[utp node] (d) at (2.3,-2.25) {.drafts};
+\draw[densely dashed] (r)--(s);
+\draw[utp arrow] (s)--(a);
+\draw[utp arrow] (s)--(m);
+\draw[utp arrow] (s)--(d);
+\end{tikzpicture}}
+\newcommand{\UTPNineTests}{%
+\begin{tikzpicture}
+\node[utp node] (a) {visited path};
+\node[utp node,right=6mm of a] (b) {regular\\file?};
+\node[utp node,right=6mm of b] (c) {name\\matches?};
+\node[utp node,right=6mm of c] (d) {print};
+\node[utp node,below=8mm of b] (e) {skip printing};
+\draw[utp arrow] (a)--(b);
+\draw[utp arrow] (b)--(c);
+\draw[utp arrow] (c)--(d);
+\draw[utp arrow,dashed] (b)--(e);
+\draw[utp arrow,dashed] (c)--(e);
+\end{tikzpicture}}
+\newcommand{\UTPNineQuotes}{%
+\begin{tikzpicture}
+\node[utp node] (a) at (0,0) {quoted};
+\node[utp node] (b) at (0,-1.2) {unquoted};
+\node[utp node] (c) at (3.3,0) {shell keeps star};
+\node[utp node] (d) at (3.3,-1.2) {shell may expand};
+\node[utp node] (e) at (6.7,0) {find matches};
+\node[utp node] (f) at (6.7,-1.2) {find gets result};
+\draw[utp arrow] (a)--(c);
+\draw[utp arrow] (b)--(d);
+\draw[utp arrow] (c)--(e);
+\draw[utp arrow] (d)--(f);
+\end{tikzpicture}}
