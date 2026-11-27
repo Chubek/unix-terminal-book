@@ -1,7 +1,10 @@
 # Chapter 14 — Match Names with Patterns
 
 - Executable fixture/check: `sh listings/chapter-14/preview-receipts.sh`.
-  It asserts membership/counts with `LC_ALL=C`, then prints a preview.
+  It asserts membership/counts without assuming display order, then
+  prints a preview. Also rerun successfully with
+  `zsh --emulate sh listings/chapter-14/preview-receipts.sh` under Linux;
+  native Zsh is not suitable for the sh no-match assertion.
 - Actual: Linux host in `chapter-13.md`, GNU findutils 4.11.0-modified.
   Scripts passed with `sh` and `bash`. Separate fresh-shell checks found
   an unchanged April glob with default Bash, `[]` with `nullglob`, and

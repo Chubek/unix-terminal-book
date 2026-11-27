@@ -25,10 +25,15 @@ Stop if the new path isn't printed. Record it for cleanup.
 
 \begin{terminal}
 lab=$(mktemp -d) && cd "$lab" && pwd
+\end{terminal}
+
+Only run the fixture setup below after \cmd|pwd| has confirmed
+the new practice directory.
+
+\begin{terminal}
 printf '%s\n' Asha Bea Chen > roll.txt
 \end{terminal}
 
-Only run the second line after you have confirmed the first one.
 \cmd|printf| prints each name followed by a newline; the shell's
 \cmd|>| sends that text to the named file rather than to the screen
 and would overwrite an existing file. Here the directory is new.
@@ -99,8 +104,10 @@ line lets a program reading from the terminal see that there is
 no more input at that read. This is an \emph{end-of-file}
 condition, often shortened to EOF. It is not the text
 \texttt{EOF} and not a newline. With pending text on a line,
-the same key can instead make those pending characters available
-without a newline. For this chapter always press \EnterKey\ after
+the first \KeyChord{Ctrl}{D} ordinarily makes those pending characters
+available without a newline. For a command still reading, such as
+\cmd|wc -l|, press \KeyChord{Ctrl}{D} again with no pending text
+to let the next read see EOF. For this chapter press \EnterKey\ after
 the text and use \KeyChord{Ctrl}{D} on the empty line that follows.
 Terminal controls can be changed; the instructions assume the usual
 interactive line settings.

@@ -17,5 +17,10 @@ test "$(tail -n +3 not-here.txt 2> diagnostic.txt | wc -l)" -eq 0
 test -s diagnostic.txt
 if tail -n +3 not-here.txt 2>/dev/null; then exit 1; fi
 report=$(tail -n +3 donations.txt | wc -l donations.txt)
-test "${report%donations.txt}" -eq 5
+# read splits the count from the fixed fixture name and discards column padding.
+read -r count name <<EOF
+$report
+EOF
+test "$count" -eq 5
+test "$name" = donations.txt
 printf '%s\n' 'The missing producer reported an error; its consumer counted zero.'

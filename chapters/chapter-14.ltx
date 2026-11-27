@@ -26,8 +26,16 @@ lab=$(mktemp -d) && cd "$lab" && pwd
 Stop if the setup does not print the path of a new directory. Note
 that path; \cmd|cd| changes the working directory only if
 \cmd|mktemp -d| succeeds. Here \cmd|$(...)| captures the printed name
-and the quoted \cmd|"$lab"| passes it as one argument. Work only in
-the directory you just created. \cmd|touch| creates each named file
+and the quoted \cmd|"$lab"| passes it as one argument.
+\cmd|mktemp -d| is widely available but is not specified by POSIX.
+If it isn't available, choose a writable parent and create a new
+empty lab with \cmd|mkdir ./utp-14-receipts|, as in
+Chapter~\ref{ch:12}. Don't enter an existing directory: if
+\cmd|mkdir| fails, stop and choose a fresh name. After creation,
+enter the new directory, verify it with \cmd|pwd|, and save its
+absolute path with \cmd|lab=$(pwd)| for cleanup.
+
+Work only in the directory you just created. \cmd|touch| creates each named file
 if it doesn't exist; on an existing file it updates its timestamps.
 The \cmd|mkdir| call creates a separate directory for an additional
 receipt. No personal receipt is needed.
