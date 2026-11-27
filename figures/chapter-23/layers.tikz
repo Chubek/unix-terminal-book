@@ -1,0 +1,7 @@
+\begin{tikzpicture}
+\node[utp node] (docs) {Rota\\Key note};
+\node[utp node,right=13mm of docs] (tar) {\texttt{handover.tar}};
+\node[utp node,right=13mm of tar] (gz) {\texttt{handover.tar.gz}};
+\draw[utp arrow] (docs)--node[above,font=\scriptsize] {tar} (tar);
+\draw[utp arrow] (tar)--node[above,font=\scriptsize] {gzip} (gz);
+\end{tikzpicture}

@@ -1,0 +1,8 @@
+\begin{tikzpicture}
+\node[utp node] (t) at (-2.5,1) {Text};
+\node[utp node] (n) at (-2.5,0) {Numeric};
+\foreach \i/\a/\b in {0/1/1,1/10/2,2/2/10}{
+ \node[utp node,minimum width=11mm] at ({1.4*\i},1) {\a};
+ \node[utp node,minimum width=11mm] at ({1.4*\i},0) {\b};
+}
+\end{tikzpicture}

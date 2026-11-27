@@ -1,0 +1,357 @@
+The tool library keeps a checkout sheet. Volunteers need a small
+list of things still out, but the export also includes returned
+items and a shelf column they don't need at the counter. Copying
+only the useful cells by hand would work once. A better use of
+the terminal is to describe which rows qualify and which columns
+to show, leaving the original checkout sheet alone.
+
+\begin{objectives}
+\item Identify tab-separated rows and fields even when tabs look like spaces.
+\item Extract or combine columns with \texttt{cut} and \texttt{paste}.
+\item Use a small \texttt{awk} rule to select records by field and verify the result.
+\end{objectives}
+\IndexCommand{cut}
+\IndexCommand{paste}
+\IndexCommand{awk}
+\IndexTerm{tab-separated values}
+
+\section{Find the field boundary}
+For this chapter, use a fresh temporary directory and a portable
+\cmd|sh| session. Run the first two commands separately. If
+either fails, stop; don't create these files anywhere else.
+
+\begin{terminal}
+practice=$(mktemp -d /tmp/utp21.XXXXXX)
+cd "$practice"
+printf '%s\t%s\t%s\n' \
+  item shelf state \
+  'Hand saw' A2 out \
+  'Clamp set' B1 in \
+  'Step ladder' '' out \
+  'Out bin' C1 in > loans.tsv
+\end{terminal}
+
+The format contains three \cmd|%s| slots for text and two
+\cmd|\t| sequences for literal tab characters. \cmd|\n| ends
+the record with a newline. When \cmd|printf| has more arguments
+than slots, it reuses the format. Here every three arguments
+form one row. The empty quoted argument supplies an entry
+with no characters, so there are still three fields in the
+ladder row. The quote marks are for the shell, not part of
+the resulting file. A compound item name is still one field
+even though it contains a space.
+
+\begin{terminal}
+cat loans.tsv
+\end{terminal}
+
+Take the apparent alignment as a hint at best. A tab moves
+the cursor to the next tab stop, so it doesn't always look
+like the same number of spaces. To make each boundary visible,
+try this diagnostic view:
+
+\begin{terminal}
+sed -n 'l' loans.tsv
+\end{terminal}
+
+The lowercase letter \texttt{l} is the list command of \cmd|sed|;
+\cmd|-n| suppresses its usual printing so you see only the
+diagnostic view. GNU sed displays tabs as \cmd|\t| and ends
+each displayed line with a dollar sign; other implementations
+can differ in how they represent nonprinting characters.
+A tab is one character regardless of its visual width. In the
+ladder row, find two consecutive tabs, with no shelf text
+between them. That empty field must remain in its proper slot
+or the state will end up in the wrong column.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-21/boundaries.tikz}
+\caption{A TSV field can contain spaces or be empty; the tabs fix its position.}
+\label{fig:21-boundaries}
+\VisualDescription{The ladder row contains the item Step ladder, a tab, an empty shelf field, another tab and the state out.}
+\end{figure}
+
+\section{Select fields without changing row order}
+\label{sec:21-cut}
+\cmd|cut -f| chooses numbered fields. In field mode it assumes
+tabs unless you specify another delimiter. The list of field
+numbers is one argument; commas separate individual positions.
+Count from 1, not 0.
+
+\begin{terminal}
+cut -f 1,3 loans.tsv
+\end{terminal}
+\begin{terminaloutput}
+item        state
+Hand saw    out
+Clamp set   in
+Step ladder out
+Out bin     in
+\end{terminaloutput}
+
+This printed output shows the values with illustrative spacing;
+the actual field separator on standard output is still a tab.
+The report contains the header and four data rows, in the
+original order. A field list is not an instruction to reorder
+columns: \cmd|cut -f 3,1| still prints selected columns in the
+order they appeared in the input. It also can't select one field
+conditionally based on the value of another. If a recipe says
+``give me the item \emph{if} the state is out,'' there is a row
+selection question as well as a column selection question.
+
+A delimiter is a character that separates fields. It is not
+a group of neighboring spaces, and \cmd|cut| does not recognize
+quoted CSV fields. To see what a suitable non-tab delimiter
+looks like, try a small example containing a colon between
+the label and the value:
+
+\begin{terminal}
+printf '%s\n' 'north:open' 'east:closed' | cut -d ':' -f 2
+\end{terminal}
+
+The results should be \texttt{open} and \texttt{closed}.
+\cmd|-d ':'| declares the delimiter. This is useful only if
+colons have that meaning consistently. In a row formatted
+as \texttt{north:open:weekends}, what does the second colon
+mean? A second delimiter would make a third field; it could
+not remain part of field 2 unless a different format or parser
+defined rules for it.
+
+\begin{terminal}
+printf '%s\n' 'north:open' 'incomplete row' | cut -d ':' -f 2
+printf '%s\n' 'north:open' 'incomplete row' | cut -s -d ':' -f 2
+\end{terminal}
+
+By default, cut leaves lines without the specified delimiter
+unchanged. That can be a surprise: a line that has no second
+field appears in a second-field report. Add \cmd|-s| to
+suppress lines with no delimiter. It is not general validation:
+a row that has one tab may still be one field short. If your
+goal is an audit, do not hide bad rows unless you record their
+number or report them separately.
+
+\begin{quicktable}{M{1.22in}Y}
+\toprule
+Question & Useful operation \\
+\midrule
+Only fields 1 and 3? & \texttt{cut -f 1,3} for TSV, with original row and field order. \\
+Only rows whose state is out? & Compare the state field in awk, rather than searching the line for the word. \\
+Fields in a new order? & Use awk to print the fields in the requested order. \\
+Two synchronized columns in separate files? & Use paste after verifying that corresponding rows already line up. \\
+\bottomrule
+\end{quicktable}
+
+\section{Select rows by a value}
+\label{sec:21-awk}
+\cmd|grep| from Chapter~\ref{ch:19} is useful if you remember a
+word somewhere in a line. Here you already know where the
+word belongs: in the state field. A case-insensitive search
+for \texttt{out} would find the item \texttt{Out bin}, even
+though it is marked \texttt{in}. A tab-aware comparison can
+distinguish the two.
+
+\begin{terminal}
+awk -F '\t' '$3 == "out" { print $1 }' loans.tsv
+\end{terminal}
+\begin{terminaloutput}
+Hand saw
+Step ladder
+\end{terminaloutput}
+
+This is a complete little \cmd|awk| program supplied as a
+quoted argument. \cmd|-F '\t'| gives awk a field separator
+represented by a tab escape. The single quotes around the
+program prevent the shell from expanding \cmd|$3| or \cmd|$1|.
+Here those notations mean the third and first field of the
+current row. The double quotes around \cmd|"out"| are part
+of the awk program; they say the value to compare against is
+the string \texttt{out}. The two equal signs compare the
+values. A single equal sign assigns a value and would not
+ask the same question. Curly braces group the action:
+when the comparison is true, print the first field.
+
+Read the program \emph{from left to right} as a rule: if
+the state on this row is out, print the item's name. Awk
+then applies the rule to each row, one after another. It
+neither needs a loop typed on the command line nor evaluates
+the words it reads from the file as shell commands.
+The \texttt{state} header does not compare equal to
+\texttt{out}, so this command happens to skip it.
+That is acceptable here but implicit; for a report that
+must include the header once, give the header its own rule.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-21/rule.tikz}
+\caption{Filter on the state field, then print only the item field.}
+\label{fig:21-rule}
+\VisualDescription{Both example rows enter the rule. The state out passes and prints Hand saw; state in fails and prints nothing.}
+\end{figure}
+
+\begin{terminal}
+awk -F '\t' -v OFS='\t' \
+  'NR == 1 || $3 == "out" { print $3, $1 }' loans.tsv
+\end{terminal}
+
+This version prints the header and matching rows, with
+state first and item second. \cmd|NR| counts input records,
+so \cmd|NR == 1| is true on the first line. The two vertical
+bars mean ``or'' inside the quoted program: either the
+header or an open loan qualifies. The \cmd|-v| option sets
+the named awk variable before reading the input. \cmd|OFS|
+is the output field separator. A comma between expressions
+in this \cmd|print| inserts that separator, specified here
+as a tab; setting \cmd|-F| alone would not change the
+default output separator of one space.
+
+For a diagnostic report, ask for rows that do not have
+three fields. \cmd|NF| is the number of fields; \cmd|!=|
+means ``not equal.'' \cmd|$0| stands for the whole current
+record, not field number zero. Quoting the awk rule still
+matters even if it would happen to run correctly in a shell
+with unusual expansion rules.
+
+\begin{terminal}
+awk -F '\t' 'NF != 3 { print NR, $0 }' loans.tsv
+printf 'status: %s\n' "$?"
+\end{terminal}
+
+The fixture produces no lines and the status should be
+zero. Unlike \cmd|grep|, awk does not use exit status 1
+to say that no record matched a condition. This particular
+validation check looks for field count only. It does not
+detect misspelled states, duplicate items, or absent rows;
+and a row with an empty field can still pass it. Each
+additional validity rule needs to come from what the
+sheet is supposed to mean.
+
+\begin{quicktable}{M{1.28in}Y}
+\toprule
+Awk notation & Meaning in these examples \\
+\midrule
+\texttt{\$1}, \texttt{\$3} & First and third fields of the current record. \\
+\texttt{\$0} & The entire current record. \\
+\texttt{NR} & How many records have been read, including this one. \\
+\texttt{NF} & How many fields the current record has. \\
+\texttt{OFS} & Separator used by a print action with comma-separated expressions. \\
+\bottomrule
+\end{quicktable}
+
+\section{Combine columns only when rows correspond}
+The \cmd|paste| utility writes adjacent columns from input
+files in parallel. By default it inserts a tab. Do not use
+this to merge two spreadsheets merely because they have the
+same number of lines. In this example the files are made by
+reading the same source twice without a change in row order.
+
+\begin{terminal}
+cut -f 1 loans.tsv > items.txt
+cut -f 3 loans.tsv > states.txt
+paste states.txt items.txt
+\end{terminal}
+
+Each row begins with its state and ends with its item; unlike
+the filtered report, this view includes both open and returned
+loans. The header reads \texttt{state} then \texttt{item}.
+The names following \cmd|paste| determine the column order.
+If an input is shorter, empty fields can appear for its
+missing lines; the tool does not report a missing key.
+It also cannot tell whether \texttt{states.txt} came from
+another day's export.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-21/paste.tikz}
+\caption{Paste pairs by line position, not by the identity of an item.}
+\label{fig:21-paste}
+\VisualDescription{The second line in each input is paired with the other second line; the command does not check the reason those lines correspond.}
+\end{figure}
+
+\begin{dialoguebox}{Which row goes with which?}
+\Brian{I sorted the names, then pasted the states beside them. The columns line up.}
+\Stephen{They do visually. But what told paste that a state belonged to a name?}
+\Brian{The line number. Doesn't sorting use line numbers too?}
+\Stephen{Sorting moves records to new positions. The states in the other file didn't move with them.}
+\Brian{Then my report can be neat and entirely wrong.}
+\Stephen{Yes. Pair rows first and sort whole paired records, or match on a verified identifier.}
+\Brian{I'll keep each item with its state until I can verify the pair.}
+\DialogueConclusion{A shared row number is not an identifier.}
+\end{dialoguebox}
+
+To adapt the technique to a real export, inspect a small set
+of first and last lines and ask for the format description.
+Tabs, spaces and commas are not interchangeable. If you
+actually have CSV rather than TSV, a comma inside a quoted
+name is not a field boundary; Chapter~\ref{ch:24} uses a
+reader that understands those quotation rules. Treat empty
+shelves as missing data, not a reason to fill in a value
+you didn't observe. Preserve the original and label any report
+derived from a filtered or repaired copy.
+
+\begin{furtherreading}
+\ReadingItem{POSIX cut}{Field selections, delimiters and the treatment of lines without delimiters}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/cut.html}
+\item \textbf{POSIX paste}. See the parallel-output rules and handling of unequal input lengths:
+  \WebLink{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/paste.html}{paste specification}.
+\ReadingItem{POSIX awk}{Records, field splitting, built-in variables and actions}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/awk.html}
+\end{furtherreading}
+
+\begin{takeaways}
+\item Know the separator before selecting fields.
+\item Use field-based conditions when the position of a value matters.
+\item Paste aligned rows only; sort whole records to preserve their relationships.
+\end{takeaways}
+
+\begin{exercise}{Find shelves, not states}
+\label{ex:21-shelves}
+Print the item and shelf columns. Expect the ladder to have an
+empty shelf without disappearing from the report. Nothing is
+written to disk.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+cut -f 1,2 loans.tsv | sed -n 'l'
+\end{terminal}
+The ladder row should have a tab after its name and no shelf text.
+\end{solution}
+
+\begin{exercise}{Change the qualifying state}
+\label{ex:21-returned}
+Print the names of items marked \texttt{in}. Expect two names,
+including one that starts with the word Out. No cleanup is needed.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+awk -F '\t' '$3 == "in" { print $1 }' loans.tsv
+\end{terminal}
+The results are Clamp set and Out bin.
+\end{solution}
+
+\begin{exercise}{Catch a damaged row}
+\label{ex:21-damaged}
+Send a one-line test record with just two fields to the field
+count rule. Expect line number 1 followed by the damaged row.
+Use a pipeline; leave the original file unchanged.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+printf '%s\t%s\n' 'Test item' A1 |
+  awk -F '\t' 'NF != 3 { print NR, $0 }'
+\end{terminal}
+This test creates no extra files.
+\end{solution}
+
+\paragraph{Cleanup.}
+Verify with \cmd|pwd| that this is the disposable \texttt{utp21}
+directory named in \cmd|"$practice"|. Remove only the three
+files created here and decline unrecognized names. If you skipped
+an example, a missing-file diagnostic is expected.
+
+\begin{terminal}
+rm -i ./loans.tsv ./items.txt ./states.txt
+cd /tmp
+rmdir "$practice"
+\end{terminal}
+
+If the directory is not empty, inspect the leftovers. Type
+\cmd|exit| only if you started a separate practice shell.

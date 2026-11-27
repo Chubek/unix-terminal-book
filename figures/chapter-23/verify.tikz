@@ -1,0 +1,9 @@
+\begin{tikzpicture}
+\node[utp node] (a) at (-2.5,1.3) {Original compressed file};
+\node[utp node] (b) at (2.5,1.3) {Received compressed file};
+\node[utp node] (x) at (-2.5,0) {Expected digest};
+\node[utp node] (y) at (2.5,0) {Observed digest};
+\draw[utp arrow] (a)--(x);
+\draw[utp arrow] (b)--(y);
+\draw[utp arrow,<->] (x)--node[above,font=\scriptsize] {compare} (y);
+\end{tikzpicture}

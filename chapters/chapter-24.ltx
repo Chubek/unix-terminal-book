@@ -1,0 +1,350 @@
+Your phone has a photo album for the neighborhood history
+walk. The spreadsheet export contains captions and routes;
+the catalog app exports a JSON list that includes whether
+each photo may be shared. You want a short review copy, not
+a new master catalog. In both files, the first job is to
+trust the format's rules rather than what seems to line up
+on the screen.
+
+\begin{objectives}
+\item Explain why a quoted comma is not a CSV field separator.
+\item Recognize JSON objects, arrays and scalar types and inspect them with jq.
+\item Export selected data through a format-aware reader without altering its source.
+\end{objectives}
+\IndexTerm{CSV}
+\IndexTerm{JSON}
+\IndexCommand{jq}
+
+\section{When a comma is part of a field}
+Use a new practice directory and a portable \cmd|sh| session.
+Run the first two commands separately and stop if either fails.
+The data is fictional and contains no images, locations of
+private homes or personal contact information.
+
+\begin{terminal}
+practice=$(mktemp -d /tmp/utp24.XXXXXX)
+cd "$practice"
+printf '%s\n' 'id,caption,route' \
+  '001,"Bridge, east side",River' \
+  '002,"The ""Old"" Gate",Hill' > photos.csv
+\end{terminal}
+
+CSV is short for comma-separated values. On the first line,
+all the commas really are separators. On the second, the
+comma after \texttt{Bridge} is part of the caption because
+the caption is enclosed in double quotes. The doubled quote
+inside the third caption represents one literal quote.
+These quote marks are part of the file, not the single
+quotes that protect an argument while it passes through the
+shell.
+
+\begin{terminal}
+cut -d ',' -f 2 photos.csv
+\end{terminal}
+\begin{terminaloutput}
+caption
+"Bridge
+"The ""Old"" Gate"
+\end{terminaloutput}
+
+This output is the demonstration of a wrong tool choice,
+not a useful caption list. The first data caption has been
+truncated at its own comma. The second has retained its
+CSV quoting rather than returning the decoded caption.
+The command has done exactly what it was told:
+\texttt{-d} specifies one literal delimiter and asks no
+questions about its context. Many errors of this kind do
+not generate a diagnostic. A successful exit status just
+says that the wrong operation completed.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-24/csv.tikz}
+\caption{The CSV reader crosses the quoted comma without starting a new field.}
+\label{fig:24-csv}
+\VisualDescription{The row breaks into the ID 001, the caption Bridge, east side, and the route River. The comma inside the caption stays in that field.}
+\end{figure}
+
+CSV files are not all identical. An exporter can differ in
+encoding, line endings, separator, header conventions and
+the escape rules for quotation marks. A quoted field may
+include a newline, so a physical line count does not always
+equal a count of records. Ask which settings exported the
+file and preview the parsed data. Don't split, remove lines,
+or count fields with simple text tools until you know that
+the particular input really allows it. A small file can
+run into the same problem as a million-row export.
+
+\section{Read CSV with a CSV reader}
+This optional step uses Python 3's standard \texttt{csv}
+module; it is not an assumption about the Unix base system.
+Check availability with \cmd|command -v python3|. If unavailable,
+inspect the fixture above and skip the Python example; a
+spreadsheet importer with the right CSV options is another
+way to verify the two captions. There is no need to install
+anything just to see the distinction.
+
+\begin{terminal}
+python3 - <<'PY'
+import csv
+with open("photos.csv", encoding="utf-8", newline="") as source:
+    for row in csv.DictReader(source):
+        print(row["id"], row["caption"], sep=": ")
+PY
+\end{terminal}
+\begin{terminaloutput}
+001: Bridge, east side
+002: The "Old" Gate
+\end{terminaloutput}
+
+\cmd|python3 -| reads the little program from standard input.
+The shell's \cmd|<<'PY'| supplies the following lines until
+the line containing only \texttt{PY}; the quoted marker tells
+the shell not to expand the program's contents. The indentation
+is part of the program. Inside, \texttt{csv.DictReader} uses
+the first record as field names, and each \texttt{row} supplies
+the fields by name. The open settings specify UTF-8 and let
+the CSV reader handle newlines. No input file is opened for
+writing. The display inserts \texttt{: } between the selected
+fields for humans; it does not claim to be another CSV file.
+
+\begin{quicktable}{M{1.23in}Y}
+\toprule
+Input trait & Why it changes the recipe \\
+\midrule
+Comma in quoted field & A reader must track quotations before assigning field positions. \\
+Doubled quote & The decoded field contains one quote, not two. \\
+Quoted newline & A record can occupy multiple physical lines. \\
+Leading zeros & \texttt{001} is an identifier here, not a quantity to convert to a number. \\
+\bottomrule
+\end{quicktable}
+
+\section{Look at the shape of JSON}
+JSON records have names and types rather than a fixed column
+number. The practical question changes from ``which column
+contains the caption?'' to ``which object or array holds the
+caption, and what kind of value is it?'' Create the practice
+catalog using the same quoted marker technique as above, this
+time as input to \cmd|cat|. The closing marker goes on a line
+by itself, without indenting it.
+
+\begin{terminal}
+cat > photos.json <<'JSON'
+[
+  {"id":"001","caption":"Bridge, east side","share":true,"score":7},
+  {"id":"002","caption":"The \"Old\" Gate","share":false,"score":null}
+]
+JSON
+\end{terminal}
+
+The outer square brackets enclose an \FirstUse{array}: an
+ordered list of values. Each pair of braces encloses an
+\FirstUse{object}: named members and their values. A quoted
+name, such as \texttt{"score"}, is followed by a colon and
+then a value. Here the first score is the number 7, and
+the second is an explicit \texttt{null}. \texttt{true} and
+\texttt{false} are Boolean values, not quoted words. The
+identifier \texttt{"001"} is a string because leading zeros
+matter. JSON uses a backslash to protect an interior quote
+in a string, not CSV's doubled quote.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-24/json.tikz}
+\caption{Inspect the outer value before deciding how to reach a field.}
+\label{fig:24-json}
+\VisualDescription{An array contains two objects; the first object has ID 001 and Boolean true for share, and the second has ID 002 and Boolean false.}
+\end{figure}
+
+\begin{quicktable}{M{1.26in}Y}
+\toprule
+JSON value & How to read it in this catalog \\
+\midrule
+\texttt{"001"} & A string of three characters, retaining leading zeros. \\
+\texttt{7} & A number; the number is not the quoted string \texttt{"7"}. \\
+\texttt{true}, \texttt{false} & Boolean decisions; \texttt{"false"} is merely a nonempty string. \\
+\texttt{null} & An explicit null value, not an empty string and not necessarily a missing field. \\
+\texttt{[\,]}, \texttt{\{\,\}} & Delimiters for an array and an object, respectively. \\
+\bottomrule
+\end{quicktable}
+
+\section{Ask jq for values, not lines}
+\label{sec:24-jq}
+\cmd|jq| is an optional JSON utility available separately
+on Linux, macOS and the BSD systems. Run
+\cmd|command -v jq| to check. If it is absent, read the
+fixture and follow the explanations without running the
+jq examples. A local package manager and the upstream
+documentation can help when you decide you need it.
+
+\begin{terminal}
+jq '.' photos.json
+jq 'type' photos.json
+\end{terminal}
+
+The dot is an identity filter: it receives and emits the
+same JSON value, though the display may be formatted
+differently. The second filter emits the JSON string
+\texttt{"array"}. For this single document, an identity
+pass is a useful parse check, but \cmd|jq| can accept a
+stream of multiple whitespace-separated JSON values; success
+alone does not prove that an arbitrary input contains
+exactly one catalog.
+
+\begin{terminal}
+jq '.[0].caption' photos.json
+jq -r '.[] | .caption' photos.json
+\end{terminal}
+
+Array indexing starts at zero. The first filter reaches
+the first object, then its caption, and jq prints it as
+a quoted JSON string. The second filter uses \cmd|.[]|
+to emit each array member. The bar inside the quoted
+program is jq's pipeline, not the shell's. Each object
+goes to \cmd|.caption|, yielding each caption. The optional
+\cmd|-r| flag sends string values as raw text, without JSON
+string syntax. That display is fine for reading two short
+captions, but raw output isn't lossless as a line-oriented
+export: a caption containing a newline can look like
+two records. Keep JSON syntax if a recipient will parse JSON.
+
+\begin{terminal}
+jq -r '.[] | select(.share == true) | .id' photos.json
+\end{terminal}
+
+\noindent
+Expect exactly \texttt{001}. \cmd|select| passes along an
+object only when its test is true, so the output includes
+neither the withheld \texttt{002} nor any unrelated fields.
+The test is expressly against a Boolean. A sloppy rule that
+checks only for a truthy value can accept a nonempty string
+\texttt{"false"}; jq treats only \texttt{false} and
+\texttt{null} as false in conditions. Even this stricter
+rule isn't a substitute for asking what sharing rights an
+app export actually represents. Reading values accurately
+does not grant permissions.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-24/filter.tikz}
+\caption{Expand the array, filter on a Boolean, then project the identifier.}
+\label{fig:24-filter}
+\VisualDescription{Both photo objects enter the selection; only the true share flag passes, and the string 001 is the projected result.}
+\end{figure}
+
+\begin{dialoguebox}{These values look the same}
+\Brian{If a catalog says ``false'' with quotes, surely the picture is still private?}
+\Stephen{It should stay private, but a program can mistake the nonempty string for permission.}
+\Brian{Why not just replace all the quoted words before reading it?}
+\Stephen{That could change captions too, and it guesses what the exporter meant.}
+\Brian{Then compare against the Boolean itself and investigate unexpected types?}
+\Stephen{Yes. And when anything is ambiguous, don't include the photo.}
+\Brian{I can preserve the full source without treating its labels as unquestionable.}
+\DialogueConclusion{Require the type your decision depends on.}
+\end{dialoguebox}
+
+\section{Save a fresh report and verify it}
+This report keeps two fields and preserves a JSON array,
+even if no objects qualify. It uses the same test as
+before. In jq, \cmd|{id, caption}| constructs an object
+containing those two named members; the outer brackets
+collect the emitted objects into an array. Run the first
+filter without redirection to inspect it before writing.
+Then write only to the unused practice filename shown.
+
+\begin{terminal}
+jq '[.[] | select(.share == true) | {id, caption}]' photos.json
+jq '[.[] | select(.share == true) | {id, caption}]' photos.json \
+  > review.json
+jq 'length' review.json
+\end{terminal}
+
+The array should contain one object, with the Bridge
+caption and string ID \texttt{001}. The final command
+reports the array's length, which is 1. A parse error
+can still leave an empty or incomplete redirected file:
+check the writer's status before distributing its output.
+Do not type the same input and output path even when a
+recipe calls the result ``cleaned.'' You may need the
+full file to explain which records were withheld or to
+rebuild the report under a corrected rule.
+
+If your next step is a CSV export, use a writer that
+knows CSV quotation rules. Joining a JSON array of fields
+with commas by hand merely recreates the mistake at the
+start of the chapter. Preview exports in their destination
+application as data, not as code or formulas. A document
+can contain formula-like strings that a spreadsheet treats
+as active expressions during import unless you explicitly
+choose an appropriate text-only import mode. Do not use
+real private records to explore those settings.
+
+\begin{furtherreading}
+\ReadingItem{RFC 4180}{A description of a common CSV format and its quotation rules}{https://www.rfc-editor.org/rfc/rfc4180}
+\ReadingItem{RFC 8259}{JSON syntax and value types}{https://www.rfc-editor.org/rfc/rfc8259}
+\ReadingItem{Python csv documentation}{Dialects, newline handling and named columns}{https://docs.python.org/3/library/csv.html}
+\ReadingItem{jq manual}{Filters, raw output and types}{https://jqlang.github.io/jq/manual/}
+\end{furtherreading}
+
+\begin{takeaways}
+\item Choose a reader that understands the format, not just its visible separator.
+\item Keep quoted strings distinct from numeric and Boolean values.
+\item Preview, write to a new file and check what the reader of that file will see.
+\end{takeaways}
+
+\begin{exercise}{Find the correct route}
+\label{ex:24-route}
+In the optional Python example, print the \texttt{route}
+instead of the \texttt{caption}. Expect \texttt{001: River}
+then \texttt{002: Hill}. If Python is absent, identify
+those same fields by tracing the CSV's quote boundaries.
+No extra file is created.
+\end{exercise}
+\begin{solution}
+Replace \texttt{row["caption"]} in the print call with
+\texttt{row["route"]}. The comma inside the Bridge caption
+does not advance the field index, so the route is River.
+\end{solution}
+
+\begin{exercise}{Read the withheld ID}
+\label{ex:24-withheld}
+For the practice fixture only, list IDs with the Boolean
+\texttt{false} share flag. Expect \texttt{002}.
+Keep the output on screen; nothing extra needs cleaning up.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+jq -r '.[] | select(.share == false) | .id' photos.json
+\end{terminal}
+Without jq, validate by inspecting the second object in the fixture.
+\end{solution}
+
+\begin{exercise}{Distinguish null from a number}
+\label{ex:24-types}
+Have jq print the type of each score. Expect the two
+quoted type names \texttt{"number"} and \texttt{"null"}.
+If jq is absent, identify the two types from the source.
+Do not write a file.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+jq '.[] | .score | type' photos.json
+\end{terminal}
+The program moves through each object, its score and then
+the type of that score. It does not convert \texttt{null} to 0.
+\end{solution}
+
+\paragraph{Cleanup.}
+Confirm \cmd|pwd| matches the disposable \texttt{utp24}
+directory in \cmd|"$practice"|. Remove only the three
+named files and decline any unexpected prompt. If you
+skipped jq, \texttt{review.json} may not exist.
+
+\begin{terminal}
+rm -i ./photos.csv ./photos.json ./review.json
+cd /tmp
+rmdir "$practice"
+\end{terminal}
+
+Inspect any unexpected leftover instead of forcing removal.
+If you started a separate \cmd|sh|, type \cmd|exit|.

@@ -1,0 +1,326 @@
+The volunteers who open the hall need the new rota and a
+one-page key handover. If you send loose files, someone may
+download one and miss the other. If you send a bundle, you
+need to know what's in it and how to tell whether the
+download matches what you sent. Those are separate tasks:
+packing, inspecting, restoring and comparing.
+
+\begin{objectives}
+\item Distinguish an archive from compression and from a backup plan.
+\item Create, list and restore a small, trusted archive without overwriting existing files.
+\item Compare SHA-256 digests and explain what a match does and does not establish.
+\end{objectives}
+\IndexCommand{tar}
+\IndexCommand{gzip}
+\IndexTerm{archive}
+\IndexTerm{checksum}
+
+\section{Pack named files together}
+Use a fresh directory for this exercise and a portable \cmd|sh|
+session. Run the first two commands separately and stop if either
+fails. These are deliberately synthetic documents: don't replace
+them with actual keys, key codes, names or personal contact details.
+
+\begin{terminal}
+practice=$(mktemp -d /tmp/utp23.XXXXXX)
+cd "$practice"
+mkdir handover
+printf '%s\n' 'Friday: early shift' > handover/rota.txt
+printf '%s\n' 'Return the practice key to the desk.' \
+  > handover/key-note.txt
+\end{terminal}
+
+An \FirstUse{archive} is a file containing a representation of
+other files and often their paths and metadata. In this example
+it holds two files and their parent directory. The tool is
+\cmd|tar|, and the new archive will be \texttt{handover.tar}.
+Use relative operands so that members can be restored beneath
+a directory of your choice.
+
+\begin{terminal}
+tar -cf handover.tar handover
+tar -tf handover.tar
+\end{terminal}
+
+In the first command, \cmd|-c| creates the archive; \cmd|-f|
+makes the following argument its filename. That name is not a
+source. The last operand, \texttt{handover}, is the source
+directory, and its contents are included. If \texttt{handover.tar}
+already exists, creation can overwrite it. In this freshly
+created directory the name is unused. On real data choose an
+unused destination outside the tree you are packing; putting
+the output inside the input tree risks collecting an unfinished
+archive or otherwise producing a misleading result.
+
+In the second command, \cmd|-t| lists members; it doesn't
+restore them. Expect \texttt{handover/} and the two file names
+beneath it, not necessarily in the same order on every system.
+Compare the inventory with what you meant to send. If an archive
+contains an entire directory rather than an explicit file list,
+hidden files may be present too. You cannot infer from the one
+directory operand that the resulting archive includes only the
+two visible files you remember seeing. A path like a saved
+settings file is enough reason to inspect before distributing.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-23/layers.tikz}
+\caption{Archiving groups names and contents; compression encodes the resulting bytes.}
+\label{fig:23-layers}
+\VisualDescription{Two files and their directory become one tar archive, and gzip can then encode that archive into one compressed file.}
+\end{figure}
+
+\section{Compress without replacing the archive}
+Compression represents a byte stream differently so it often
+takes fewer bytes to store or send. It doesn't make a member
+list, and it is not encryption. Here \cmd|gzip -c| writes
+compressed bytes to standard output and leaves the input file
+in place. Redirect the output to a fresh name. Don't write
+the result over the source or run the command if either of the
+two paths is not what you expect.
+
+\begin{terminal}
+gzip -c handover.tar > handover.tar.gz
+gzip -t handover.tar.gz
+printf 'status: %s\n' "$?"
+\end{terminal}
+
+\cmd|-t| asks gzip to test the compressed stream for integrity;
+success normally produces no text and status 0. It doesn't
+prove the contents are appropriate or restore correctly.
+Compression may shrink a tar archive of short text because
+the tar format has regular structure and padding. Some image
+and video formats are already compressed, so mixing them into
+an archive and compressing again may save little. Don't
+estimate the download size from an extension. Compare the
+actual sizes:
+
+\begin{terminal}
+wc -c handover.tar handover.tar.gz
+\end{terminal}
+
+\cmd|-c| orders \cmd|wc| to count bytes. Each line pairs the
+count with a filename, and a total line sums the two inputs.
+For judging which file to send, use the two individual
+counts rather than the total. A small size says nothing
+about whether the right files were packed.
+
+\begin{quicktable}{M{1.29in}Y}
+\toprule
+Operation & Question it answers \\
+\midrule
+\texttt{tar -tf} & What are the member names in this tar archive? \\
+\texttt{gzip -t} & Does the compressed stream pass gzip's integrity check? \\
+\texttt{wc -c} & How many bytes would I store or transfer for each version? \\
+SHA-256 & Does this byte sequence match a trusted fingerprint? \\
+Restore drill & Can I retrieve the files I meant to save? \\
+\bottomrule
+\end{quicktable}
+
+\section{Restore in a fresh destination}
+\label{sec:23-restore}
+Practice only on the archive you made here. Listing members
+helps catch an unexpected source or destination, but it is
+not proof that an archive from an unfamiliar sender is safe
+to extract. Potential trouble includes absolute paths, a
+\texttt{..} component, special files, links, multiple entries
+for the same path and very large decompressed data. Tools and
+versions handle these differently. Don't extract an unfamiliar
+archive merely because the visible names look ordinary, and
+never extract as an administrator for this exercise. A new
+destination helps prevent ordinary collisions; it is not a
+security boundary for untrusted content.
+
+First produce another plain archive from the compressed
+practice file. Use a distinct unused filename. With
+\cmd|gzip -dc|, \cmd|-d| selects decompression and \cmd|-c|
+keeps the compressed original while writing the result to
+standard output. Stop if the command fails; a shell can
+leave an empty or partial output file even after failure.
+Then compare the uncompressed bytes to the original.
+
+\begin{terminal}
+gzip -dc handover.tar.gz > restored.tar
+cmp handover.tar restored.tar
+tar -tf restored.tar
+\end{terminal}
+
+Expect the byte comparison to be silent (status 0) and the
+list to show the same members. This is a comparison of the
+exact plain archives, not a claim that creating a fresh tar
+at a different time will always produce identical bytes.
+Metadata, order and format choices can change even if
+the documents' text is unchanged.
+
+\begin{terminal}
+mkdir recovered
+tar -xf restored.tar -C recovered
+cmp handover/rota.txt recovered/handover/rota.txt
+cmp handover/key-note.txt recovered/handover/key-note.txt
+\end{terminal}
+
+Stop if \cmd|mkdir| fails. \cmd|-x| extracts; \cmd|-C|
+tells the tar implementations used here to change into the
+named directory before extracting. Because the member paths
+start with \texttt{handover/}, that directory appears
+\emph{inside} \texttt{recovered}. The original is still next
+to the archive. The two comparisons should return status 0.
+This is a restore drill: inspect the reconstructed files,
+not only the name of the archive or the size of its output.
+It checks these two file contents, not ownership, permissions
+or all possible metadata.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-23/restore.tikz}
+\caption{Extract beneath the fresh destination, then compare with the source.}
+\label{fig:23-restore}
+\VisualDescription{Original files remain under handover. An extracted second handover tree appears under recovered, making it possible to compare the two.}
+\end{figure}
+
+\section{Check the exact file you intend to transfer}
+A digest is a fixed-length fingerprint calculated from a
+byte sequence. SHA-256 writes 256 bits, conventionally shown
+as 64 hexadecimal characters. Matching digests provide strong
+evidence that two byte sequences are the same if you trust
+both the expected digest and the tool. A mismatch establishes
+that the previously fingerprinted bytes and the currently
+fingerprinted bytes differ, assuming the records used the
+same algorithm and are accurate. Neither comparison explains
+\emph{why} a change happened.
+
+Select the utility your system actually has. These commands
+show the file digest in differing formats. Use only one row,
+not one of each, for the exercises. \cmd|command -v| can
+show whether a named command is available; consult local
+manuals when names or options differ.
+
+\begin{quicktable}{M{1.15in}Y}
+\toprule
+Common tool & Command and reading \\
+\midrule
+GNU Coreutils & \texttt{sha256sum handover.tar.gz}; the hex digest precedes the filename. \\
+macOS Perl wrapper & \texttt{shasum -a 256 handover.tar.gz}; the algorithm option selects SHA-256. \\
+BSD alternatives & \texttt{sha256 -q handover.tar.gz} where available, or OpenBSD \texttt{sha256 -q} from its digest utility; consult the local manual. Quiet output shows the digest only. \\
+\bottomrule
+\end{quicktable}
+
+On a system with GNU Coreutils, make a mock second copy of
+the compressed archive and compare the digests:
+
+\begin{terminal}
+cp -i handover.tar.gz copy.tar.gz
+sha256sum handover.tar.gz copy.tar.gz
+\end{terminal}
+
+Other systems can run the chosen digest command separately on
+each file. The displayed filenames differ but the 64 hex
+digits match. The same output from two files on one disk says
+nothing about resilience to loss of that disk. If you attach
+a digest to a real delivery, the recipient should recalculate
+it after downloading the file and compare against the expected
+value. For adversarial tampering, an expected digest delivered
+through the same untrusted channel as the file does not
+authenticate either one.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-23/verify.tikz}
+\caption{Calculate both fingerprints over the same representation.}
+\label{fig:23-verify}
+\VisualDescription{One digest is made from the compressed file before transfer and one from the received compressed file. Compare the digests, not the file labels.}
+\end{figure}
+
+\begin{dialoguebox}{What did the check establish?}
+\Brian{The checksum matches. Does that mean the archive is safe to open?}
+\Stephen{It means the bytes match what the expected checksum describes.}
+\Brian{If the sender packed the wrong folder, the checksum could still match.}
+\Stephen{Yes. It doesn't know the intended contents.}
+\Brian{And if someone changes both the file and the checksum?}
+\Stephen{Matching them won't catch that. You need a trusted source for the expected value.}
+\Brian{So I'll verify both the source and the files I can actually restore.}
+\DialogueConclusion{A digest compares bytes, not intentions.}
+\end{dialoguebox}
+
+\begin{platformnote}{Linux, macOS and the BSDs}
+\texttt{tar} is widely available but its interface is not
+specified by POSIX; POSIX defines the \texttt{pax} utility.
+GNU tar and implementations used by macOS, FreeBSD, OpenBSD
+and NetBSD offer the basic create, list and extract modes.
+Do not assume that all versions accept GNU long options
+or preserve the same extended metadata. Gzip and SHA-256
+utility names and options are likewise outside these POSIX
+interfaces. Consult \texttt{man tar} and the applicable
+digest manual on the destination machine.
+\end{platformnote}
+
+\begin{furtherreading}
+\ReadingItem{GNU tar manual}{Creation, listing, extraction and security considerations}{https://www.gnu.org/software/tar/manual/}
+\ReadingItem{GNU Gzip manual}{Compression, standard output, decompression and integrity testing}{https://www.gnu.org/software/gzip/manual/}
+\ReadingItem{OpenBSD cksum manual}{The base-system digest utility and its alternate names}{https://man.openbsd.org/cksum}
+\end{furtherreading}
+
+\begin{takeaways}
+\item Archive, compression, authenticity and recoverability are different questions.
+\item Inspect the inventory, and practice extraction only with a trusted archive in a new destination.
+\item Verify the delivered bytes and rehearse restoring the contents.
+\end{takeaways}
+
+\begin{exercise}{Pack just the rota}
+\label{ex:23-rota}
+Use a new archive named \texttt{rota-only.tar}. The listing
+should contain exactly one member, \texttt{handover/rota.txt}.
+Leave it for the final cleanup.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+tar -cf rota-only.tar handover/rota.txt
+tar -tf rota-only.tar
+\end{terminal}
+There is no directory operand, so the note is not included.
+\end{solution}
+
+\begin{exercise}{Fingerprint a different representation}
+\label{ex:23-representation}
+Calculate SHA-256 for \texttt{handover.tar} and
+\texttt{handover.tar.gz}. Expect different digests even though
+decompression restored the tar's bytes. No output file is needed.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+sha256sum handover.tar handover.tar.gz
+\end{terminal}
+Use the equivalent digest command from the table where required.
+\end{solution}
+
+\begin{exercise}{Read the restored note}
+\label{ex:23-note}
+Using a path under \texttt{recovered}, print the handover note
+and compare it with its source. Expect the key desk instruction
+and a silent comparison. No additional cleanup is needed.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+cat recovered/handover/key-note.txt
+cmp handover/key-note.txt recovered/handover/key-note.txt
+\end{terminal}
+\end{solution}
+
+\paragraph{Cleanup.}
+Check \cmd|pwd| against \cmd|"$practice"| first. Only in this
+disposable \texttt{utp23} directory, remove the named files,
+decline unexpected prompts, then remove the empty directories.
+An absent optional exercise file produces a harmless diagnostic.
+
+\begin{terminal}
+rm -i ./handover/rota.txt ./handover/key-note.txt
+rm -i ./recovered/handover/rota.txt ./recovered/handover/key-note.txt
+rm -i ./handover.tar ./handover.tar.gz ./restored.tar ./copy.tar.gz
+rm -i ./rota-only.tar
+rmdir recovered/handover recovered handover
+cd /tmp
+rmdir "$practice"
+\end{terminal}
+
+Inspect any unexpected leftovers without switching to forced
+removal. If you started a separate \cmd|sh|, type \cmd|exit|.

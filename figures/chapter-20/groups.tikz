@@ -1,0 +1,7 @@
+\begin{tikzpicture}
+\node[utp node] (a) {Original\\Chess\\Maps\\Chess};
+\node[utp node,right=17mm of a] (b) {Sorted\\Chess\\Chess\\Maps};
+\node[utp node,right=17mm of b] (c) {Tally\\2 Chess\\1 Maps};
+\draw[utp arrow] (a)--node[above,font=\scriptsize] {\texttt{sort}} (b);
+\draw[utp arrow] (b)--node[above,font=\scriptsize] {\texttt{uniq -c}} (c);
+\end{tikzpicture}

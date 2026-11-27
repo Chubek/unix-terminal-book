@@ -1,0 +1,7 @@
+\begin{tikzpicture}
+\node[utp node] (a) {Step ladder\\item};
+\node[utp node,right=2mm of a,dashed] (t) {TAB};
+\node[utp node,right=2mm of t] (b) {Empty\\shelf};
+\node[utp node,right=2mm of b,dashed] (u) {TAB};
+\node[utp node,right=2mm of u] (c) {out\\state};
+\end{tikzpicture}

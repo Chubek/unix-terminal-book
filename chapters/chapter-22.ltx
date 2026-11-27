@@ -1,0 +1,348 @@
+The repair cafe needs a new sign. The previous version has the correct
+accessibility information and the wrong closing time. You want to
+change one thing, not accidentally bury yesterday's decision about the
+entrance. Transformations make the candidate; comparisons establish
+whether that candidate is ready to leave the practice folder.
+
+\begin{objectives}
+\item Replace or remove text in a stream without modifying the original.
+\item Read a unified diff and distinguish differences from command errors.
+\item Create, review and verify a separate candidate before distributing it.
+\end{objectives}
+\IndexCommand{sed}
+\IndexCommand{tr}
+\IndexCommand{diff}
+\IndexTerm{preview before saving}
+
+\section{Make a trial change}
+Use \cmd|sh| for the practice syntax. Run the first two lines
+separately and stop if either fails. The fixture includes an access
+note that must survive the change.
+
+\begin{terminal}
+practice=$(mktemp -d /tmp/utp22.XXXXXX)
+cd "$practice"
+printf '%s\n' 'Repair cafe' 'Close: 5' 'Accessible entrance' \
+  'Ask about Bay 5' > sign.txt
+\end{terminal}
+
+\cmd|sed| reads input, applies editing instructions and by
+default prints the resulting lines. Applying an edit to a
+stream is not the same as saving an edit to a file. The
+following commands change what goes to standard output, with
+no redirection and no special in-place option.
+
+\begin{terminal}
+sed 's/5/6/' sign.txt
+\end{terminal}
+\begin{terminaloutput}
+Repair cafe
+Close: 6
+Accessible entrance
+Ask about Bay 6
+\end{terminaloutput}
+
+The command beginning with \texttt{s} is a substitution.
+The slash after \texttt{s} separates its parts: first is
+the search pattern, then the replacement, and the final slash
+ends the replacement. Each line with a match loses its
+first match to the replacement. That still changes two
+lines. The utility interpreted the rule exactly as written;
+our rule forgot to say which 5.
+
+\begin{terminal}
+sed 's/^Close: 5$/Close: 6/' sign.txt
+cat sign.txt
+\end{terminal}
+
+The anchors make the whole old closing line the target.
+The first command shows a new closing time and the old bay
+number. The second shows the unchanged original. If the
+original instead said \texttt{Close: 5 pm}, the new rule would
+leave it alone. Treat an unchanged candidate as a reason
+to inspect the file rather than weaken the rule blindly:
+the apparent discrepancy could be whitespace, punctuation,
+or the wrong working directory. A substitution that doesn't
+match usually completes successfully.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-22/substitute.tikz}
+\caption{The closing line matches the anchored rule; the bay line does not.}
+\label{fig:22-substitute}
+\VisualDescription{Close: 5 passes the whole-line test and becomes Close: 6. Ask about Bay 5 fails the test and remains unchanged.}
+\end{figure}
+
+\section{Distinguish a match from its replacement}
+Within the pattern of a substitution, sed normally uses
+basic regular expressions. In the replacement part, an
+unescaped ampersand means the entire matched text. This is
+handy when the matched text should remain visible with a
+new label. Appending \texttt{g} after the closing slash
+changes each non-overlapping match in the current line, not
+just the first. It does not mean recurse through files.
+
+\begin{terminal}
+printf '%s\n' 'Bay 5, Gate 5' | sed 's/5/[&]/'
+printf '%s\n' 'Bay 5, Gate 5' | sed 's/5/[&]/g'
+\end{terminal}
+
+Expect \texttt{Bay [5], Gate 5} and then
+\texttt{Bay [5], Gate [5]}. Here the brackets in the
+replacement are ordinary characters. In the search pattern,
+they would usually introduce a character choice. If you use
+literal slash or ampersand in a replacement, deal with the
+substitution grammar as well as the shell grammar. Don't
+paste an arbitrary clipboard string into the middle of an
+editing rule and assume it will be read as literal text.
+
+\begin{terminal}
+sed -n '/^Close:/p' sign.txt
+\end{terminal}
+
+\cmd|-n| stops the default printing. The expression between
+the first two slashes is an address that selects matching
+lines, and \texttt{p} prints those lines explicitly. The
+result is just \texttt{Close: 5}. Without \cmd|-n| the
+explicitly printed line would be printed in addition to the
+default print. A selector like this does not replace text,
+and the editing address is not a shell filename pattern.
+
+\begin{quicktable}{M{1.24in}Y}
+\toprule
+Construction & Effect in these examples \\
+\midrule
+\texttt{s/old/new/} & Replace the first match in each input line. \\
+\texttt{s/old/new/g} & Replace each non-overlapping match in each input line. \\
+\texttt{\&} in replacement & Insert the portion matched by the pattern. \\
+\texttt{-n} with \texttt{/pattern/p} & Print only lines selected by the address; no substitution required. \\
+\bottomrule
+\end{quicktable}
+
+\section{Translate characters, not words}
+Use \cmd|tr| when the operation is on individual characters.
+It reads standard input rather than taking a file operand.
+Two sets specify the source characters and their corresponding
+replacements. An ASCII fixture can use the standard character
+classes to translate uppercase letters to lowercase in the
+C locale.
+
+\begin{terminal}
+printf '%s\n' 'GATE ACCESS' |
+  LC_ALL=C tr '[:upper:]' '[:lower:]'
+\end{terminal}
+
+Expect \texttt{gate access}. The single quotes preserve the
+arguments for \cmd|tr| to read; these are its own sets, not
+grep expressions. When you use a range or class, think about
+which locale applies and whether your implementation handles
+the intended characters. Do not use this C-locale recipe as
+a general Unicode case converter for names. It gives a
+predictable ASCII example, not a language-aware spelling rule.
+
+\begin{terminal}
+printf '%s\n' 'A--B----C' | tr -s '-'
+printf '%s\n' 'rooms 5 and 6' | tr -d '0123456789'
+\end{terminal}
+
+The first command squeezes adjacent copies of a listed
+character to one. A bare hyphen operand is not an option
+here; it denotes the hyphen to squeeze. The result is
+\texttt{A-B-C}. The second deletes all occurrences of the
+listed digits; it leaves the spaces, even where there
+are now two adjacent spaces. These transformations remove
+information. In a public label it might be fine to collapse
+accidental repeated punctuation; in an identifier, the
+same change might turn distinct codes into the same code.
+First check why the character is there.
+
+\section{Compare before you keep}
+\label{sec:22-diff}
+Use a distinct new filename for the candidate. The shell
+opens the file named after \cmd|>| before sed reads the
+input. If you accidentally use \texttt{sign.txt} on both
+sides, it can be truncated before sed reads anything.
+Even a different-looking name might refer to the same file
+through a link. In this fresh practice directory the new
+name is unused; on real files, check that you have a truly
+new destination and a backup before you write.
+
+\begin{terminal}
+sed 's/^Close: 5$/Close: 6/' sign.txt > sign-candidate.txt
+diff -u sign.txt sign-candidate.txt
+printf 'status: %s\n' "$?"
+\end{terminal}
+
+The \cmd|-u| option requests unified format: additions and
+deletions are shown in one view along with context lines.
+The first operand is your old version; the second is the
+candidate. Here is the body of the difference; the omitted
+file headers normally include paths and may include timestamps:
+
+\begin{terminaloutput}
+@@ -1,4 +1,4 @@
+ Repair cafe
+-Close: 5
++Close: 6
+ Accessible entrance
+ Ask about Bay 5
+\end{terminaloutput}
+
+A hunk is one contiguous group of changes and the surrounding
+context. The marker line says there are four lines starting
+at line 1 in the old file and four starting at line 1 in
+the new file. A leading minus marks a line removed from
+the old version; a leading plus marks an addition in the
+candidate. A leading space marks context, unchanged around
+the edit. None of those leading markers is in the actual
+sign text. The sign's access note and bay number were printed
+precisely so you can see that they stayed in place.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-22/hunk.tikz}
+\caption{Read a changed line alongside its unchanged neighbors.}
+\label{fig:22-hunk}
+\VisualDescription{Old and new closing lines are marked with minus and plus respectively. A space marks the unchanged entrance note.}
+\end{figure}
+
+\begin{quicktable}{M{1.25in}Y}
+\toprule
+Exit status & Reading for diff \\
+\midrule
+0 & No differences found. Check the transformation if a change was expected. \\
+1 & Differences found. Review whether they match your intent. \\
+Greater than 1 & The comparison encountered an error. Read standard error and check both input paths. \\
+\bottomrule
+\end{quicktable}
+
+Here the status is 1 because the files differ. Not all
+nonzero statuses represent failures: in a script that is
+supposed to find a change, this one can be the desired
+result. Conversely, an identical file returns zero even
+if the change was essential. For comparing exact bytes
+without asking which lines changed, use \cmd|cmp| as in
+Chapter~\ref{ch:7}. A unified diff is primarily a review of
+changes you can read, not a method for deciding all kinds
+of equivalence.
+
+\begin{terminal}
+diff -u sign.txt sign.txt
+printf 'status: %s\n' "$?"
+\end{terminal}
+
+The comparison produces nothing and its status is zero.
+To turn an approved candidate into a distribution copy,
+make an explicitly named new file and compare it with what
+you approved. Keep the original and the candidate in this
+exercise; making a third copy is for practicing the
+boundary where a reviewed version becomes a deliverable.
+
+\begin{terminal}
+cp -i sign-candidate.txt sign-for-print.txt
+diff -u sign-candidate.txt sign-for-print.txt
+\end{terminal}
+
+\cmd|cp -i| asks before overwriting an existing destination;
+decline if you weren't expecting the name to exist. The
+second command should show no differences. If you need to
+undo a rejected candidate, leave the original alone and
+remove only the candidate after verifying the path. If
+the original has already been overwritten, an editor's undo
+buffer or a backup might help, but a shell redirection has
+no built-in undo.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-22/review.tikz}
+\caption{A separate output file is a place to stop and inspect before publication.}
+\label{fig:22-review}
+\VisualDescription{An arrow runs from the original to a candidate, then through a review decision to a print copy. The original remains separate.}
+\end{figure}
+
+\begin{dialoguebox}{The command worked, but did the edit?}
+\Brian{Diff returned 1. Does that mean my file is broken?}
+\Stephen{No, 1 means the two contents differ.}
+\Brian{But if I ask for an edit and see no difference, diff returns zero.}
+\Stephen{Right. Zero answers its question, not whether your edit succeeded.}
+\Brian{And the first edit changed the bay. That would also return 1.}
+\Stephen{Exactly. Read the changes; the status doesn't say they were intended.}
+\Brian{I'll let the status tell me where to look, not what to approve.}
+\DialogueConclusion{Review the differences, not just the status.}
+\end{dialoguebox}
+
+\begin{platformnote}{GNU and BSD implementations}
+The examples use streaming edits. Do not copy a recipe with
+\texttt{sed -i} into work you care about: in-place editing
+is not a POSIX option, and GNU and BSD implementations differ
+in the way the backup suffix is supplied. Consult the local
+\texttt{man sed}, especially if switching between Linux and
+macOS, FreeBSD, OpenBSD or NetBSD. Keep in-place edits out of
+the preview phase on any system.
+\end{platformnote}
+
+\begin{furtherreading}
+\ReadingItem{POSIX sed}{The substitution command, addresses and stream output}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/sed.html}
+\ReadingItem{POSIX tr}{Translation, deletion and squeezing}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/tr.html}
+\ReadingItem{POSIX diff}{Unified format and exit status}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/diff.html}
+\end{furtherreading}
+
+\begin{takeaways}
+\item Make a transform narrow enough to protect unrelated text.
+\item Keep the source untouched while you create a candidate.
+\item Read the diff and verify the final copy as its own step.
+\end{takeaways}
+
+\begin{exercise}{Keep the bay number}
+\label{ex:22-bay}
+Preview a closing time of 7, leaving the bay at 5. Expect four
+output lines, with only the closing line changed. Do not redirect
+this preview; there is nothing new to clean up.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+sed 's/^Close: 5$/Close: 7/' sign.txt
+\end{terminal}
+The line about the bay should still contain 5.
+\end{solution}
+
+\begin{exercise}{Practice a deletion on synthetic text}
+\label{ex:22-delete}
+Remove colons from the input \texttt{A:B:C}. Expect
+\texttt{ABC}. Use a pipeline and no output file.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+printf '%s\n' 'A:B:C' | tr -d ':'
+\end{terminal}
+With no saved output, no exercise cleanup is needed.
+\end{solution}
+
+\begin{exercise}{Turn the comparison around}
+\label{ex:22-reverse}
+Compare the saved candidate to the original, in that order.
+Expect the signs on the two changed closing lines to be
+reversed compared with the earlier diff. Keep both files for
+the chapter cleanup.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+diff -u sign-candidate.txt sign.txt
+\end{terminal}
+Expect a removal of the 6 line and an addition of the 5 line.
+\end{solution}
+
+\paragraph{Cleanup.}
+Verify \cmd|pwd| against the path stored in \cmd|"$practice"|.
+In that disposable \texttt{utp22} directory only, remove
+the named files; decline any prompt you weren't expecting.
+Missing-file errors are harmless if you skipped a step.
+
+\begin{terminal}
+rm -i ./sign.txt ./sign-candidate.txt ./sign-for-print.txt
+cd /tmp
+rmdir "$practice"
+\end{terminal}
+
+Inspect any unexpected leftover rather than forcing directory
+removal. If you started a separate \cmd|sh|, type \cmd|exit|.

@@ -1,0 +1,385 @@
+The community garden meets this week. You know someone wrote down when
+the gate opens, but your laptop contains a season of notes and none of
+the filenames contains the word ``gate.'' The command you want is not
+one that finds files \emph{named} like a gate. It is one that reads
+selected files and shows the lines that say something about a gate.
+
+\begin{objectives}
+\item Search notes for literal words and phrases without editing the files.
+\item Choose between a fixed string, a basic regular expression and an
+      extended regular expression.
+\item Tell the difference between a match, an empty result and a failed search.
+\end{objectives}
+\IndexCommand{grep}
+\IndexTerm{regular expression}
+
+\section{Start with the words you remember}
+\label{sec:19-literal}
+Use a disposable directory for all the examples. If you use Fish or
+the C shell family, enter \cmd|sh| before the setup; the listings use
+portable shell syntax. Keep this shell open until cleanup. Run the
+lines separately, and stop if the first or second line fails: none
+of the paths below should ever resolve inside a real notes folder.
+The first line stores the directory name returned by \cmd|mktemp|;
+\cmd|-d| asks for a directory rather than a file. The template's six
+Xs stand for a generated suffix.
+
+\begin{terminal}
+practice=$(mktemp -d /tmp/utp19.XXXXXX)
+cd "$practice"
+printf '%s\n' 'Gate opens at 9' 'Bring gloves' \
+  'Update: north gate opens at 10' \
+  'Reminder: tea at 11' > meeting.txt
+printf '%s\n' 'gate code changed' 'Bring tea bags' \
+  'Buy stakes [urgent]' 'Repaint gatepost' > errands.txt
+\end{terminal}
+
+The backslash at the end of a physical line makes it continue on
+the next one; it is not a backslash to insert in the note. The
+\cmd|printf| format writes one argument per line. Use this fixture
+rather than a private diary, a file of passwords, or a directory
+that includes cached messages. A search can put information on
+screen that you did not remember storing.
+
+\begin{terminal}
+grep -n -F 'gate opens' meeting.txt
+\end{terminal}
+\begin{terminaloutput}
+3:Update: north gate opens at 10
+\end{terminaloutput}
+
+Put the options first, the pattern next, and the filenames last.
+\cmd|-F| means fixed strings: the pattern is searched for as written.
+\cmd|-n| prefixes each selected line with its number in the file;
+the first line is 1. The number and colon are a label on the
+output, not characters that \cmd|grep| added to the file. A match
+need not occupy the whole line; the result contains the entire
+line regardless of where the phrase occurs. The single quotes tell
+the shell to pass the space as part of one argument. They are not
+characters that must be present in the notes.
+
+The result has missed the first line, which starts with uppercase
+\texttt{G}. If you don't remember how something was capitalized,
+add \cmd|-i| to ignore case when comparing characters. Each
+filename after the pattern is another input. With more than one
+input file, the output includes the filename before each line
+number. A one-file search isn't missing information just because
+it omits that prefix.
+
+\begin{terminal}
+grep -n -i -F 'gate' meeting.txt errands.txt
+\end{terminal}
+\begin{terminaloutput}
+meeting.txt:1:Gate opens at 9
+meeting.txt:3:Update: north gate opens at 10
+errands.txt:1:gate code changed
+errands.txt:4:Repaint gatepost
+\end{terminaloutput}
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-19/search.tikz}
+\caption{Selecting a line is not the same as extracting the matching phrase.}
+\label{fig:19-search}
+\VisualDescription{The pattern is compared with each input line; both matching lines leave the command intact, and the unselected line does not.}
+\end{figure}
+
+The fourth result may look like a mistake if you meant the noun
+``gate,'' not the label ``gatepost.'' The command can't infer
+that distinction. It found the character sequence you specified.
+Before changing the search, identify which result you would keep
+and which you would throw out by hand. The difference suggests
+what to tell the utility next. For example, if you care about
+meeting times rather than equipment, refine back to the longer
+phrase. If you are looking for any mention of the noun, including
+next to a comma or at the end of a line, neither a longer phrase
+nor adding a single space is a general solution.
+
+\section{Specify a shape instead of a phrase}
+\label{sec:19-regex}
+Suppose the notes mix reminders and updates and you care only about
+lines labeled as updates. Searching for \texttt{Update:} anywhere
+would also accept a quotation containing that phrase. A
+\FirstUse{regular expression} lets you say where a match belongs
+as well as what characters it contains. With neither \cmd|-F| nor
+\cmd|-E|, \cmd|grep| interprets its pattern as a basic regular
+expression, often abbreviated BRE. Start with this one:
+
+\begin{terminal}
+grep -n '^Update:' meeting.txt
+\end{terminal}
+
+\noindent
+You should see only line 3. The caret at the start is an
+\FirstUse{anchor}: it tests the start of the line rather than
+matching a printed caret. A dollar sign at the end of a pattern
+tests the end of the line. The following search selects lines
+that end with a digit. The two square brackets enclose a
+one-character choice. The inner \texttt{[:digit:]} is the name of
+a standard character class, not a second pattern of its own.
+
+\begin{terminal}
+grep -n '[[:digit:]]$' meeting.txt
+\end{terminal}
+
+This matches lines 1, 3 and 4. It is not a check that there is a
+valid time: an arbitrary note ending with the digit 7 also matches.
+If your editor leaves trailing spaces, a line that looks like it
+ends in a digit may fail this test. A match is evidence that a
+specific pattern succeeded, not that an interpretation is true.
+Notice the distinction between an anchored expression and the
+\cmd|-x| option, which requires the whole line to match the chosen
+pattern. With \cmd|-F -x| the whole line must equal the literal
+phrase; that combination requires no regular expression at all.
+
+\begin{quicktable}{M{1.31in}Y}
+\toprule
+Pattern & Meaning in BRE and ERE here \\
+\midrule
+\texttt{\textasciicircum Update:} & The first seven characters must be the label \texttt{Update:}. \\
+\texttt{[[:digit:]]\$} & There must be a digit immediately before the end of the line. \\
+. & One character, not necessarily a period. Under \texttt{-F} it is a period. \\
+ba* & The letter \texttt{b}, followed by zero or more occurrences of \texttt{a}. \\
+\bottomrule
+\end{quicktable}
+
+The star is especially deceptive. In a shell glob (Chapter~\ref{ch:14})
+a star can stand for a stretch of filename by itself. In a
+regular expression it repeats the preceding expression. To match
+a stretch of arbitrary characters in a regular expression, put it
+after the dot: \cmd|.*|. Unless you need the location or shape of
+the text around a phrase, you don't need to add either symbol:
+\cmd|grep| already looks for the phrase within each line. Resist
+the urge to add syntax just because you saw it in another search.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-19/parsers.tikz}
+\caption{Quotes protect the pattern; the option selects who interprets it.}
+\label{fig:19-parsers}
+\VisualDescription{The shell passes the quoted bracket expression as one argument. Grep receives the brackets and treats them literally with its fixed-string option.}
+\end{figure}
+
+\begin{terminal}
+grep -n -F '[urgent]' errands.txt
+grep -n '[urgent]' errands.txt
+\end{terminal}
+
+The first command finds only the line about stakes. The second
+finds all four lines, each of which contains at least one of the
+letters between the brackets. This is a useful diagnostic:
+switch to \cmd|-F| as soon as a search has surprising extra
+matches and you had intended literal punctuation. Quoting alone
+protects text from the shell, not from the utility's pattern
+language (Figure~\ref{fig:19-parsers}).
+
+\section{Choose a pattern language deliberately}
+Extended regular expressions, abbreviated ERE, make several
+common choices easier to write. Use \cmd|-E| for this grammar.
+The vertical bar inside the quoted argument means ``or'' to
+\cmd|grep|, not a pipeline to the shell. Parentheses group the
+alternatives so that the anchor applies to both of them.
+
+\begin{terminal}
+grep -n -E '^(Update|Reminder):' meeting.txt
+\end{terminal}
+
+This selects lines 3 and 4. Without the parentheses,
+\cmd+^Update|Reminder:+ means a line beginning with
+\texttt{Update}, or a line containing \texttt{Reminder:} anywhere.
+Moving a colon outside a group makes it apply after either
+alternative. Test your expression against a deliberately bad
+near-match, not only against the line you hope to find.
+For simple independent phrases, repeat \cmd|-e| to supply more
+than one pattern. The following example stays in fixed-string
+mode and accepts a line containing either of the two phrases:
+
+\begin{terminal}
+grep -n -F -e 'gate opens' -e 'tea' meeting.txt errands.txt
+\end{terminal}
+
+There should be three lines: the update, the reminder and the
+errand for tea bags. Each \cmd|-e| has its own pattern operand.
+This spelling is also useful for a pattern that starts with a
+hyphen, since \cmd|-e| makes explicit that its operand is the
+pattern, not another option.
+
+\begin{quicktable}{M{1.04in}Y}
+\toprule
+Switch & Use it when \ldots \\
+\midrule
+\texttt{-F} & You have literal text copied from a note or a message. \\
+none & You only need basic regular expressions, such as a line-start anchor. \\
+\texttt{-E} & You need alternatives, grouping or other extended syntax such as
+  \texttt{+} for one or more repetitions. \\
+\texttt{-c} & You need a count of matched lines per file, not a count of occurrences. \\
+\texttt{-l} & You need the names of the files with matches, not the lines themselves. \\
+\bottomrule
+\end{quicktable}
+
+\begin{dialoguebox}{The quotes did their job}
+\Brian{I quoted the brackets, and I still got too many matches. What did I protect?}
+\Stephen{You protected the brackets from the shell. I should have said which program the quotes affect.}
+\Brian{Then the same brackets arrive intact at \texttt{grep}, which reads them its own way?}
+\Stephen{Right. By default, brackets introduce a choice of characters.}
+\Brian{But this note really has brackets. I don't want a choice.}
+\Stephen{Add \texttt{-F}. Now the choice is made before the search: the pattern is literal.}
+\Brian{So the quotes still belong there, even with \texttt{-F}?}
+\Stephen{Yes. They get your literal pattern to the program in the first place.}
+\DialogueConclusion{Quotes protect the argument; options set its meaning.}
+\end{dialoguebox}
+
+\section{Make silence explain itself}
+Standard output alone is not enough to decide whether the search
+worked. \cmd|grep| has three classes of exit status: zero means
+one or more selected lines, 1 means no selected lines, and a
+value greater than 1 means an error. In GNU grep, the usual
+error status is 2. An error can happen after a match has already
+been printed from an earlier file; visible output doesn't rule
+out partial failure. Don't discard diagnostic output until you
+understand what you are discarding.
+
+\begin{terminal}
+grep -F 'snow' meeting.txt
+printf 'status: %s\n' "$?"
+grep -F 'snow' absent.txt
+printf 'status: %s\n' "$?"
+\end{terminal}
+
+\noindent
+The first command prints no matching lines and its status is 1.
+The second also prints no matching lines, but it should report
+that the named file could not be opened, and its status is
+greater than 1. Diagnostic wording varies. \cmd|$?| supplies the
+status of the command that just finished; read it immediately.
+Even \cmd|pwd| run in between would replace the value. Don't
+use the quiet option \cmd|-q| as a complete file-read check:
+a successful match may cause a zero status even if an error
+also occurred. A pipeline such as \cmd+grep -F 'snow' meeting.txt | wc -l+
+usually reports the status of the last command in a portable
+shell, not \cmd|grep|'s, as in Chapter~\ref{ch:17}.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-19/status.tikz}
+\caption{A search that found nothing is different from a search that could not run.}
+\label{fig:19-status}
+\VisualDescription{Three boxes distinguish match, no match and error by exit status even when standard output is empty or incomplete.}
+\end{figure}
+
+\section{A repeatable notes search}
+Use a narrow list of files first. A name pattern on the command
+line can extend the search to visible text notes once you have
+checked which paths it expands to:
+
+\begin{terminal}
+printf '%s\n' ./*.txt
+grep -l -i -F 'bring' ./*.txt
+grep -n -i -F 'bring' ./*.txt
+\end{terminal}
+
+Both files should appear in the name-only output. In the last
+command, look for gloves in the meeting file and tea bags in
+the errands. The unquoted \cmd|./*.txt| is a shell glob, not a
+\cmd|grep| pattern. The shell matches names before invoking the
+program, and the \texttt{./} prefix keeps a leading hyphen in a
+filename from looking like an option. This example does not
+search subdirectories or hidden files. If the preview shows the
+pattern unchanged or the shell complains it couldn't match
+anything, check the working directory instead of assuming the
+notes are empty. Files with a \texttt{.txt} suffix can still be
+binary or have an encoding unsuitable for the current locale.
+
+What about \cmd|grep -R|, often seen in recipes? Recursive
+options and their rules for symbolic links are outside the
+portable examples here. Qualify the tree carefully before using
+them; a home directory can contain program caches, hidden
+settings and mounts unrelated to the task. Searching explicitly
+selected plain text is easier to check and less likely to
+surface unrelated private information. Case folding and
+character classes can depend on the locale, especially outside
+ASCII. Accents are not necessarily ignored by \cmd|-i|, and
+two visually identical words can be stored with different
+Unicode sequences (Chapter~\ref{ch:18}). Try a distinctive
+ASCII part of the phrase before drawing conclusions.
+
+\begin{platformnote}{Linux, macOS and the BSDs}
+The examples use options specified by POSIX and portable BRE or
+ERE syntax, not GNU-only extensions such as \texttt{-P} for a
+different regular expression language. GNU grep is common on
+Linux, while macOS, FreeBSD, OpenBSD and NetBSD ship their own
+base-system utilities. Check \texttt{man grep} on the machine
+running the search, particularly for recursion, context lines,
+binary inputs and color. Steps here were tested on Linux only.
+\end{platformnote}
+
+\begin{furtherreading}
+\ReadingItem{POSIX grep}{Options and the distinction between an empty selection and an error}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/grep.html}
+\ReadingItem{POSIX regular expressions}{Rules for basic and extended expressions and the effect of locales}{https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/V1_chap09.html}
+\end{furtherreading}
+
+\begin{takeaways}
+\item Use \texttt{-F} first for words you can remember or copy literally.
+\item Know which parser sees each symbol: the shell handles the filename glob, then grep handles the content pattern.
+\item Inspect the search scope, output and status before acting on the result.
+\end{takeaways}
+
+\begin{exercise}{Find out who is bringing what}
+\label{ex:19-bring}
+Search both files for \texttt{Bring}, showing filenames and line
+numbers. Expect two lines, one from each file. This is a read-only
+exercise with no files to clean up.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+grep -n -F 'Bring' meeting.txt errands.txt
+\end{terminal}
+Look for \texttt{meeting.txt:2} and \texttt{errands.txt:2}.
+\end{solution}
+
+\begin{exercise}{Pin down the whole line}
+\label{ex:19-whole}
+Select only a line that says exactly \texttt{Bring gloves}.
+Expect one result. Repeat with just \texttt{Bring} as the
+pattern and confirm that the shorter pattern selects nothing.
+There is no new output file to remove.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+grep -F -x 'Bring gloves' meeting.txt
+grep -F -x 'Bring' meeting.txt
+printf 'status: %s\n' "$?"
+\end{terminal}
+The second search prints nothing; its status is 1.
+\end{solution}
+
+\begin{exercise}{Try an intentionally wrong anchor}
+\label{ex:19-anchor}
+Search for the label \texttt{Reminder:} at the start of a line.
+Then temporarily move your anchor to the end of the pattern.
+Expect one match in the first test and none in the second.
+Both searches are read-only; use the chapter cleanup afterwards.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+grep -n '^Reminder:' meeting.txt
+grep -n 'Reminder:$' meeting.txt
+\end{terminal}
+The first prints line 4. In the second, the reminder label
+would have to end the line; instead, there is a message after it.
+\end{solution}
+
+\paragraph{Cleanup.}
+Run \cmd|pwd| and compare it with \cmd+printf '%s\n' "$practice"+.
+Only if both name the chapter's disposable directory, remove the
+two practice files. \cmd|-i| asks before each removal; decline
+anything you do not recognize. An unexpected leftover makes
+\cmd|rmdir| fail harmlessly, so inspect it rather than switching
+to recursive removal. If you started a separate \cmd|sh|, type
+\cmd|exit| after cleanup to return to your usual shell.
+
+\begin{terminal}
+rm -i ./meeting.txt ./errands.txt
+cd /tmp
+rmdir "$practice"
+\end{terminal}

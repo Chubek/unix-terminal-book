@@ -1,0 +1,8 @@
+\begin{tikzpicture}
+\node[utp node] (a) at (0,0.6) {Hand saw: out};
+\node[utp node] (b) at (0,-0.6) {Out bin: in};
+\node[utp node] (y) at (6,0.6) {Hand saw};
+\node[utp node] (n) at (6,-0.6) {No output};
+\draw[utp arrow] (a)--node[above,font=\small] {State equals out} (y);
+\draw[utp arrow,dashed] (b)--node[above,font=\small] {State does not equal out} (n);
+\end{tikzpicture}

@@ -1,0 +1,7 @@
+\begin{tikzpicture}
+\node[utp node] (a) at (-2.2,1.2) {States, line 2\\out};
+\node[utp node] (b) at (2.2,1.2) {Items, line 2\\Hand saw};
+\node[utp node] (c) at (0,-0.4) {Output, line 2\\out \quad [TAB] \quad Hand saw};
+\draw[utp arrow] (a)--(c);
+\draw[utp arrow] (b)--(c);
+\end{tikzpicture}

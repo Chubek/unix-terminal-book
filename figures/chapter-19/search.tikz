@@ -1,0 +1,11 @@
+\begin{tikzpicture}
+\node[utp node] (a) at (0,1.1) {Gate opens at 9};
+\node[utp node] (b) at (0,0) {Bring gloves};
+\node[utp node] (c) at (0,-1.1) {North gate opens at 10};
+\node[utp node] (yes) at (5.5,1.1) {Keep whole line};
+\node[utp node] (no) at (5.5,0) {No output};
+\node[utp node] (yes2) at (5.5,-1.1) {Keep whole line};
+\draw[utp arrow] (a)--node[above,font=\scriptsize] {matches gate} (yes);
+\draw[utp arrow,dashed] (b)--node[above,font=\scriptsize] {no match} (no);
+\draw[utp arrow] (c)--node[above,font=\scriptsize] {matches gate} (yes2);
+\end{tikzpicture}

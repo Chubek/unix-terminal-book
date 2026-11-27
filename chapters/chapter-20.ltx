@@ -1,0 +1,363 @@
+The last page of a library suggestion box is a list of requested
+activities. There is no tally. Chess appears at the top, near the
+bottom and in the middle, and the case varies in the handwritten
+original. Turning the list into a tally takes two decisions before
+it takes two commands: what counts as the same suggestion, and what
+order will make the result useful?
+
+\begin{objectives}
+\item Separate whole-line sorting, numerical sorting, and adjacent counting.
+\item Choose an explicit locale for reproducible output when appropriate.
+\item Check ties, malformed numbers and duplicates before trusting a tally.
+\end{objectives}
+\IndexCommand{sort}
+\IndexCommand{uniq}
+\IndexTerm{locale}
+
+\section{Bring equal lines together}
+\label{sec:20-adjacent}
+If needed, enter \cmd|sh| for the setup. Run the first two lines
+separately and stop if either fails. Work only in this new temporary
+directory until chapter cleanup. The first file represents six
+suggestions already transcribed using consistent spelling; the
+second is a separate list of numbers written on raffle tickets.
+
+\begin{terminal}
+practice=$(mktemp -d /tmp/utp20.XXXXXX)
+cd "$practice"
+printf '%s\n' Chess Knitting Chess Chess Maps Knitting > votes.txt
+printf '%s\n' 10 2 1 20 02 > tickets.txt
+\end{terminal}
+
+Try \cmd|uniq| alone before using it in a pipeline. With \cmd|-c|
+it writes a count at the start of each output line. Leading spaces
+are just padding; align your attention on the number and the
+suggestion beside it.
+
+\begin{terminal}
+uniq -c votes.txt
+\end{terminal}
+\begin{terminaloutput}
+      1 Chess
+      1 Knitting
+      2 Chess
+      1 Maps
+      1 Knitting
+\end{terminaloutput}
+
+Six votes went in, but Chess still appears in two places. \cmd|uniq|
+looks for runs of equal adjacent lines: sections of the input
+in which the same line appears without a break. It does not
+maintain a running list of everything it has seen. That design is
+useful if you need to preserve the order in which things
+happened. Consider a list of room changes: Room A, Room A, Room B,
+Room A. Collapsing adjacent entries leaves A, B, A, correctly
+preserving a return to Room A. Sorting that input first would
+erase the information that someone went back.
+
+For the vote count, sequence isn't important, so sort the lines
+first. Run \cmd|sort| on its own and check the intermediate
+output. It writes to standard output rather than changing the file.
+
+\begin{terminal}
+LC_ALL=C sort votes.txt
+\end{terminal}
+\begin{terminaloutput}
+Chess
+Chess
+Chess
+Knitting
+Knitting
+Maps
+\end{terminaloutput}
+
+Now pipe the same result to \cmd|uniq -c|, which reads standard
+input since it wasn't given a filename. The order of operations
+is the point: the first command makes complete groups, the
+second counts those groups.
+
+\begin{terminal}
+LC_ALL=C sort votes.txt | LC_ALL=C uniq -c
+\end{terminal}
+\begin{terminaloutput}
+      3 Chess
+      2 Knitting
+      1 Maps
+\end{terminaloutput}
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-20/groups.tikz}
+\caption{Sorting makes separated duplicates adjacent before counting.}
+\label{fig:20-groups}
+\VisualDescription{An abbreviated stream shows Chess, Maps, Chess becoming Chess, Chess, Maps after sorting. Counting reduces those two distinct runs to 2 Chess and 1 Maps.}
+\end{figure}
+
+Before relying on this count, ask what a line represents. If a
+single vote can include two suggestions on one line, this pipeline
+counts that pair as a separate choice. If the list contains a
+header, it counts the header as a vote. If an entry has two
+spaces between words instead of one, character-for-character
+comparison in the C locale treats it as a separate line. A tool
+can make an exact count of an untidy input. That is very
+different from making the count you meant.
+
+\section{Alphabetical order is a policy}
+The prefix \cmd|LC_ALL=C| sets the locale for the command that
+follows it. A \FirstUse{locale} is a collection of conventions
+for interpreting and presenting information. For sorting, one
+convention is which characters are compared first and which
+are treated similarly. Another is how numbers are written. A
+locale may define punctuation or a decimal separator differently
+from your usual settings. \cmd|LC_ALL| sets all of the locale
+categories for this one command; \texttt{C} is the standard
+locale name for predictable traditional behavior. It is available
+without installing a language pack. A prefix on the first command
+in a pipeline does not automatically apply to each later command.
+
+Use the C locale for exact reproducibility with these plain ASCII
+fixtures. It is not a universal recommendation for alphabetizing
+names. A person writing a multilingual directory may expect
+accented letters close to their unaccented neighbors and not
+at the end of the list. In that case, select an installed
+locale that meets the reader's needs, record it, and run sample
+comparisons including the actual characters that matter. If
+you choose a named locale that isn't installed, do not
+assume the process used it. The shell does not verify whether
+a command can honor the value supplied to it.
+
+\begin{terminal}
+printf '%s\n' ant Zoo Apple zoo | LC_ALL=C sort
+\end{terminal}
+\begin{terminaloutput}
+Apple
+Zoo
+ant
+zoo
+\end{terminaloutput}
+
+In the C locale, uppercase ASCII letters sort before lowercase
+ones, so \texttt{Zoo} precedes \texttt{ant}. The terminal didn't
+misread the words. You have asked for a different ordering
+policy from the one you might use in a subject index. Use
+\cmd|locale| to inspect the current setting, or \cmd|locale -a|
+to list the available names. A locale does not repair damaged
+encoding or automatically convert one kind of stored Unicode
+text to another. Do not assume visual equality implies identical
+bytes (Chapter~\ref{ch:18}).
+
+\begin{quicktable}{M{1.25in}Y}
+\toprule
+What matters & First check \\
+\midrule
+Same report on two machines & Set the comparison locale explicitly and use the same fixture bytes. \\
+Good order for readers & Test the intended locale with case, accents and punctuation that occur in the list. \\
+Exact duplicates only & Prefer whole-line comparison in the C locale; don't ignore case or compare on a partial key. \\
+Grouping by a shared meaning & Agree on a spelling policy, inspect variants and normalize a copy before counting. \\
+\bottomrule
+\end{quicktable}
+
+\section{Digits on paper, numbers in a comparison}
+The tickets list contains \texttt{1}, \texttt{2}, \texttt{10},
+\texttt{20} and \texttt{02}. If you're ordering ticket quantities
+as numbers, ten should follow two. If you're ordering labels,
+you may want \texttt{02} to be distinct from \texttt{2}.
+See both interpretations, then decide what you're sorting.
+
+\begin{terminal}
+LC_ALL=C sort tickets.txt
+LC_ALL=C sort -n tickets.txt
+\end{terminal}
+
+The plain sort orders the strings \texttt{02}, \texttt{1},
+\texttt{10}, \texttt{2}, \texttt{20}. It compares from the
+left; in the comparison between \texttt{10} and \texttt{2},
+the first differing digits are 1 and 2. With \cmd|-n|, sort
+compares the leading quantities numerically: first 1, then
+both spellings of 2, then 10 and 20. The numerical comparison
+doesn't turn \texttt{02} into \texttt{2} on output. These are
+still the original lines, which can preserve meaningful
+differences in a catalog or ticket roll.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-20/numbers.tikz}
+\caption{Text order compares digits as characters; numeric order compares values.}
+\label{fig:20-numbers}
+\VisualDescription{The strings 1, 10 and 2 appear in that order under text comparison, but numeric comparison swaps 10 and 2.}
+\end{figure}
+
+Use \cmd|-r| to reverse the comparison, so a numeric maximum
+can come first. Here the next sort receives the output of the
+tally; the count at the start of each line is the numeric
+value it compares. Try deleting the last stage to see that
+the tally still worked but wasn't ranked. In this original
+fixture the counts happened to appear in descending order
+already; the added votes make the change visible.
+
+\begin{terminal}
+printf '%s\n' Maps Maps Maps >> votes.txt
+LC_ALL=C sort votes.txt | LC_ALL=C uniq -c | LC_ALL=C sort -nr
+\end{terminal}
+\begin{terminaloutput}
+      4 Maps
+      3 Chess
+      2 Knitting
+\end{terminaloutput}
+
+The short options \cmd|-n| and \cmd|-r| can be written
+together as \cmd|-nr| here. The redirection \cmd|>>|
+appends rather than truncating; do not run the append twice
+unless you mean to add six votes. If you did repeat it, recreate
+only the practice fixture from the setup, after checking
+your working directory. On real data, keep the original and
+make a separate report. You might need to change the counting
+rules or reconstruct the tally later.
+
+\begin{quicktable}{M{1.2in}Y}
+\toprule
+Operation & What it changes \\
+\midrule
+\texttt{sort} & Reorders lines; by itself it doesn't remove them. \\
+\texttt{uniq -c} & Emits one line per adjacent run and prefixes its size. \\
+\texttt{sort -nr} & Ranks leading numbers from largest to smallest. \\
+\texttt{sort -k 2,2} & Compares by the second blank-delimited field as the selected key. \\
+\texttt{sort -u} & Emits one line per equal comparison key; it is not just a different spelling of counting. \\
+\bottomrule
+\end{quicktable}
+
+\section{Don't confuse a key with a record}
+A \FirstUse{sort key} is the portion you ask sort to compare
+first. For a list such as \texttt{10 Chess}, a key can pick
+out the activity and leave the number alone. \cmd|-k 2,2|
+starts at field 2 and stops at the end of field 2. In this
+simple list, fields are separated by blanks, and each activity
+name is one word. Leaving off the second \texttt{2} would let
+the key extend to the end of the line.
+
+\begin{terminal}
+printf '%s\n' '10 Maps' '2 Chess' '7 Knitting' |
+  LC_ALL=C sort -k 2,2
+\end{terminal}
+
+The activities should be listed as Chess, Knitting, Maps, even
+though the count appears first in each line. Choosing a key
+doesn't project or delete fields. \cmd|sort| can still use a
+whole-line comparison to order ties unless another option
+changes that behavior. To give a report a known secondary
+ordering, specify a second key: for example,
+\cmd|sort -k 1,1nr -k 2,2| compares the first field numerically
+in reverse order, then compares the second field normally.
+Here the letters after \texttt{1,1} modify that key alone.
+For names of several words, this choice covers only the first
+word of the name; decide whether the key should instead extend
+through the remaining text.
+
+\begin{terminal}
+printf '%s\n' '02' '2' | LC_ALL=C sort -n | LC_ALL=C uniq -c
+printf '%s\n' '02' '2' | LC_ALL=C sort -n -u
+\end{terminal}
+
+The first pipeline counts two distinct original lines once
+each. The second prints one representative because those
+two numeric keys compare equal. Don't rely on which spelling
+is kept for tied keys by a recipe that doesn't promise a
+representative. If you need to audit which spelling was
+originally used, don't drop either line.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-20/keys.tikz}
+\caption{The key may be equal even though the records differ.}
+\label{fig:20-keys}
+\VisualDescription{Two distinct strings, 02 and 2, point to the same numeric value 2. Their original spellings are still different.}
+\end{figure}
+
+\begin{dialoguebox}{One tally or two?}
+\Brian{My list contains 02 and 2. Are they duplicates?}
+\Stephen{If they are quantities, the numeric comparison makes them equal.}
+\Brian{But they're ticket identifiers, and the printer issued both.}
+\Stephen{Then I chose the wrong comparison. Keep their spelling intact.}
+\Brian{So the same cleaning pipeline could erase a valid ticket?}
+\Stephen{Yes. Numerical order is harmless by itself, but keeping just one representative can lose information.}
+\Brian{Then I'll decide what a record means before I remove any.}
+\DialogueConclusion{Define equality before you remove duplicates.}
+\end{dialoguebox}
+
+Be careful with loose input such as \texttt{about 20}, a blank
+line, or a date split by hyphens. A numeric sort is not a numeric
+validator. It can produce a plausible report even when its
+numeric comparison used only part of a line or no digits.
+Likewise, a tidy count does not tell you whether every source
+was read. Check the upstream steps separately while developing
+the pipeline, and check the input against what you know about
+it. For the expanded tally, all counts add to nine. They should
+agree with \cmd|wc -l votes.txt| because each fixture vote ends
+with a newline and none has been omitted. That check won't find a
+wrong label, but it will catch some dropped or extra lines.
+
+\begin{furtherreading}
+\ReadingItem{POSIX sort}{Keys, numeric and reverse comparison, uniqueness and locale variables}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/sort.html}
+\ReadingItem{POSIX uniq}{Adjacent runs and counts}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/uniq.html}
+\end{furtherreading}
+
+\begin{takeaways}
+\item Group before counting if original sequence no longer matters.
+\item Treat locale, comparison keys and ties as explicit report decisions.
+\item Keep the raw file; a successful tally is not a check of its meaning.
+\end{takeaways}
+
+\begin{exercise}{Insist on a second key}
+\label{ex:20-tie}
+Rank the quantities \texttt{3 Maps}, \texttt{3 Chess}, and
+\texttt{1 Knitting} by quantity descending and activity
+ascending. The tie should resolve to Chess first. Nothing is
+saved; there is no separate cleanup.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+printf '%s\n' '3 Maps' '3 Chess' '1 Knitting' |
+  LC_ALL=C sort -k 1,1nr -k 2,2
+\end{terminal}
+Expect Chess, Maps, Knitting in that order, with counts preserved.
+\end{solution}
+
+\begin{exercise}{Count without reordering}
+\label{ex:20-runs}
+Represent four consecutive room measurements as A, A, B, A.
+Collapse each adjacent run to one line without losing the
+return to A. This read-only pipeline creates no files.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+printf '%s\n' A A B A | LC_ALL=C uniq -c
+\end{terminal}
+Expect 2 A, 1 B, 1 A. Putting sort first would have hidden the return.
+\end{solution}
+
+\begin{exercise}{Keep spellings distinct}
+\label{ex:20-spelling}
+Count distinct full-line ticket labels in \texttt{tickets.txt}.
+Expect five different labels, each with a count of 1.
+No output file is needed.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+LC_ALL=C sort tickets.txt | LC_ALL=C uniq -c
+\end{terminal}
+Confirm that both \texttt{02} and \texttt{2} appear.
+\end{solution}
+
+\paragraph{Cleanup.}
+Confirm with \cmd|pwd| that you are still in the disposable
+\texttt{utp20} directory (compare it with the path in
+\cmd|"$practice"|). Remove only the named files, and leave the
+practice directory before removing it. If it is unexpectedly
+nonempty, inspect it rather than forcing removal. If you entered
+a separate \cmd|sh| for these examples, type \cmd|exit| afterwards.
+
+\begin{terminal}
+rm -i ./votes.txt ./tickets.txt
+cd /tmp
+rmdir "$practice"
+\end{terminal}

@@ -1,0 +1,8 @@
+\begin{tikzpicture}
+\node[utp node] (a) at (0,0.6) {Close: 5};
+\node[utp node] (b) at (0,-0.6) {Ask about Bay 5};
+\node[utp node] (c) at (6,0.6) {Close: 6};
+\node[utp node] (d) at (6,-0.6) {Ask about Bay 5};
+\draw[utp arrow] (a)--node[above,font=\small] {replace} (c);
+\draw[utp arrow,dashed] (b)--node[above,font=\small] {pass unchanged} (d);
+\end{tikzpicture}
