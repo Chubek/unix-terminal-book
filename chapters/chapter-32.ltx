@@ -72,6 +72,8 @@ shows a different number, use that number instead. Job numbers
 have meaning only to the shell that created them and can be
 reused. Don't assume the bracketed numbers will start at 1 if
 you already have jobs.
+Figure~\ref{fig:32-terminal} distinguishes the input owner
+from jobs that can still print.
 
 \begin{figure}[htbp]
 \centering
@@ -149,6 +151,17 @@ already written stay written.\\
 \bottomrule
 \end{quicktable}
 
+Figure~\ref{fig:32-states} helps when a program looks
+``frozen'' after a stray key. If the prompt appears and
+the job says it stopped, bring it forward if you still
+want to interact with it. If no prompt appears and the
+program is simply quiet, returning to the shell by
+starting a fresh terminal is a useful way to look up help
+without changing that program's state. If the terminal
+itself has changed how it displays input, don't assume
+it is a job-control problem; the terminal troubleshooting
+in Chapter~\ref{ch:45} starts from that different symptom.
+
 \section{Send quiet work to the background}
 \label{sec:32-background}
 \index{background}
@@ -191,7 +204,8 @@ jobs -l
 \end{terminal}
 
 The shell describes one job, even when its display names two
-processes. To clean up, run \cmd|wait| after making sure there
+processes, as in Figure~\ref{fig:32-pipeline}. To clean up,
+run \cmd|wait| after making sure there
 is no other background work in this practice shell, or let the
 fifteen seconds expire. Pipeline status is not automatically
 every member's status (see Chapter~\ref{ch:17}); a successful
@@ -297,6 +311,28 @@ If you only retrieve the report, you might miss the warning.
 Redirect both streams separately when appropriate, using
 the rules in Chapter~\ref{ch:16}. A background run isn't less
 important just because its messages are out of sight.
+
+If you have two completion files, give each run a distinct
+name. The prompt doesn't tell you which process finished
+first, and output in one shared file can blend together
+without a useful boundary. It is easiest to start one run,
+note the child ID and destination together, then start
+another only if both have room to make progress. Saving the
+first ID before starting the second matters because
+\cmd|$!| describes the latest asynchronous start.
+Waiting for the second run while checking the first run's
+file is like checking somebody else's receipt: even a
+successful status does not belong to that file.
+
+For everyday work, prefer two explicit observations over
+a complicated control sequence. If one job is supposed to
+consume the other's results, don't start both independently
+and hope they finish in the right order. The two commands
+are related by a dependency. A foreground sequence with an
+explicit success check is often clearer, or write the
+dependency down in a small script (Chapter~\ref{ch:30}).
+Keeping your prompt available is useful when tasks really
+can proceed independently.
 
 \begin{quicktable}{M{1.16in}YY}
 \toprule
@@ -419,6 +455,9 @@ exits no files or processes from the exercise need cleanup.
 \item A background job is not a persistent session or a guarantee
 of successful completion.
 \end{takeaways}
+
+\NextChapter{Next, learn to predict where a command may read,
+write, and create files.}
 
 \begin{furtherreading}
 \ReadingItem{POSIX shell job control}{Foreground and background process groups and asynchronous lists.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/V3_chap02.html}

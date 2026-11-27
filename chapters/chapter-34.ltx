@@ -25,6 +25,8 @@ drive or a network share may each have its own mount point.
 An operating system may also split ordinary-looking locations
 across several filesystems without showing a drive letter at
 every boundary.
+For example, the branches in Figure~\ref{fig:34-mount}
+share a pathname tree without sharing a storage total.
 
 \begin{terminal}
 pwd
@@ -141,6 +143,9 @@ reports the whole filesystem serving it. Running it on
 unless something independent of the exercise changes the
 mount layout. The byte counts or available space of a live
 system may change while you are looking.
+Before comparing two counts, trace the scopes in
+Figure~\ref{fig:34-scope}: a small subtree can be only a
+small part of a much larger allocation pool.
 
 \begin{figure}[htbp]
 \centering
@@ -218,6 +223,20 @@ file, but the filesystem still accounts for it. Think of
 deleting a catalog entry while a borrower still holds the book.
 The analogy stops there: the name won't spring back when the
 borrower closes the file.
+Figure~\ref{fig:34-unlinked} separates the open handle
+from the name a directory walk could have reached.
+
+There is no need to make a drive run out of space to see
+this difference. The reusable \texttt{space-check.sh}
+listing uses a disposable tiny fixture, not a large test
+file: its measurement of allocation is useful even when
+the output rounds differently. To see a related naming
+effect without disturbing open applications, think
+back to hard links in Chapter~\ref{ch:8}. A file can have
+two names, so one removed name may leave the object fully
+accessible through the other. When summing disk use,
+don't assume two names belonging to one filesystem object
+therefore represent two independently allocated copies.
 
 \begin{figure}[htbp]
 \centering
@@ -257,7 +276,8 @@ directories under the location you scan with \cmd|du|.
 These are macOS-only, read-only commands. Run just the
 first pair if you are comparing such views for your own
 Mac. They are not instructions to erase, repair, or mount
-a disk.
+a disk. The local \ManPage{diskutil}{8} and
+\ManPage{tmutil}{8} pages describe the supported subcommands.
 
 \begin{terminal}
 df -Pk "$HOME"
@@ -371,6 +391,19 @@ the inaccessible part.'' Uncertainty, stated at the point
 it enters the measurement, is better than a confident
 but wrong estimate.
 
+Finally, a filesystem report made a week ago cannot
+guarantee space for today's copy. On a network share
+someone else may be using the same storage pool.
+Recheck when you start, and keep enough room to finish
+without depending on a particular user to remove files
+midway through. If a copy fails partway through, label
+that destination as incomplete and retain the originals.
+Inspect what was produced before resuming, rewriting, or
+removing it. A partial copy's allocation can explain why
+the second attempt starts with less space than the first,
+but it doesn't tell you what parts of its contents are
+usable.
+
 \begin{dialoguebox}{Which number is wrong?}
 \Brian{My folders only add up to half of what the disk says is used.}
 \Stephen{You have measured the names you counted.}
@@ -450,6 +483,9 @@ unset room
 \item Logical length, allocated storage, free space, and account
 limits are different things.
 \end{takeaways}
+
+\NextChapter{Next, decide when an optional tool is worth
+adding and which package channel to use.}
 
 \begin{furtherreading}
 \ReadingItem{POSIX df}{Filesystem reports and the portable output format.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/df.html}

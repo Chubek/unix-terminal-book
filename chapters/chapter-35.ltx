@@ -49,6 +49,8 @@ than posting it. A session started by a graphical app and one
 started in a terminal might have different settings. Run the
 lookup in the context that actually failed, rather than assuming
 that a successful lookup somewhere else settles it.
+Before taking an installation step, compare the three
+separate questions in Figure~\ref{fig:35-questions}.
 
 \begin{figure}[htbp]
 \centering
@@ -349,6 +351,12 @@ separate supported channels.}
 maintenance and optional package maintenance.}
 \end{figure}
 
+Keep the distinction in Figure~\ref{fig:35-channels} in
+mind when following advice on what to update. Someone
+reporting a newer optional utility is not necessarily
+describing the base version. An organizational support
+policy can apply to one or both channels.
+
 \section{Read the plan before accepting it}
 \label{sec:35-maintain}
 Suppose you need to add a reader for many photo-catalog files.
@@ -373,6 +381,8 @@ any planned removals. Read local documentation before using a
 preview flag: the name and meaning vary, and a preview can
 still contact a repository. If you are unsure, decline.
 Never add a flag merely to answer Yes to everything.
+The second branch in Figure~\ref{fig:35-decision} is a
+perfectly valid outcome, even when the command is missing.
 
 \begin{figure}[htbp]
 \centering
@@ -463,18 +473,26 @@ Write down which documentation applies; no temporary files or
 package changes are required.
 \end{solution}
 
-\begin{exercise}{Audit an imaginary approval request}
+\begin{exercise}{Compare a local inventory with lookup}
 \label{ex:35-plan}
-A proposal adds a JSON reader, upgrades two dependencies,
-and removes a viewer you still use. The cache date is unknown
-and the signer is unfamiliar. Decide whether to approve.
+Select the local inventory example applicable to your machine
+and check whether it records an installed \cmd|jq| package.
+If no manager applies, check whether \cmd|man 1 jq| finds
+a page and state why this is not an inventory check. Compare
+your result with the shell's lookup. Do not refresh, install,
+or remove anything.
 \end{exercise}
 \begin{solution}
-Decline. Find the supported repository and explain the
-removal with the package maintainer or administrator before
-retrying. The goal was to read JSON; the removal is an
-additional consequence, not a necessary cost established by
-this evidence. This is a paper exercise; nothing needs undoing.
+On an Arch-family distribution, for instance, inspect
+\cmd|pacman -Q jq|, then \cmd|command -v jq|. If both
+find something, the first identifies an installed package
+and the second identifies what this shell would select;
+they are not proof of each other's identity. If the package
+is absent but the command exists, a copy could have come
+from elsewhere. If only the manual is available, read its
+synopsis and leave the pager; don't infer installation
+from documentation alone. These are observations, with
+no package change to undo.
 \end{solution}
 
 \begin{takeaways}
@@ -485,6 +503,9 @@ system and release.
 \item Review dependencies and removals; a package transaction is
 not a promise of easy rollback.
 \end{takeaways}
+
+\NextChapter{Next, turn a tool mismatch or an unexpected error
+into a test somebody else can repeat.}
 
 \begin{furtherreading}
 \ReadingItem{Debian apt-cache(8)}{Read-only inspection of cached package information.}{https://manpages.debian.org/apt-cache}

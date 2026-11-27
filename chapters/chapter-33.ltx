@@ -107,6 +107,8 @@ on the path and also pass the file's own read check. The outer
 directory matters, too. A file whose mode allows everyone to
 read is not thereby reachable by everyone if the directory
 containing it is private.
+Follow Figure~\ref{fig:33-path} in order: reaching the outer
+directory tells you nothing yet about the inner one.
 
 \begin{figure}[htbp]
 \centering
@@ -267,6 +269,16 @@ filter does not retroactively change an existing file, and
 rerunning the redirection could truncate it. Restoring the
 old mask does not restore modes of files created meanwhile.
 
+Figure~\ref{fig:33-mask} uses the same filter for two
+different requests. A mask of 077 doesn't make the text
+file executable: its starting request lacked those bits.
+Conversely, using a permissive mask doesn't override
+a tool that always asks for owner-only access to its
+settings. This is why the useful test is to create a
+fictional object with the program you intend to use and
+inspect the result, rather than treating the mask setting
+as a full description of what is safe to share.
+
 Linux ACLs, macOS ACLs and file flags, and BSD variants all
 have additional access mechanisms. If a normal file
 still refuses a write, check the exact error, parent path,
@@ -351,6 +363,30 @@ and when creating it won't conflict with other people's
 work. If the owner or policy is unclear, give the observed
 error and your intended action to the person responsible.
 
+For documents you mean to share with a household or
+team, ask which group or service is supposed to supply
+access. ``Other'' means accounts outside the owner and
+applicable group class; on a shared computer this can
+include people outside that team. Giving everyone read
+permission to make one person's error go away changes
+the audience, not just the symptom. On a system with
+managed access it may make more sense to put a copy in
+the team's approved location, verify what is shared
+with a fictional file first, and keep the private version
+under your control. Check the actual mode of the new
+copy, since a privacy assumption from the source directory
+can stop applying the moment you place it elsewhere.
+
+On the other hand, owner-only mode is not encryption.
+It is an access rule the running system applies to its
+users. It doesn't make a storage device safe to lend to
+someone or protect credentials passed in command arguments.
+Do not use a permissions exercise to test security with
+real confidential material. If you need to preserve
+private data, consider the sensitivity and storage policy
+of any backups too. Restore one practice copy first to see
+which permissions your normal backup tool preserves.
+
 \begin{exercise}{Show that read and write are separate}
 \label{ex:33-read}
 On \texttt{budget.txt}, remove owner write but keep owner read.
@@ -420,6 +456,9 @@ path to readable data.
 \item Inspect, record, change narrowly, and verify; a mode is not a backup.
 \item \texttt{umask} filters requested access at creation, not afterward.
 \end{takeaways}
+
+\NextChapter{Next, distinguish access to a destination from
+the space actually available there.}
 
 \begin{furtherreading}
 \ReadingItem{POSIX chmod}{Symbolic and numeric mode changes.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/chmod.html}

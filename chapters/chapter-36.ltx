@@ -244,6 +244,21 @@ ending makes the problem disappear, restore the relevant feature
 with fictional words. If the issue is specific to a locale,
 that setting may be relevant, but do not send a whole
 environment dump to communicate it.
+Figure~\ref{fig:36-grep} shows how the immediate status
+adds a distinction that the visible search output cannot
+provide by itself.
+
+The fixture above is a useful check if the original tool
+was embedded in a pipeline. A later stage could print
+nothing because an earlier stage gave it nothing, or it
+could succeed with empty input while an earlier stage
+failed. Before replacing the last command, take the stages
+apart as in Chapter~\ref{ch:17}. Use the tiny sample with
+each important stage and record the first one whose
+behavior differs from your expectation. If the output
+is large, choose the smallest input that still shows
+that difference. A pipeline that appears to run more
+quickly after a change may simply be doing less work.
 
 \subsection{Capture only the lines needed to explain an error}
 For an ordinary manual test you can usually read the screen.
@@ -350,6 +365,9 @@ attachments, from the recipient's point of view. If a secret
 was accidentally disclosed, changing the post may not remove
 copies; use the account or service's revocation procedure and
 contact the responsible administrator if needed.
+The separation in Figure~\ref{fig:36-share} is intentional:
+your local working record and the document you send need
+not contain the same material.
 
 \subsection{What makes a reproduction actionable?}
 Imagine a tool maintainer is reading the report at a different
@@ -374,6 +392,20 @@ is shaped correctly and that the recipient is testing the
 same thing. If you can't reduce the problem without private
 inputs, explain where you had to stop and ask for a safer
 way to provide evidence.
+
+When the problem is intermittent, add how often you can
+reproduce it and what appears to distinguish successes
+from failures. ``It fails after I resume my laptop but not
+in a fresh session'' is more useful than a dozen identical
+error excerpts. If it appears only during heavy work,
+inspect the destination and relevant process status without
+trying to recreate that load on a shared machine. If your
+account is managed, note that fact and ask for approved
+ways to verify policy rather than attempting to defeat it.
+In a report that crosses teams, time and time zone may
+be enough to locate an event; do not send a full log by
+default. If the problem might include another person's
+data, stop collecting it and ask where evidence should go.
 
 \begin{dialoguebox}{Does more output make a better report?}
 \Brian{Wouldn't they fix this faster if I sent my whole terminal history?}
@@ -445,6 +477,9 @@ unset room
 \item Use a fictional minimal reproduction and the command's exact status.
 \item Share just enough for another reader to repeat the test.
 \end{takeaways}
+
+\NextChapter{In Part IV, use these observation and reporting
+habits on connections, remote sessions, and everyday projects.}
 
 \begin{furtherreading}
 \ReadingItem{POSIX uname}{Operating system and hardware identity fields.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/uname.html}

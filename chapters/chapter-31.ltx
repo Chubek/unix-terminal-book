@@ -143,6 +143,9 @@ that the output is getting better. Before deciding a process is hung,
 look for progress in the application, listen for an input request,
 and check evidence such as whether a destination file is still
 growing. No single field is a verdict.
+Figure~\ref{fig:31-snapshots} is the reason to avoid a
+strong conclusion from two quiet-looking rows: they leave
+nearly the entire interval unobserved.
 
 Suppose the timer row has a PPID that differs from the shell
 PID you printed. Check whether you launched the timer from
@@ -239,6 +242,15 @@ separate ``Terminated'' notice. \cmd|wait| is not a general-purpose
 tool for processes from another shell; Chapter~\ref{ch:32} develops
 that boundary. If you have not sent the signal, waiting here may
 take up to the timer's remaining duration.
+
+The separate steps in Figure~\ref{fig:31-request} matter if
+you are making notes for someone else. Write down the request
+result before the child status, and say how you obtained
+each. ``Status 143'' alone doesn't explain which command
+reported it. The reusable timer example in the source
+listings demonstrates these two observations together; the
+individual instructions here let you inspect the timer and
+decide whether to proceed before sending the signal.
 
 \begin{terminal}
 ps -p "$timer" -o pid -o ppid -o comm
@@ -408,6 +420,9 @@ app's own shutdown control before sending a signal.
 \item A signal request, the child's exit status, and file integrity are
 three different outcomes.
 \end{takeaways}
+
+\NextChapter{Next, keep track of several processes as one job
+and decide which job gets the terminal.}
 
 \begin{furtherreading}
 \ReadingItem{POSIX ps}{Process selection and formatted output.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/ps.html}
