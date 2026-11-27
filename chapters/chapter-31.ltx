@@ -82,10 +82,10 @@ ready for another command. \cmd|ps| has already taken its snapshot
 and exited. Try comparing a broader snapshot with that one:
 
 \begin{terminal}
-ps -e -o pid -o ppid -o comm | head -n 8
+ps -A -o pid -o ppid -o comm | head -n 8
 \end{terminal}
 
-The selection \cmd|-e| asks for all processes \cmd|ps| can report in
+The selection \cmd|-A| asks for all processes \cmd|ps| can report in
 your environment; containers and local access rules can limit the
 view. \cmd|head -n 8| keeps the first eight lines including the
 header. This is a display limit, not a filter for importance. You
@@ -312,9 +312,12 @@ trying to kill the family tree.
 
 On Linux, both \cmd|ps -e| and the procps \cmd|ps ax| style are often
 seen. The latter's no-dash syntax belongs to another option style;
-it isn't a rule for forming new options. On macOS and the BSDs,
-local \ManPage{ps}{1} pages describe their own columns and defaults.
-The examples here use the POSIX selection and output syntax.
+it isn't a rule for forming new options. In particular,
+\OpenBSD{} \ManPage{ps}{1} uses \cmd|-e| to display the environment,
+not to select all processes. An environment can contain confidential
+values; don't add that option while looking for a wider list.
+Use \cmd|-A| for this example. On macOS and the BSDs, local
+\ManPage{ps}{1} pages describe their own columns and defaults.
 Consult the local page before relying on process-state letters or
 adding Linux-specific columns to a script. Finally, don't share a
 full process listing casually: a command line can contain paths,

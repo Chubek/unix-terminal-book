@@ -14,6 +14,8 @@ runs; the chapter does not prescribe 143. Foreground `ps` and `kill` syntax
 is based on the linked POSIX manuals; `ps` population, names, and spacing
 are not promises. The displayed PID and process row are illustrative. KILL,
 recovery of interrupted writes, and system processes were not exercised.
+OpenBSD's `ps(1)` manual documents `-A` for all processes and `-e` for
+environment display; the worked list deliberately uses `-A`.
 
 Author-side layout check for chapters 31–36: a standalone six-chapter
 preview used pdfTeX 1.40.26 / TeX Live 2024, three print/answers passes with
