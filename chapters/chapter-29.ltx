@@ -377,6 +377,92 @@ an unchanged pattern explicitly. An honest comparison
 shows which behavior a task relies on rather than
 ranking every shell by one small example.
 
+\section{Separate the interpreter from what it launches}
+\label{sec:29-utilities}
+
+One recommendation might use Bash on both machines yet
+still fail on one. Start the following once on each
+machine. It runs a fixed POSIX command string twice
+if the optional Bash is present, and reports the
+utility lookup without running the utility:
+
+\begin{terminal}
+sh -c 'command -v sort'
+bash -c 'command -v sort'
+\end{terminal}
+
+On one machine both shells may identify the same
+system \texttt{sort}; another may find a different
+executable. The path may even look alike on both
+machines despite referring to different implementations.
+The interpreter can read a valid line while the selected
+utility rejects that line's options. On a new machine,
+use its own manual to check the relevant option and
+look at the implementation your shell found. Don't
+decide that a utility option is portable on the basis
+of the shell's version number.
+
+Change just one dimension when comparing results.
+On one computer, run the same portable command
+string through two interpreters while leaving the
+input and utility lookup the same. If they disagree,
+check what the shell handles: token boundaries,
+substitution, patterns and redirections. Then hold
+the interpreter and command string fixed while
+checking the utility from a different installation,
+where version and platform may change what the utility
+accepts. In either test, keep the baseline command
+read-only. Investigating an obscure option doesn't
+require letting it act on your real files.
+
+If a recipient has only the portable system shell
+and your instructions require a native Fish feature,
+label the mismatch plainly. A recognized file
+extension is not evidence that there's an interpreter
+on the computer to read it. Replacing every visible
+instance of the word Fish with sh in the instructions
+does not convert the language, either. Consider
+providing a short equivalent that uses the earlier
+POSIX idiom, or choose the native interpreter and
+document the dependency. Do not silently substitute
+one for the other in a command that will modify
+files just because a small display test happened
+to work.
+
+The smallest useful handoff also says what to do if an
+interpreter is absent. Imagine the report is due in an
+hour. If the Bash path is missing, the reader needs to
+know whether to use a documented POSIX alternative, to
+ask for a completed report, or to arrange installation
+later through their normal package process. Installing
+an unfamiliar executable is not a prerequisite for
+reporting a compatibility difference. Return the exact
+interpreter name, a nonprivate sample input, and the
+first error. That gives the author something to test
+without requiring the recipient to change their system.
+
+When you find a promising alternative, compare boundaries
+as well as visible text. An argument containing two
+words, an explicitly empty argument, and an argument
+beginning with a hyphen answer three different questions
+about the receiving code. If a report is meant to read
+files, keep those tests in a disposable directory. A
+successful ordinary-title example does not establish that
+the alternate dialect preserved every input. Write down
+which cases actually ran, distinguish native defaults
+from compatibility mode, and keep the example short
+enough that someone else can repeat it.
+
+It is useful to give the baseline first and the extension
+second in shared instructions. Someone who cannot use the
+extension can still check whether the baseline works on
+their machine. Someone who can use it now has a known
+result to compare. If the baseline itself fails, stop
+there: the error may be in the working directory, the
+command lookup, or the input, rather than in the optional
+language feature. That ordering makes the recipe easier
+to maintain without making the reader learn seven shells.
+
 \section{Exercises and cleanup}
 
 \begin{exercise}{Probe the intended interpreter}

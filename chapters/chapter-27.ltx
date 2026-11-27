@@ -416,6 +416,72 @@ explains, but ordinary shell variables do not automatically
 gain that wider visibility merely because you write their
 names in uppercase.
 
+\section{Remove a heading from the argument list, not from the data}
+\label{sec:27-shift}
+
+Imagine a recipe that takes a notice title first, then as
+many attachment names as the reader supplied. The title
+must not be checked as a filename; it is a different kind
+of argument. First use \texttt{set --} in the fresh
+practice shell, exactly as you did above. Now check the
+count before taking the first item. \texttt{-gt} asks
+whether one number is greater than another.
+
+\begin{terminal}
+set -- 'For printing' 'June notes.txt' 'Floor plan.pdf'
+if [ "$#" -gt 0 ]; then
+    heading=$1
+    shift
+    printf 'Heading: <%s>\n' "$heading"
+    printf 'Remaining count: %s\n' "$#"
+    printf 'Attachment or marker: <%s>\n' "$@" end
+fi
+set --
+\end{terminal}
+
+The bracketed \texttt{test} spelling asks whether the
+list has any arguments. As in the tests in
+Chapter~\ref{ch:26}, zero exit status means a true
+answer; the \texttt{if} group runs only in that case.
+The \texttt{shift} builtin discards the first positional
+parameter and slides the remainder forward one slot.
+It does not change their contents, and it does not
+remove any files. The remaining count here becomes
+two and the attachment lines show the two complete
+names, followed by \texttt{end}. The separate assignment
+preserves the heading as text before the source list
+is shifted.
+
+What should the same procedure do when the title was
+omitted? There are two different tests worth trying.
+Repeat the block after replacing its setup line first
+with \texttt{set --}, then with \texttt{set -- ''}.
+With no arguments, nothing in the group runs: the
+count is zero and there is no first slot to shift.
+With an explicitly empty title, the group runs, prints
+an empty heading, and reports no attachments before
+the final marker. If a title is required to be nonempty,
+neither count nor brace syntax chooses that policy for
+you. A separate test can reject the blank or a
+documented default can supply its display text.
+
+The reason to write down the two cases is that later
+changes to a recipe tend to preserve the obvious
+example and break a boundary. A new option might
+take the place of the heading, or a list might allow
+zero attachments. If someone supplies an argument
+that looks like an option, the \texttt{set --} rehearsal
+can preserve it as data for the receiving code; a real
+script still needs to specify how its caller can supply
+that argument. Decide on one meaning for the first
+slot and document the empty-list behavior alongside it.
+Nobody should have to infer that from a failed file check.
+
+Use a distinctive marker when reading a diagnostic display.
+In this test the marker is not part of the remaining list.
+It is there so the final display still has one explicit
+argument when there are no attachments.
+
 \section{Exercises and cleanup}
 
 \begin{exercise}{Build a suffix without changing the value}

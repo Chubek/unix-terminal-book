@@ -199,21 +199,29 @@ A continuation prompt is not an instruction to type another
 Start with a new practice directory. The \texttt{-d} option of
 \texttt{mktemp} asks for a directory rather than a file; this
 convenient form is available on common GNU and BSD implementations.
-The first line stores the pathname printed by the utility. Use the
-lines individually: proceed only if the first command succeeds and
-the second prints the new practice directory. If \texttt{mktemp}
-is absent or reports an error, stop and make a fresh practice folder
-with the method in Chapter~\ref{ch:12} instead. Never practice the
-file-writing lines in a folder with real documents.
+The assignment stores the new path printed by the utility. The
+\cmd|&&| operators make each next step conditional on success:
+\texttt{cd} must not run if creation fails, and \texttt{pwd -P}
+must not run if changing directory fails.
 
 \begin{terminal}
-practice=$(mktemp -d)
-cd "$practice" && pwd
+practice=$(mktemp -d) && cd "$practice" && pwd -P
 \end{terminal}
 
-Here \cmd|$(...)| captures the command's standard output, and
-\cmd|&&| runs the second command only if the first succeeds.
-Create two files with different contents, then try both reads.
+Here \cmd|$(...)| captures the command's standard output.
+Confirm that the path shown ends in the newly assigned directory
+name before proceeding. The physical path can look different
+from the stored path if a parent of the directory is itself a
+symbolic link. If \texttt{mktemp} is absent or reports an
+error, stop. For the fallback in Chapter~\ref{ch:12}, create and
+enter an empty practice folder, then run \cmd|practice=$(pwd -P)|
+and record the printed working directory with \cmd|pwd -P|.
+That way the cleanup below can still use the same
+\texttt{practice} variable. If you are not sure which directory
+you reached, do not continue.
+
+Run this next block only after verifying the new location.
+It creates two files with different contents, then reads both.
 The \texttt{>} writes the left command's output to the named file;
 an existing file would be truncated. That is why the empty
 practice directory matters. Stop if any creation command fails.
@@ -462,15 +470,22 @@ In your practice directory, predict which line changes if
 \texttt{Hall d.txt} is renamed to \texttt{Hall a.txt}. Then test
 the pattern with the argument probe instead of reading the file.
 Under both names the literal read should still return the draft.
+First check with \texttt{ls -a} that the temporary destination
+is unused. If a move asks to replace a file, decline and stop
+this exercise.
 \end{exercise}
 \begin{solution}
 \begin{terminal}
 printf '<%s>\n' Hall\ [draft].txt
-mv './Hall d.txt' './Hall a.txt'
+mv -i './Hall d.txt' './Hall a.txt'
 printf '<%s>\n' Hall\ [draft].txt
 cat 'Hall [draft].txt'
-mv './Hall a.txt' './Hall d.txt'
+mv -i './Hall a.txt' './Hall d.txt'
 \end{terminal}
+The \texttt{-i} option asks before replacing an existing
+destination. Run the lines separately and confirm each move
+before going on; decline any overwrite prompt. Before moving
+back, check that the original path is now unused.
 The probe changes from \texttt{<Hall d.txt>} to \texttt{<Hall
 a.txt>}. Both letters are in the bracket expression. Move the
 fixture back, as shown, so it matches the cleanup list.

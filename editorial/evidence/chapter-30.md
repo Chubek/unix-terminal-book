@@ -16,10 +16,11 @@ executor.
 
 Author system: Linux 6.18.52-1-lts, EndeavourOS x86_64, Python
 3.14.7, `/bin/sh` linked to GNU Bash 5.3.15(1). Local run:
-36 selected checks passed across six chapters; Ksh and Tcsh unavailable
+46 selected checks passed across six chapters; Ksh and Tcsh unavailable
 and skipped. Chapter 30 checks two test/branch examples, `sh -n`,
 the caller's argument boundaries, successful relative and absolute path operands, mixed fixture
-outcomes, argument misuse, and empty and option-like candidates.
+outcomes, argument misuse, empty and option-like candidates, a
+symbolic link to a readable target, and a zero-byte readable file.
 The test doesn't deliberately create unreadable files or race filesystem
 changes. Native macOS, FreeBSD, OpenBSD and NetBSD were not tested by W5.
 

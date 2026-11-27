@@ -408,6 +408,76 @@ copy, and use examples small enough to compare. This
 is more useful than pasting a long \texttt{PATH} from
 one account into someone else's startup file.
 
+\section{Distinguish an empty entry from a missing entry}
+\label{sec:28-empty}
+
+The earlier child-shell tests distinguish a value that
+wasn't passed from one that was changed. A third case is
+worth knowing about when you read a program's setup
+instructions: the environment can pass a name with an
+empty value. The following test defines both cases
+explicitly, so it does not depend on a previous test.
+
+\begin{terminal}
+export SWAP_LABEL=''
+sh -c 'printf "<%s>\n" "${SWAP_LABEL-unset}"'
+unset SWAP_LABEL
+sh -c 'printf "<%s>\n" "${SWAP_LABEL-unset}"'
+\end{terminal}
+
+The child prints \texttt{<>} first and
+\texttt{<unset>} second. The command uses the
+no-colon form from Chapter~\ref{ch:27}, so it substitutes
+the marker only when no value is assigned. The
+environment export made the intentional blank visible
+to the first child. Unsetting the name removed it
+for the second child. Those are distinct requests to
+an application that distinguishes ``set but blank''
+from ``not set.'' Some applications treat both as
+the default; others give them different meanings.
+Check the intended tool rather than assuming the shell
+test defines an application's policy.
+
+The same reasoning explains why replacing a lookup
+path with an empty string is not a safe way to
+test an unset path. Some path-search rules give an
+empty component the meaning of the current directory;
+the default handling of a missing setting is a
+separate issue. An empty string is not the way to
+ask a command to ignore everything in its environment.
+For the invented label, the cleared environment
+example above was both clearer and safer. For lookup
+questions, keep the existing setting and use a known
+absolute command path or \texttt{command -v} as
+appropriate. There is rarely a reason to alter the
+normal search path just to diagnose one invocation.
+
+When you inherit an environment, you don't have to
+inherit the previous person's explanation of it.
+Record which exact command uses the setting, what
+its documentation says about absent and empty
+values, and what the smallest test actually showed.
+If a colleague reports that a locale override did
+not stick, ask whether they wanted a change for one
+program or a persistent change for every application
+in their desktop session. Exporting at one prompt
+does not accomplish the latter: applications already
+running and programs started elsewhere do not receive
+that export. Choose the smallest temporary scope that
+matches your goal, and treat any broader configuration
+change as a separate task with its own rollback.
+
+As a final check, distinguish a report about one program
+from a report about a session. Suppose two commands both
+seem to use an inherited setting, but one has an explicit
+override in its invocation. Showing only the values
+both programs printed would hide the difference. Include
+the command line you used, with invented values, and
+say what you observed on the next invocation without the
+override. That pair demonstrates lifetime: it tells a
+reader whether a setting stuck, rather than only whether
+one program saw it once.
+
 \section{Exercises and cleanup}
 
 \begin{exercise}{Distinguish a local variable from an export}
@@ -448,12 +518,13 @@ clean up.
 
 \begin{exercise}{Check what an override leaves behind}
 \label{ex:28-override}
-With the chapter's label still exported, give one command the
-value \texttt{Glassware}. Then verify that the calling shell
-still has the value \texttt{Kitchen items}.
+Export the chapter's baseline label, \texttt{Kitchen items},
+again. Give one command the value \texttt{Glassware}. Then
+verify that the calling shell still has the baseline value.
 \end{exercise}
 \begin{solution}
 \begin{terminal}
+export SWAP_LABEL='Kitchen items'
 SWAP_LABEL=Glassware sh -c 'printf "<%s>\n" "$SWAP_LABEL"'
 printf '<%s>\n' "$SWAP_LABEL"
 \end{terminal}

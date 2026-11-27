@@ -18,17 +18,28 @@ does between reading the command and running it.
 \index{field splitting}
 \index{pathname expansion}
 
-The examples here use a fresh \texttt{sh} session. Type each setup
-line individually and stop if the first reports an error or the
-second does not print the new directory. \texttt{mktemp -d} is a
-common GNU/BSD convenience, not a POSIX requirement; if unavailable,
-use Chapter~\ref{ch:12}'s procedure for making a new, empty folder
-and record its full path in \texttt{practice}. Each redirection
-creates one fixture; use these only in that new folder.
+The examples here use a fresh \texttt{sh} session. The first
+command below creates a private practice directory, stores its
+pathname and enters it only if creation succeeds. \texttt{pwd -P}
+reports the physical working directory only after the change has
+succeeded. \texttt{mktemp -d} is a common GNU/BSD convenience, not
+a POSIX requirement; if unavailable, use Chapter~\ref{ch:12}'s
+procedure for making a new, empty folder, and record its full
+pathname in \texttt{practice}.
 
 \begin{terminal}
-practice=$(mktemp -d)
-cd "$practice" && pwd
+practice=$(mktemp -d) && cd "$practice" && pwd -P
+\end{terminal}
+
+Stop if the setup fails or does not print your new practice
+directory. A temporary parent may be reached through a symbolic
+link, so the printed physical pathname need not be spelled exactly
+like the saved path. Check that it is the same new directory, with
+the newly assigned last component. Run the two writing lines
+below only after this verification; they would truncate existing
+files with those names if pasted in an unrelated directory.
+
+\begin{terminal}
 printf '%s\n' 'Friday selection' > 'Long title.txt'
 printf '%s\n' 'Tuesday selection' > Short.txt
 \end{terminal}
@@ -170,9 +181,10 @@ printf '<%s>\n' $title
 \end{terminal}
 
 The first display is \texttt{<Friday selection>}. The second
-has one bracketed word per line. The same file was opened
-both times; the second display causes a split only when
-\texttt{title} is read back as an unquoted argument. A shell
+has one bracketed word per line. The one \texttt{cat} opened the
+file once; both display commands reuse that one captured value.
+The split occurs only when \texttt{title} is read back as an
+unquoted argument. A shell
 assignment by itself, such as \cmd|title=$(cat ...)|, is not an
 ordinary argument and does not split the result this way.
 Keeping the display quoted is sensible even if the current
@@ -289,7 +301,10 @@ printf 'Is that exact name a file? %s\n' "$?"
 
 The candidate text contains the original star and the test
 reports one. The test is quoted to ask about that exact
-name. Don't detect an unmatched glob by searching the result
+name: the \texttt{-f} operand to \texttt{test} asks whether that
+pathname leads to a regular file, not a directory. A normal true result
+is status zero, and a normal false result is one. Don't detect
+an unmatched glob by searching the result
 for a star: the characters legal in a filename include a
 literal star. A future script can test the candidate's type
 directly instead. A preview that mistakes a placeholder for a
@@ -414,6 +429,62 @@ two bracket pairs is direct evidence. In the star case,
 check from a folder with known matches and from an empty
 one. Otherwise it is easy to mistake one day's harmless
 result for a guarantee about the recipe.
+
+\section{Isolate splitting from filename matching}
+\label{sec:26-isolate}
+
+When a surprise involves both spaces and stars, one
+experiment can expose only one stage at a time. Keep
+the original reading-group fixture and assign a string
+with two intended meanings: the characters of a pattern,
+followed by a literal label. Try the unquoted expansion,
+then the same expression in a group that temporarily
+disables globbing.
+
+\begin{terminal}
+report='*.txt Friday'
+printf '<%s>\n' $report
+(
+    set -f
+    printf '<%s>\n' $report
+)
+printf '<%s>\n' "$report"
+\end{terminal}
+
+The first run gives both real filenames and
+\texttt{<Friday>}. The second gives \texttt{<*.txt>} and
+\texttt{<Friday>}: splitting still happened, but the
+resulting star did not select names. Finally, quoting
+gives one argument, \texttt{<*.txt Friday>}. The
+inside command \texttt{set -f} disables pathname
+expansion; the parentheses keep this change inside
+a subshell environment. There is no need to revise
+your interactive settings afterward. This is a diagnostic
+experiment, not a general recommendation to disable
+globbing.
+
+Use that difference to choose a fix. If the plan really
+calls for text describing a pattern, keep the text in
+one argument and send it to the tool that expects
+pattern notation. If the plan calls for one label and
+one group of names, don't save them joined by a blank.
+Give the label its own quoted argument and write the
+matching pattern separately. If you must preserve a
+group of arguments that were already supplied by
+someone else, transport the group without turning
+it into a single string; the next chapter shows how.
+
+It is possible that neither stage explains your
+observation. If a quoted preview displays one
+complete pathname but opening it still fails, check
+the working directory and the file's actual name.
+The preview emits what you asked it to emit. It
+doesn't validate that an absolute path belongs to
+the right computer, that a relative path starts in
+the right directory, or that you have permission to
+read it. That separation saves time: once the bracket
+probe shows that the value survived as one argument,
+rearranging the quotes is not the first thing to try.
 
 \section{Exercises and cleanup}
 

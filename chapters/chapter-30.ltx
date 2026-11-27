@@ -389,6 +389,85 @@ manual invocation is already automation: it moves
 the tedious checks out of your memory while leaving
 the final decision in your hands.
 
+\section{Check the boundary of a passing test}
+\label{sec:30-boundary}
+
+The word ``regular'' describes what the path leads to,
+not a promise that the path names the original directory
+entry. To see the difference, add a symbolic link in
+the disposable practice directory only. Check \texttt{pwd}
+first and stop if it isn't the new fixture directory.
+In \texttt{ln -s}, the first operand is the stored
+target and the second names the new link. If that
+name already exists, do not replace it; stop and
+inspect the lab before proceeding.
+
+\begin{terminal}
+ln -s 'May notes.txt' ./May-link.txt
+sh "$script" './May-link.txt'
+printf 'Preview status: %s\n' "$?"
+\end{terminal}
+
+The target spelling is relative to the link's own
+directory (Chapter~\ref{ch:8}). The script should print
+\texttt{Would include: <./May-link.txt>} and status
+zero. It never says ``this is not a link.'' A
+different task might require excluding links entirely,
+or might allow them only after verifying their
+targets. In either case, the requirement would need
+a separate check and its own test fixture. Avoid
+interpreting a pass as a promise that the test
+didn't make.
+
+When you finish this contrast, verify you are still
+in the practice directory and use
+\cmd|rm -i './May-link.txt'| to remove only the link.
+Leave \texttt{May notes.txt} in place for the exercises.
+If you have already moved out of the practice folder,
+do not run that relative removal until you have
+returned and confirmed the location.
+
+This experiment also shows a limit of timing. A path
+can pass now and name something different when you
+use it later. A preview should remain separate from
+an operation that changes files, so you can review
+what it intends to do; it cannot freeze the system
+in the state it observed. If the underlying inputs
+keep changing, work with an approved stable copy
+or recheck just before use. Don't replace the human
+decision with a single status code. A documented
+zero means no specified check rejected an argument
+on this invocation, not that every future operation
+using that name will work.
+
+One consequence can look odd at first: the script can
+say a file is readable without knowing whether it is a
+valid note. To test that distinction in the fixture, confirm
+that \texttt{./Blank.txt} is unused, then run
+\cmd|touch './Blank.txt'| followed by
+\cmd|sh "$script" './Blank.txt'|. Here \texttt{touch} creates
+an empty file; if the name is already taken, skip the exercise.
+After checking the preview, use \cmd|rm -i './Blank.txt'| in
+the fixture. The preview tests type and readability, not
+length or contents. A zero-byte file can therefore pass. If the
+committee asks for a nonempty document, that is a new
+policy. A size check would still not prove the author's
+name, that the contents contain the latest decisions, or
+that another reader knows how to open the format. Test
+each property that matters, and describe the others as
+outside the preview instead of implying that they passed.
+
+For a quick write-free comparison now, pass the
+ordinary \texttt{./May notes.txt} candidate and the
+\texttt{./Handouts} directory in one invocation. A
+passing file and a rejected directory give two different
+messages even though both names exist. Return status
+one describes the whole invocation; the two messages
+explain which argument needs attention. Preserve that
+distinction in any handoff you write. ``The preview
+returned one'' is less useful than ``The notes passed;
+Handouts was a directory and was rejected.''
+
 \section{Exercises and cleanup}
 
 \begin{exercise}{Include two real fixtures}
