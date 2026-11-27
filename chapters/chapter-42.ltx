@@ -46,14 +46,36 @@ specified by POSIX; this example asks it to replace the
 final \texttt{X}s with a unique suffix in the trusted system
 temporary directory. Use another trusted absolute temporary
 path if needed. Each \texttt{\&\&} requires the previous
-command to succeed. If \cmd|pwd| doesn't show the new
-\texttt{utp-media} lab, stop without writing anything.
+command to succeed. \texttt{pwd -P} resolves symbolic links
+in the directory path. The setup clears any old value, then
+records and prints the exact physical path once the new
+directory is ready. If it prints no path, stop.
 
 \begin{terminal}
-medialab=$(mktemp -d /tmp/utp-media.XXXXXXXX) &&
-  cd "$medialab" &&
-  mkdir release &&
-  pwd
+unset medialab
+newlab=$(mktemp -d /tmp/utp-media.XXXXXXXX) &&
+  cd "$newlab" &&
+  medialab=$(pwd -P) &&
+  printf '%s\n' "$medialab"
+\end{terminal}
+
+Define this check in the same shell. The \texttt{-n} test
+requires a nonempty saved path, and the equality test compares
+the entire current physical path to it. An empty value, a
+different parent directory, or a similar-looking name isn't a
+match. A failed check prints a diagnostic on standard error
+and returns status one; the following command does not run.
+If it fails, don't change the saved value to make it pass.
+
+\begin{terminal}
+in_media_lab() {
+  if test -n "$medialab" && test "$(pwd -P)" = "$medialab"; then
+    return 0
+  fi
+  printf '%s\n' 'Stop: not in the original media lab.' >&2
+  return 1
+}
+in_media_lab && mkdir release
 \end{terminal}
 
 Only in this confirmed fresh lab, make the first fixture. The
@@ -64,7 +86,8 @@ only. A derivative is a new copy made from the original, not the
 master you want to keep.
 
 \begin{terminal}
-printf '%s\n' 'This is only a line of text.' > ./not-a-pdf.pdf &&
+in_media_lab &&
+  printf '%s\n' 'This is only a line of text.' > ./not-a-pdf.pdf &&
   file ./not-a-pdf.pdf
 \end{terminal}
 
@@ -90,9 +113,10 @@ arguments as separate lines (including the comment beginning with
 from your camera will probably be compressed binary formats.
 
 \begin{terminal}
-printf '%s\n' P3 '# synthetic tiles' '2 2' '255' \
-  '255 0 0  0 255 0' '0 0 255  255 255 255' > ./tiles.ppm
-file ./tiles.ppm
+in_media_lab &&
+  printf '%s\n' P3 '# synthetic tiles' '2 2' '255' \
+    '255 0 0  0 255 0' '0 0 255  255 255 255' > ./tiles.ppm &&
+  file ./tiles.ppm
 \end{terminal}
 
 \cmd|file| may recognize the image as Netpbm or portable pixmap
@@ -119,8 +143,9 @@ the pixels. ImageMagick can replace an existing output file;
 check that \texttt{./tiles.png} does not exist before running it.
 
 \begin{terminal}
-magick ./tiles.ppm -set comment 'fictional noticeboard' ./tiles.png
-file ./tiles.png
+in_media_lab &&
+  magick ./tiles.ppm -set comment 'fictional noticeboard' ./tiles.png &&
+  file ./tiles.png
 \end{terminal}
 
 ImageMagick's \texttt{identify} subcommand reads information
@@ -146,9 +171,10 @@ only original. If a destination already exists, inspect it
 and choose a different unused name.
 
 \begin{terminal}
-magick ./tiles.png -strip ./release/tiles-share.png
-magick identify -format '%w x %h: %c\n' ./tiles.png
-magick identify -format '%w x %h: %c\n' ./release/tiles-share.png
+in_media_lab &&
+  magick ./tiles.png -strip ./release/tiles-share.png &&
+  magick identify -format '%w x %h: %c\n' ./tiles.png &&
+  magick identify -format '%w x %h: %c\n' ./release/tiles-share.png
 \end{terminal}
 
 The lab's release copy should still be two by two, with no
@@ -242,9 +268,11 @@ output. Use the exact fixture only, not LaTeX source from
 an unknown sender. No document in this chapter needs shell escape.
 
 \begin{terminal}
-printf '%s\n' '\documentclass{article}' '\begin{document}' \
-  'The practice event begins at noon.\end{document}' > ./program.tex
-pdflatex -no-shell-escape -interaction=nonstopmode -halt-on-error ./program.tex
+in_media_lab &&
+  printf '%s\n' '\documentclass{article}' '\begin{document}' \
+    'The practice event begins at noon.\end{document}' > ./program.tex &&
+  pdflatex -no-shell-escape -interaction=nonstopmode \
+    -halt-on-error ./program.tex
 \end{terminal}
 
 The explicit \texttt{-no-shell-escape} option tells the engine
@@ -409,18 +437,22 @@ image handoff. Follow the lab cleanup steps after this review.
 \end{solution}
 
 \paragraph{Lab cleanup.}
-After finishing the exercises, use \cmd|pwd| and confirm that it
-shows your \texttt{utp-media} lab. Run the following only inside
-that directory and skip nonexistent optional outputs.
+After finishing the exercises, use the same exact-path check
+before removing any files. The braces group the whole cleanup
+so none of it runs when the check fails. Skip nonexistent
+optional outputs if typing the commands individually, but
+keep the path check before every removal.
 \cmd|rm -i| asks for confirmation; confirm only the synthetic
 fixtures. If a command failed part way through the lab, inspect
 which outputs it actually created before removing them.
 \begin{terminal}
-rm -i ./not-a-pdf.pdf ./tiles.ppm
-rm -i ./tiles.png ./release/tiles-share.png
-rm -i ./program.tex ./program.pdf ./program.aux ./program.log
-rmdir ./release
-cd && rmdir "$medialab"
+in_media_lab && {
+  rm -i ./not-a-pdf.pdf ./tiles.ppm
+  rm -i ./tiles.png ./release/tiles-share.png
+  rm -i ./program.tex ./program.pdf ./program.aux ./program.log
+  rmdir ./release
+  cd && rmdir "$medialab"
+}
 \end{terminal}
 If \cmd|rmdir| refuses, inspect the directory for unexpected
 files rather than deleting everything recursively.

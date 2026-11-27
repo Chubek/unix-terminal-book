@@ -16,5 +16,12 @@
 - Revision check: printed lab setup passed with an nvme template
   and stopped with an invalid one. Exact cleanup was present in the
   rebuilt screen/noanswers PDF; all local media fixtures passed again.
+- Final path guard: executed the printed blocks on Linux with
+  scratch on nvme. Setup through a symlink captured the physical
+  directory, and setup with an invalid template left the guard
+  closed. All seven mutating blocks rejected a different directory
+  with the identical basename; all eight named sentinel files there
+  remained unchanged. The real lab accepted the same blocks,
+  including explicit removal with per-invocation confirmations.
 - `figures/chapter-42/`: `three-checks.tikz`, `derivative.tikz`,
   `content.tikz`. Slice build and grayscale check: see `chapter-37.md`.
