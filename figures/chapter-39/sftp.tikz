@@ -1,0 +1,7 @@
+\begin{tikzpicture}
+\node[utp node] (a) {Local directory\\\texttt{lpwd}, \texttt{lls}};
+\node[utp node,right=5mm of a] (b) {\texttt{sftp>}\\one prompt};
+\node[utp node,right=5mm of b] (c) {Remote directory\\\texttt{pwd}, \texttt{ls}};
+\draw[utp arrow] (b)--(a);
+\draw[utp arrow] (b)--(c);
+\end{tikzpicture}

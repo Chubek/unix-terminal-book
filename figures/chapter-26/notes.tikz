@@ -1,0 +1,5 @@
+\begin{tikzpicture}
+\node[utp node] (source) {first $\mid$ newline $\mid$ second $\mid$ newline};
+\node[utp node,below=10mm of source] (target) {first $\mid$ newline $\mid$ second};
+\draw[utp arrow] (source)--node[right,font=\small] {capture} (target);
+\end{tikzpicture}

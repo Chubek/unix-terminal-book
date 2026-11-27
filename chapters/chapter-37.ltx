@@ -1,0 +1,409 @@
+The library's room-booking page worked yesterday. Today the browser waits,
+then gives up. The weather page still loads. Is the wireless connection down?
+Is the library's name wrong? Is the booking service unavailable while the
+rest of the library site is fine? These are different questions, and a good
+terminal observation narrows one of them instead of answering all of them
+with ``the network is broken.''
+
+\begin{objectives}
+\item Separate a host name, an address, a transport port, and a URL path.
+\item Make read-only observations locally and interpret a practice report.
+\item Find the most useful next question without testing someone else's system.
+\end{objectives}
+
+\section{Read the address you were given}\label{sec:37-address}
+\index{host name}\index{IP address}\index{DNS}\index{port}
+Suppose the library gives you
+\nolinkurl{https://booking.example.org:443/rooms/tuesday}. This printed address
+is a teaching example, not a real booking endpoint. The browser, or another
+program making the request on your behalf, is the \FirstUse{client}. The
+program answering is a \FirstUse{service}, running on a server. People often
+use ``server'' for either the program or the machine that runs it. A single
+machine can offer more than one service, and a service can be spread over
+multiple machines.
+
+The address is a URL, which tells the client how to request something. The
+scheme \texttt{https} means to use HTTP with a protected connection. The
+host name \texttt{booking.example.org} identifies the destination by name.
+The explicit \texttt{:443} names the port; for HTTPS it is common to omit
+the port and let the client use the default, 443. The
+\texttt{/rooms/tuesday} part asks the web service for a particular resource.
+It is not a directory you can assume exists on that server's disk. A program
+can generate it on the spot, and a site can move it without changing its
+name or port. Figure~\ref{fig:37-url} puts the pieces next to the decisions
+they control.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-37/url.tikz}
+\caption{Read a URL from the scheme through the resource path.}\label{fig:37-url}
+\VisualDescription{Four connected labels separate HTTPS, the host name, port 443, and the rooms path.}
+\end{figure}
+
+You can parse the example without visiting it. In a shell, \cmd|printf|
+with the format \cmd|'%s\n'| prints its argument as text and ends the line.
+Quoting keeps the example one argument; the command does not look up the
+name, open the URL, or test the site's certificate.
+
+\begin{terminal}
+printf '%s\n' 'https://booking.example.org:443/rooms/tuesday'
+\end{terminal}
+
+Another address might end in \texttt{?day=tuesday}. The query after the
+question mark can change what the service returns without changing the
+destination machine. Some real query strings include invitation codes or
+temporary account tokens. Do not put real sign-in links into shell history
+or support notes. Even a URL without a password can contain a private
+document title or an identifier that grants access. If a support person
+only needs the scheme and host, leave out the rest.
+
+\begin{quicktable}{M{1.2in}Y}
+\toprule
+Piece & What changing just this piece might change \\
+\midrule
+https & How the client talks to the service; don't switch to HTTP to bypass an error. \\
+Host name & Which service name the client looks up and checks. \\
+443 & Which transport endpoint the client asks for at its destination. \\
+/rooms/tuesday & What resource the already contacted web service is asked to return. \\
+\bottomrule
+\end{quicktable}
+
+\section{Names get you to addresses, not to pages}
+\FirstUse{DNS}, the Domain Name System, distributes information about names.
+For a routine web connection, your system's name lookup usually consults
+DNS to find candidate IP addresses, though local configuration or a cached
+answer can supply an address too. The program may try more than one answer.
+A common reason is that it can reach a service over IPv6 as well as IPv4,
+two versions of the Internet Protocol. An IPv4 address looks like
+\texttt{192.0.2.25}; an IPv6 address might look like \texttt{2001:db8::25}.
+Both here are from documentation ranges. The double colon in the IPv6
+example shortens a run of zero groups. In a URL containing a numeric IPv6
+address, brackets separate the address from a following port, as in
+\texttt{https://[2001:db8::25]:443/}. Do not substitute an address for a
+name to bypass a web certificate warning: the service can rely on the name
+for both identity and site selection.
+
+A name can have many addresses for ordinary reasons. A large service might
+direct readers in different regions to different addresses, and a home
+computer might change addresses when it joins a different network. Likewise,
+many site names can share one address. An IP address is a delivery
+destination at the network layer, not proof that you reached the person or
+organization you intended to reach. That distinction matters again for
+SSH in Chapter~\ref{ch:38}.
+
+Here is a made-up lookup report. It deliberately does not copy a particular
+utility's format. Read each row as a candidate, not as a successful visit.
+
+\begin{terminaloutput}
+name                 family    candidate
+booking.example.org  IPv4      192.0.2.25
+booking.example.org  IPv6      2001:db8::25
+\end{terminaloutput}
+
+The report has no port, status code, or room availability. A correct
+address answer can coexist with a down service. The reverse can also be
+true: another device may reach a service immediately using a cached
+answer while your device gets a lookup error. A \FirstUse{resolver} is the
+component that seeks the answer. Other programs on the same machine can
+use different caches or lookup paths: some browsers, for instance, can
+use their own DNS settings. Don't treat your shell and browser as identical
+instruments unless you know they're using the same settings.
+Figure~\ref{fig:37-lookup} puts the connection attempt after address choice.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-37/lookup.tikz}
+\caption{Name lookup supplies candidates for a separate connection attempt.}\label{fig:37-lookup}
+\VisualDescription{The resolver hands two candidate addresses to the client, which separately attempts a service connection.}
+\end{figure}
+
+\section{Read only what you need locally}\label{sec:37-local}
+Your own operating system knows about its network \FirstUse{interfaces},
+which are entry and exit points for network traffic. Wi-Fi and Ethernet are
+familiar kinds, and software can provide virtual ones. One kind that
+doesn't lead out of your computer is \FirstUse{loopback}: the machine
+talking to itself. An IPv4 loopback address you often see is
+\texttt{127.0.0.1}; the IPv6 loopback address is \texttt{::1}. The usual
+interface name on Linux is \texttt{lo}; on macOS and the BSDs here it is
+usually \texttt{lo0}. ``This machine can see its loopback interface'' is a
+small and useful fact. It does not mean your Wi-Fi, Internet connection, or
+library page is up.
+
+\index{ip@\texttt{ip}}\index{ifconfig@\texttt{ifconfig}}\index{loopback}
+\begin{platformnote}{Linux and macOS/BSD}
+On Linux, use the iproute2 utility \texttt{ip} if installed:
+\end{platformnote}
+
+\begin{terminal}
+ip address show dev lo
+\end{terminal}
+
+In this invocation \texttt{address} selects protocol address information,
+\texttt{show} asks to display it, and \texttt{dev lo} limits it to the named
+interface. The command asks the operating system for configuration; it
+doesn't send traffic to a destination. Look for \texttt{inet} for IPv4
+and \texttt{inet6} for IPv6 if configured. A suffix like
+\texttt{/8} or \texttt{/128} is an address prefix length, not a port
+number. It describes how many leading bits identify a network prefix;
+you don't need to calculate it here.
+
+On macOS, FreeBSD, OpenBSD, or NetBSD, use the local \texttt{ifconfig}
+form with only the interface name. Don't append setting words or addresses.
+
+\begin{terminal}
+ifconfig lo0
+\end{terminal}
+
+The field order varies. Some versions show an IPv4 netmask rather than
+a slash prefix length; it conveys which address bits belong to the network
+prefix. Look for an address, not an exact transcript match. An absent
+IPv6 entry isn't by itself an error. If the named utility or interface
+does not exist, use the system's network information panel rather than
+installing a package or modifying an interface just for this lesson.
+
+You can view the computer's configured name, if \texttt{hostname} is
+available, by using it with no arguments or options:
+
+\begin{terminal}
+hostname
+\end{terminal}
+
+This is the local configuration's idea of a name; it doesn't prove that
+another device can resolve it. Some systems have a short name, some have a
+longer name with dots, and some have a name generated by the network or an
+administrator. Output can reveal a person's name, a school or employer, or
+the naming pattern of machines inside a workplace. For debugging your own
+problem it may help to write ``confirmed I was on my laptop'' instead of
+pasting the literal output into a public forum. There is no need here to
+request every network adapter, DNS option, or address from your system.
+
+\section{Connections produce different kinds of evidence}
+\index{TCP}\index{TLS}
+Once the client has an address, it tries to talk to the intended port.
+TCP and UDP are distinct transport protocols, and both have port numbers
+of their own. An HTTPS client may use TCP or, with HTTP/3, QUIC over UDP.
+To reason about the page here, imagine the TCP case first. A refusal
+normally means the connection was rejected promptly by an endpoint or
+intermediary. The service may not be listening there, or policy may
+actively reject the connection. A timeout means the program did not
+receive what it needed before its deadline. It doesn't tell you which
+device failed, filtered traffic, or simply responded too late. Clients
+can time out during several stages, not only while opening the connection.
+Figure~\ref{fig:37-layers} shows where those later stages fit.
+
+Next comes the protected connection. TLS is the protocol that a conventional
+HTTPS client uses to protect communication and check the service identity.
+The client checks, among other things, whether the name it meant to contact
+is covered by the certificate. A bad clock can make a legitimate certificate
+appear outside its validity period; a wrong or untrusted certificate can
+also signal a much more serious problem. Stop and ask the service owner
+using a known channel rather than suppressing the check. Some public
+networks have a sign-in page and can interrupt access until you follow the
+network operator's official instructions. That does not make an unexpected
+certificate safe to accept. Once TLS works, the web service still has to
+process the request. A response like HTTP 404 (not found) isn't evidence
+of absent Internet access; an HTTP responder answered for that request.
+It may be an intermediary or deliberately conceal a resource.
+
+There might also be a proxy between the application and the service.
+A \FirstUse{proxy} is a program that makes or forwards requests on
+someone else's behalf. For example, an employer may route work
+browsers through a proxy that enforces access rules. It could be
+the proxy that resolves the destination name, not the computer under
+your hands. In that setting an application that ignores the proxy
+isn't a clean comparison with the approved browser. If you need
+support, say you used the ordinary work configuration. Don't bypass it
+to make a troubleshooting result look simpler. Likewise, a VPN only
+affects the traffic it is set up to handle. ``VPN appears connected''
+and ``this request can reach the private service'' aren't equivalent
+observations.
+
+Be especially careful interpreting so-called connectivity tests for a
+service. A response from a different protocol tells you that something
+responded under the conditions of that test. It doesn't show a web
+application can process bookings. Conversely, a service may correctly
+ignore a test message altogether while responding to its normal
+clients. Choose observations from the request that actually matters.
+Using a book's example IP address, changing ports at random, or
+requesting pages repeatedly teaches you little about the original
+problem and can interfere with other people's work.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-37/layers.tikz}
+\caption{In the TCP case, look for the last stage that actually worked.}\label{fig:37-layers}
+\VisualDescription{Name lookup leads to transport, identity checking, and then an HTTP response. Any stage can fail while the preceding one succeeds.}
+\end{figure}
+
+\begin{quicktable}{p{1.45in}Y}
+\toprule
+Observation & Narrow next question \\
+\midrule
+Can't resolve name & Does the address match the one the owner supplied, and is this a name only available on an approved network? \\
+Refused or timed out & Is this the intended service and port, and what stage did the actual client report? \\
+Certificate warning & Are the name and local time correct, and what does the owner say through a known channel? \\
+HTTP 401 or 403 & Does the request require a sign-in or permission? Follow the official access procedure. \\
+HTTP 404 & Is the resource path still correct? Ask for the current link rather than guessing alternatives. \\
+\bottomrule
+\end{quicktable}
+
+\begin{dialoguebox}{The weather page}
+\Brian{If the weather page loads, doesn't that settle the network question?}
+\Stephen{It shows your computer can reach a site.}
+\Brian{Or that my browser already had the weather page.}
+\Stephen{Good catch. A fresh response is better evidence than a cached view.}
+\Brian{Even a fresh forecast doesn't tell me whether the room-booking name works.}
+\Stephen{Right. It rules out some broad failures, not a failure specific to the booking request.}
+\Brian{So I should tell support which request gave which result, not say the Internet is down.}
+\Stephen{And say whether you know it was a fresh request.}
+\DialogueConclusion{Report the observation, not a diagnosis.}
+\end{dialoguebox}
+
+\section{Practice on a fictional desk report}
+Shell examples use \texttt{sh} syntax. The following practice uses ordinary
+text files rather than sending even one request. Save these examples for
+looking at a problem when you have enough context to describe it. Start
+with a new directory; \cmd|mktemp -d| asks for a unique directory,
+replacing the final \texttt{X}s in the trusted local temporary path
+with a suffix. The utility is common but not required by POSIX.
+The first line saves the resulting path in the shell variable
+\texttt{desk}, whose quoted expansion is one operand. Each
+\texttt{\&\&} runs the next command only when the previous
+one succeeds. Confirm that \cmd|pwd| shows the new
+\texttt{utp-desk} directory under \texttt{/tmp}; otherwise stop
+without creating the log. Use a different trusted absolute
+temporary-directory path if your system requires one.
+
+\begin{terminal}
+desk=$(mktemp -d /tmp/utp-desk.XXXXXXXX) &&
+  cd "$desk" &&
+  pwd
+\end{terminal}
+
+Make the file once, in this new directory. \cmd|printf| repeats the format
+for each of the four arguments; shell continuation backslashes keep the
+command on multiple input lines. The \cmd|>| writes and could truncate
+\texttt{desk.log} if you repeated it somewhere else. The timestamps are
+local practice clock labels, not test data from a live network.
+
+\begin{terminal}
+printf '%s\n' \
+  '14:00 lookup: no answer recorded' \
+  '14:05 lookup: IPv4 192.0.2.25' \
+  '14:05 transport: connection opened' \
+  '14:05 web: HTTP 404 for /rooms/tuesday' > desk.log
+\end{terminal}
+
+Read the whole report with \cmd|cat desk.log|, then use fixed-string search
+to retrieve observations about one stage. \cmd|-F| keeps the search literal;
+the pattern is the text before an ordinary clause on those lines, and the
+last operand is the file to inspect.
+
+\begin{terminal}
+cat desk.log
+grep -F 'lookup:' desk.log
+grep -F 'web:' desk.log
+\end{terminal}
+
+Expect two lookup lines and one web line. If only the second lookup was
+recorded, you couldn't demonstrate a change in lookup outcome. Likewise
+the report's first line describes absent evidence, not necessarily a failed
+lookup: it says ``no answer recorded,'' not ``NXDOMAIN.'' The latter is a
+DNS protocol response that says the queried name does not exist in the
+answering view. Whether or not your tool uses that term, distinguish a
+negative answer from a failure to receive an answer. The two hypotheses
+lead to different follow-up questions.
+
+For the next example, look for a TLS observation, then immediately print
+the status of that search. No matching line is expected. The single-quoted
+format \cmd|'%s\n'| belongs to \cmd|printf|; \cmd|"$?"| is the previous
+command's exit status. A \cmd|grep| status of 1 indicates no matching
+lines; a status greater than 1 indicates an error. Don't infer that TLS was
+skipped from a search with no matches. It only shows that those letters
+followed by a colon are not present in the log.
+
+\begin{terminal}
+grep -F 'TLS:' desk.log
+printf '%s\n' "$?"
+\end{terminal}
+
+In a real support exchange, share a short chronology with timezone, the
+client type, a redacted resource description, exact non-sensitive error
+words, and steps tried. Record when you switched networks, not the names
+of all networks you can see. If calling the library, you could say:
+``This afternoon my browser reached the booking site, but the room link
+gave not found. I used the link from yesterday's email; where is the current
+booking page?'' This is kinder to both parties than an attached dump of
+every setting. For a service you don't administer, use its normal interface
+and published support channels; don't try unrelated ports or devices.
+There are no live connection exercises in this chapter.
+
+If you make a second observation, change one relevant condition at a
+time and record what changed. ``After checking the published URL, I saw
+that Tuesday's link had been replaced'' is useful. ``I restarted,
+changed networks, changed the address, and tried again'' doesn't tell
+you which step mattered. In practice the next observation may be a
+question for a person instead of a new command. A service owner can
+say whether an old booking link expired or whether outsiders are
+supposed to use a different portal. Nothing in the fictional desk log
+would establish that. The terminal has given you a better question,
+which is often the best possible result.
+
+Keep the temporary directory until the exercises are done. To clean up,
+use \cmd|pwd| first and check that you are in \cmd|"$desk"|. Remove only
+\cmd|./desk.log| with \cmd|rm -i| (confirm only the practice file).
+Use \cmd|cd && rmdir "$desk"| so removal is not attempted if
+\cmd|cd| fails. \cmd|rmdir| refuses to remove a directory with
+entries, so unexpected files are a reason to stop and look.
+
+\begin{exercise}{Same host, another room}\label{ex:37-url}
+Print a version of the example URL with path \texttt{/rooms/friday}.
+Identify the pieces you didn't change and explain what changed without
+opening the address. This creates no files; keep the desk log.
+\end{exercise}
+\begin{solution}
+\cmd|printf '%s\n' 'https://booking.example.org:443/rooms/friday'|
+prints the new URL. The scheme, host name, and port remain the same; only
+the requested resource name changes. Nothing was fetched or modified.
+\end{solution}
+
+\begin{exercise}{One interface, one claim}\label{ex:37-loopback}
+Use the read-only loopback command for your system. Find an address if
+configured, and say one thing the result establishes and one thing it
+doesn't. If your tool is unavailable, use the printed addresses instead.
+No cleanup is needed.
+\end{exercise}
+\begin{solution}
+In the Linux output, \texttt{inet 127.0.0.1/8}, if present, is evidence of
+the local IPv4 loopback configuration. The comparable macOS/BSD line may
+spell out the netmask. It says nothing about access to the library server.
+A printed address illustrates notation only; it isn't evidence about
+your machine.
+\end{solution}
+
+\begin{exercise}{Separate absence from error}\label{ex:37-status}
+In the desk directory, search first for the fixed string
+\texttt{transport:} in \texttt{desk.log}, then for
+\texttt{TLS:} in the same file, then for \texttt{transport:}
+in \texttt{absent.log}, which was not created. Check each status
+before running another command. Finish by removing the desk log and
+its directory as above.
+\end{exercise}
+\begin{solution}
+\cmd|grep -F 'transport:' desk.log| prints one line and returns zero.
+\cmd|grep -F 'TLS:' desk.log| prints nothing and returns one.
+\cmd|grep -F 'transport:' absent.log| prints a diagnostic and returns a
+status greater than 1; that is not a successful search with zero matches.
+After checking \cmd|pwd|, \cmd|rm -i ./desk.log| removes the one practice
+file on confirmation; \cmd|cd && rmdir "$desk"| finishes the cleanup.
+\end{solution}
+
+\begin{takeaways}
+\item A name, an address, a port, and a resource path answer different questions.
+\item Local observations describe local state; don't promote them into remote facts.
+\item Record the last working stage and the first observed failure, with context and without secrets.
+\end{takeaways}
+
+\begin{furtherreading}
+\ReadingItem{RFC 3986, section 3}{The scheme, authority, and path components of a URI.}{https://www.rfc-editor.org/rfc/rfc3986.html}
+\ReadingItem{RFC 9110}{HTTP semantics, including status codes and HTTPS.}{https://www.rfc-editor.org/rfc/rfc9110.html}
+\ReadingItem{ip-address(8)}{The Linux iproute2 address display syntax.}{https://man7.org/linux/man-pages/man8/ip-address.8.html}
+\ReadingItem{ifconfig(8)}{OpenBSD's interface display syntax; consult the installed manual for your OS.}{https://man.openbsd.org/ifconfig}
+\end{furtherreading}

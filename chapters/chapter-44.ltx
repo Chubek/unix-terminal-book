@@ -1,0 +1,444 @@
+You ask a colleague to find the two items that need attention in
+a report. They say, ``the red lines.'' On your screen the two
+shades look alike. In a spoken reading of the terminal, there are
+no red lines at all. The report does have a useful property: it is
+text. If the status is written in words, you can read it with your
+preferred font, search for it, or take it to a reader that suits you.
+
+\begin{objectives}
+\item Make keyboard, visual, and spoken access adjustments without
+losing a known-good setup.
+\item Turn a short report into plain, searchable output with explicit status.
+\item Preserve the original report and verify the result independently of color.
+\end{objectives}
+
+\section{Distinguish the display from the data}\label{sec:44-layers}
+
+When terminal output is hard to use, find where the obstacle lives.
+The terminal application draws characters, manages a scrollback
+buffer, and may offer an accessibility interface for a screen reader.
+The shell handles the prompt and its own command editing. An
+application you run may choose whether to print plain lines, move
+the cursor, or take over the entire window. Chapter~\ref{ch:43}
+isolated changes to a shell prompt; changing the font used to
+display that prompt is normally a terminal-application setting.
+Figure~\ref{fig:44-layers} separates these responsibilities.
+\index{accessibility}\index{screen readers}
+
+\input{figures/chapter-44/layers.tikz}
+
+Make one change at a time, in a spare window or a duplicate terminal
+profile if your application offers one. Record the old value and how
+to switch back before changing it. Try the smallest test that uses
+the setting you changed: read one prompt, move through a known
+command by character, and read a line after that command finishes.
+Check what happens when the window is not quite wide enough. A
+visually wrapped line may still be one line in the file; verify this
+by counting lines or by reading the file in a different tool.
+Larger fonts may mean more wrap; that is a reason for shorter
+labels, not a reason to give up the font you can read.
+
+Think about a wrapped email address as a concrete example.
+The extra screen row may be a display decision, or the original
+text may have a real newline in the middle. Those are different
+problems: width changes help with the first, but a valid address
+still needs reconstruction in the second. A spoken reader might
+announce both events as a pause. A test with known line breaks
+makes that distinction easier to learn than trying to guess from
+the pacing of an unfamiliar report. Long lines aren't inherently
+unusable, but the person reading them should have a way to
+reach the relevant portion and understand whether it belongs to
+the previous line. When designing your own report, one short
+record per line gives somebody a choice of reader without
+making them reconstruct the layout.
+
+\begin{quicktable}{p{.32\linewidth}Y}
+\toprule
+What makes work hard & First adjustment to test \\
+\midrule
+Characters look alike & A larger monospace font; test zero and
+capital O, then one, lowercase l, and capital I. \\
+Screen output vanishes & Use scrollback or save plain output and
+read the saved file; check whether scrollback is limited. \\
+Reader speaks every update & Avoid animated tools when a plain
+report option is available; test the report in a separate reader. \\
+Wrong app gets key & Check screen-reader and terminal
+key bindings before changing shell editing bindings. \\
+State is shown by shade alone & Add words such as ``open'' and
+``done'' at the data or reporting layer. \\
+\bottomrule
+\end{quicktable}
+
+For visual settings, try high contrast between text and background
+and evaluate normal, selected, and error text separately. A color
+scheme is a set of several color pairs, not one. Try a roomy font at
+the actual zoom you work at; check narrow punctuation as well as
+letters. Turn off typographic ligatures if a font or renderer combines
+two source characters into a confusing glyph. Test cursor visibility
+when the window does not have focus; a flashing caret may not help
+someone who is distracted by motion. A label such as \texttt{open}
+keeps its meaning if you take the terminal's colors away.
+
+For speech or braille, start with the documented interaction model
+for your terminal and reader. Some readers expose a review mode
+that lets you read an earlier line without moving the command's
+cursor. Learn how to return to the live input position. On macOS,
+Apple documents Terminal's accessibility settings and VoiceOver;
+on Linux, the Orca guide describes reviewing text in accessible
+applications. On the BSDs the availability of graphical terminals
+and readers depends on what is installed. Do not assume the same
+keystrokes or even the same access to live terminal output. A plain
+text file offers another route on every one of these systems: use
+an editor or reader you already know. None of the commands below
+requires altering the global keyboard configuration.
+
+Test typed input separately from program output. A reader that
+echoes typed characters can help with accuracy but make long
+input hard to review if it repeats everything simultaneously.
+A synthesizer that pronounces a command name as a single word
+may not speak a dash you need to copy. Read by character or
+switch to a punctuation level that works for the test; you
+needn't permanently announce every symbol in every app.
+For braille, ask which part of a long line is visible after
+panning and where the device indicates focus. When writing
+instructions for others, provide a copyable literal command
+and describe its components in words. ``Use the short dash
+before the letter n'' is information a keyboard diagram may
+not convey.
+
+\section{Build a report you can read out of order}\label{sec:44-report}
+
+The practice uses POSIX shell syntax; type \cmd|sh| first in a spare
+terminal if needed. \cmd|mktemp -d| is widely available but is not
+a POSIX utility. It creates a new directory with a unique name in
+place of the Xs. Run this setup by itself:
+
+\begin{terminal}
+lab=$(mktemp -d "${TMPDIR:-/tmp}/utp44.XXXXXX") &&
+    cd "$lab" && lab=$PWD && pwd
+\end{terminal}
+
+Continue only if it prints the absolute path of the new directory
+with a name beginning \texttt{utp44.}. Note that exact path for
+cleanup. If the setup fails or prints an unexpected path, stop.
+The next command uses \cmd|>|, which can replace its destination.
+Run it only inside the verified fresh directory.
+
+\begin{terminal}
+printf '%s\n' 'open: call the library' 'done: return the book' \
+    'open: choose next title' > ./tasks.txt
+\end{terminal}
+
+The same starting report is in
+\FilePath{listings/chapter-44/tasks.txt}.
+
+Use each status as part of the line, not as a separate legend.
+Read only the beginning first. \cmd|head -n 2| asks for two
+physical lines of text; multiple screen rows after a wrap are still
+one physical line. Use \cmd|wc -l| with input redirection to count
+newline characters in the entire report. The fixture has a final
+newline so this is also the number of its lines. Redirection hides
+the operand name from \cmd|wc|; some versions pad the number.
+
+\begin{terminal}
+head -n 2 ./tasks.txt
+wc -l < ./tasks.txt
+\end{terminal}
+
+The first command should print the call and the return. The count is
+three. An optional full-screen pager can be convenient, but start
+with a short bounded read: a screen reader may speak a whole page
+when that is not what you want. Pressing a key in a pager can move
+its internal cursor, send shell input, or do neither, depending on
+which program is in the foreground. Know how to leave a tool
+before testing it. The optional \cmd|less| pager documents
+\Key{q} for quit; this chapter does not require it.
+
+Extract the open lines to a second file. The quoted pattern is a
+basic regular expression: the caret requires a match at the
+beginning of a line. This differs from searching for the letters
+``open'' anywhere, which would find ``reopen'' if it were present.
+\cmd|-n| prefixes each matched line with its original line number.
+Line numbers let a collaborator locate evidence without reading the
+report in the same screen order you did.
+
+\begin{terminal}
+grep -n '^open:' ./tasks.txt > ./open.txt
+printf 'search status: %s\n' "$?"
+cat ./open.txt
+\end{terminal}
+
+\begin{terminaloutput}
+1:open: call the library
+3:open: choose next title
+\end{terminaloutput}
+
+The expected search status is zero. Status one means no match;
+greater than one indicates an error. Redirection can leave an empty
+file even if a search fails, so do not interpret an empty result
+without reading the diagnostic and status. \cmd|cat| prints the
+saved output; it does not colorize the findings. Copy this small
+fixture into your preferred plain text reader if the live window
+has no suitable review mode. A graphical editor can be the right
+last step even when the terminal is the right tool for filtering.
+\index{head@\texttt{head}}\index{grep@\texttt{grep}}\index{wc@\texttt{wc}}
+
+\input{figures/chapter-44/routes.tikz}
+
+Figure~\ref{fig:44-routes} shows two ways to read the same result.
+Saving output is not a universal switch to plain text. If a command
+has already emitted terminal control characters, redirection can
+store those same characters. Look in that command's own manual for
+plain, no-color, or noninteractive options. There is no POSIX option
+called \texttt{--no-color} that must work everywhere. Likewise
+setting \texttt{NO\_COLOR} only affects software that honors that
+convention. Removing color does not suppress animation, progress
+output, or cursor motion on every utility.
+
+You can review a saved report without moving the terminal
+cursor through screen rows. Ask for its final matching line
+and give it a spoken introductory sentence. \cmd|tail -n 1|
+asks for the last line; it doesn't need a pager to do this.
+The first command describes what you intend to read, and the
+second prints the actual evidence. If the file is missing,
+the label alone does not mean there was any evidence.
+
+\begin{terminal}
+printf '%s\n' 'Last open item in the saved report:'
+tail -n 1 ./open.txt
+\end{terminal}
+
+Expect the line numbered three, not a line numbered two.
+The number came from the source file and is intentionally
+preserved. If the person reviewing the list requests only
+one item at a time, labels and stable numbers let you do
+that without asking them to rely on a particular cursor
+position or reading speed. In contrast, a stream of partial
+updates may show an unfinished result as though it were the
+current answer and then overwrite it on the next redraw.
+
+\section{Hear the result of a command, not only its lines}
+
+Try making an affirmative status line for a no-match search.
+\cmd|-q| tells \cmd|grep| to suppress matched lines; the exit status
+is useful when only the presence of a match matters. With a single
+controlled file, the cases below distinguish no result from an
+error. For a search across many files where independent errors
+matter, do not use quiet mode as proof that all files were readable:
+a successful match can give zero even if another file failed.
+Here the quoted caret pattern means to look for a line that starts
+with the status \texttt{waiting:}.
+
+\begin{terminal}
+grep -q '^waiting:' ./tasks.txt
+report_status=$?
+case "$report_status" in
+    0) printf '%s\n' 'Waiting items found.' ;;
+    1) printf '%s\n' 'No waiting items.' ;;
+    *) printf 'Search error, status %s.\n' "$report_status" ;;
+esac
+\end{terminal}
+
+\cmd|case| chooses the first matching pattern for the value supplied,
+and each \cmd|;;| ends a branch. The final \cmd|*| pattern catches
+all other status values. \cmd|esac| ends the construct. Expect the
+plain sentence ``No waiting items.'' This label and the match
+lines each answer a different question: whether the request found
+anything, and where an item appeared in the source. Both can work
+without color. For a batch job, keep status lines short and make
+the order predictable. A friendly sentence in an interactive
+report can be a nuisance when mixed with machine-readable rows;
+write status information to standard error in that setting
+(Chapter~\ref{ch:15}).
+
+A screen reader can read error messages too, but its timing
+and the terminal's redraw can make one easy to miss. Preserve
+a known diagnostic for review. The file \texttt{absent.txt}
+was never created; the command is supposed to fail. \cmd|2>|
+writes standard error into the named file, not into the report.
+Record the status immediately and review the diagnostic as
+text afterwards.
+
+\begin{terminal}
+head -n 1 ./absent.txt 2> ./diagnostic.txt
+printf 'read status: %s\n' "$?"
+cat ./diagnostic.txt
+\end{terminal}
+
+Expect a nonzero status and a diagnostic about the missing
+path. Wording and punctuation vary. In a real workflow, make
+sure your accessibility route preserves failures as well as
+results; saving only standard output can lose the error that
+explains a missing record. Keep the diagnostic separate from
+data, and avoid sharing the file verbatim if it contains a
+private path or an identifier. Saving it locally for review
+doesn't mean consenting to publish it.
+
+\begin{dialoguebox}{What counts as plain?}
+\Brian{I turned off the colors and the report is still hard to use.}
+\Stephen{What gets in the way now?}
+\Brian{The reader starts again on every percentage update.}
+\Stephen{Then I solved the wrong part. Plain colors don't imply stable lines.}
+\Brian{I'd rather read the final count than hear it being made.}
+\Stephen{Look for a noninteractive report and test it with your reader.}
+\Brian{And put the status in words, so I can search for it tomorrow.}
+\DialogueConclusion{Plain output needs stable, meaningful text.}
+\end{dialoguebox}
+
+\section{Test a route from the keyboard}
+
+Do not practice with private data, especially if a screen reader
+speaks it aloud. Use this literal string to test how the font and
+reader distinguish shapes. Hear the label and count the characters
+if you need to tell whether the reader pronounced a spelling or
+read a word. Different readers may speak the symbols differently.
+
+\begin{terminal}
+printf '%s\n' 'Zero and O: 0 O' 'One, ell, eye: 1 l I'
+\end{terminal}
+
+In the same test window, type but do not execute a simple
+\cmd|printf '%s\n' 'practice:'| line. Use the documented keys for
+your reader or shell to review the editable text. Compare its
+contents before and after moving the caret, then execute it only
+if the line still matches the harmless test. If the input has
+changed in ways you cannot inspect, cancel rather than pressing
+\EnterKey{}. In a normal interactive shell, \KeyChord{Ctrl}{C}
+usually cancels the input, but verify which application currently
+owns the keyboard. If a screen-reader shortcut doesn't deliver a
+shell editing key, start by checking who owns the binding; do not
+disable a critical access mechanism to make one shortcut work.
+Figure~\ref{fig:44-keys} shows this diagnosis.
+
+\input{figures/chapter-44/keys.tikz}
+
+\begin{quicktable}{p{.29\linewidth}Y}
+\toprule
+Part of the trial & What to verify before keeping the change \\
+\midrule
+Input & Can you identify the live editing location and cancel an
+uncertain line without submitting it? \\
+Status & Can you tell a successful command, a no-match result, and
+an error apart with the display configuration you use? \\
+Navigation & Can you reread an earlier line and return to the
+prompt? Are editor or reader shortcuts still available? \\
+Recovery & Do you know the old setting and how to restore it without
+relying on the newly changed shortcut? \\
+\bottomrule
+\end{quicktable}
+
+Some people use a mouse to select a past line and a keyboard to
+enter commands; others do the reverse or do neither. The useful
+test is whether the exact tasks you need are possible, not whether
+you can reproduce a particular person's setup. If you report an
+accessibility gap, describe the smallest harmless input, what you
+could perceive, and which component you expected to respond.
+An audio report that says ``the reader says blank after the last
+line'' can be more useful than a screenshot. Record application,
+shell, and reader versions, not personal file contents.
+
+\subsection{Keep an alternative when a single route is fragile}
+
+Suppose you send a daily report to two people. One wants to
+scroll through the list using the terminal's review mode; one
+wants to search predictable text in an editor after the report
+finishes. They can be reading the same facts. Do not ask the
+second person to convert a screenshot into text or retrace
+an animation to find what was actually decided. If a dashboard
+is valuable, keep it, and also make the stable records
+accessible. Decide what one record means: an item with a
+status, a count for one category, or an error with an
+identifiable source. Write the records so a later reader
+doesn't need a legend visible in another pane.
+
+Review an output file in a window unlike the one in which it
+was made. Try different line lengths and a plain font. Can
+you identify the open items from the text alone? Can you tell
+whether a status line describes one item or the whole report?
+If a table depends on columns lining up, put a few records
+into a labeled one-per-line format and compare them aloud.
+Neither layout is intrinsically better for every use. The
+test is whether the information survives changing the tool
+that reads it.
+
+When a live program can't produce a usable result and you
+cannot safely capture it, use a different tool to do the
+same job. Accessibility is not a promise that every terminal
+application works with every reader. Prefer a route you can
+verify with your own setup over a clever configuration that
+fails whenever a package changes. Write down the route and the
+smallest example you can use to check it after an update.
+
+\begin{takeaways}
+\item Change the layer that owns the problem: display, shell, or application.
+\item Save stable text and give important status a word, not only a color.
+\item Test access and rollback with an ordinary, repeatable task.
+\end{takeaways}
+
+\begin{exercise}{An error is not an empty report}\label{ex:44-error}
+Run the status example with a nonexistent file in place of
+\texttt{tasks.txt}, using the name \texttt{absent.txt}. Read both the
+diagnostic and the status line. Do not create that file.
+\end{exercise}
+\begin{solution}
+Replace only the file operand on the \texttt{grep} line. The utility
+should identify the missing file on standard error, with a status
+greater than one. The final branch prints an error rather than
+claiming there are no waiting items. No file was written.
+\end{solution}
+
+\begin{exercise}{Locate a line without color}\label{ex:44-locate}
+Write only the numbered done line to \texttt{done.txt} and verify
+that it is from the second line. Remove \texttt{done.txt} during
+chapter cleanup.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+grep -n '^done:' ./tasks.txt > ./done.txt
+cat ./done.txt
+\end{terminal}
+Expect \texttt{2:done: return the book}. The number is the source
+line, not the line number inside the new file.
+\end{solution}
+
+\begin{exercise}{Change one display choice}\label{ex:44-display}
+In a secondary profile or spare window, note the current font,
+contrast, or reader setting. Change one setting, repeat the
+character distinction test and the test of reaching the live
+prompt, then return to the original setting. If you do not have an
+independent profile or the change is unsafe, use a plain text
+reader for \texttt{open.txt} and test a preference there instead.
+\end{exercise}
+\begin{solution}
+The controlled comparison is the same input before and after,
+with a specific observation such as ``I can distinguish zero from
+O'' or ``the reader now repeats the status.'' Revert even a helpful
+setting as part of this exercise to demonstrate a recovery route;
+then choose whether to reapply it. Close only the window you set
+aside, not a working session. No additional chapter file is needed.
+\end{solution}
+
+Cleanup: run \cmd|pwd| and compare the entire path with the one
+you recorded at setup. If it differs, stop: the names below might
+refer to files outside the practice directory. If you created
+\texttt{done.txt} in the exercise, remove that file separately
+before the main cleanup. Otherwise skip this first block.
+
+\begin{terminal}
+rm ./done.txt
+\end{terminal}
+
+Remove the remaining reports you made, then leave and remove the
+empty directory. If you opened a child shell for practice, you can
+exit it afterwards.
+
+\begin{terminal}
+rm ./tasks.txt ./open.txt ./diagnostic.txt
+cd / && rmdir "$lab"
+\end{terminal}
+
+\begin{furtherreading}
+\ReadingItem{Apple Terminal User Guide}{Terminal settings and accessibility features on macOS.}{https://support.apple.com/guide/terminal/welcome/mac}
+\ReadingItem{Orca help}{Reviewing and navigating text with the Orca screen reader.}{https://help.gnome.org/users/orca/stable/}
+\ReadingItem{POSIX grep}{Options and distinct statuses for matches, no matches, and errors.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/grep.html}
+\end{furtherreading}

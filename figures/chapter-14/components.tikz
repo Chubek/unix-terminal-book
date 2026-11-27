@@ -1,0 +1,7 @@
+\begin{tikzpicture}
+\node[utp node] (here) {\texttt{.}\\Current directory};
+\node[utp node,right=8mm of here] (sub) {\texttt{archive}\\Directory component};
+\node[utp node,right=8mm of sub] (file) {\texttt{march-?.txt}\\Final component};
+\path (here.east)--node[font=\ttfamily]{/} (sub.west);
+\path (sub.east)--node[font=\ttfamily]{/} (file.west);
+\end{tikzpicture}

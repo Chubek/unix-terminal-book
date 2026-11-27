@@ -1,0 +1,8 @@
+\begin{tikzpicture}
+\node[utp node] (a) at (0,0.6) {001: true};
+\node[utp node] (b) at (0,-0.6) {002: false};
+\node[utp node] (y) at (5.7,0.6) {Emit ID \texttt{"001"}};
+\node[utp node] (n) at (5.7,-0.6) {Emit nothing};
+\draw[utp arrow] (a)--node[above,font=\small] {passes Boolean test} (y);
+\draw[utp arrow,dashed] (b)--node[above,font=\small] {fails Boolean test} (n);
+\end{tikzpicture}

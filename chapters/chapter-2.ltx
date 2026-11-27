@@ -1,0 +1,200 @@
+You send a friend a command that worked on your laptop. On theirs, the command has the same name but refuses one of the options. Did they mistype it? Did you both install different versions? Or was the instruction never common to both systems? A little Unix history helps you ask the right question and rescue the useful part of the instruction.
+
+\begin{objectives}
+\item Identify the operating-system name reported by the current session.
+\item Explain why Linux, macOS and the BSD systems share some commands but not all details.
+\item Use a standard, a local implementation and an optional utility as three distinct ideas.
+\end{objectives}
+
+\section{Collect a clue, not a full inventory}
+\label{sec:2-clue}
+\index{uname@\texttt{uname}}
+
+At a local shell prompt, ask the system to identify itself. This is a read-only request; it does not contact another computer.
+
+\begin{terminal}
+uname
+\end{terminal}
+
+The name \texttt{uname} can be read as ``Unix name.'' With no options, it prints the system-name string, just as it does with \texttt{-s}. This is one line, but the system name need not be a single word. It doesn't necessarily match the name printed on your computer or in the system's graphical settings. Here are plausible results, not a list of text to type.
+
+\begin{quicktable}{M{1in}Y}
+\toprule
+Result & How to interpret it here \\
+\midrule
+Linux & The running system reports Linux. This does not identify a distribution such as Debian or Fedora. \\
+Darwin & Expected on macOS: Darwin is the Unix-based core underlying macOS. This name is not the macOS product version. \\
+FreeBSD & The system reports FreeBSD, not a generic release shared by all BSD systems. \\
+OpenBSD & The system reports OpenBSD; use its own manuals for local details. \\
+NetBSD & The system reports NetBSD; FreeBSD or OpenBSD options cannot be assumed to apply. \\
+\bottomrule
+\end{quicktable}
+
+POSIX also specifies \texttt{-s} for the system name. Ask explicitly:
+
+\begin{terminal}
+uname -s
+\end{terminal}
+
+Compare this with plain \texttt{uname}. On the systems in the table the two answers normally match. The second line is useful in a written support request because it makes clear which kind of name you mean. It still doesn't tell you which version of a text utility was launched. To see a different field, try:
+
+\begin{terminal}
+uname -r
+\end{terminal}
+
+\texttt{-r} selects the operating-system release string as exposed by \texttt{uname}. On Linux, for instance, this is a kernel release. A \emph{kernel} is the central part of an operating system that manages resources such as running programs, memory and devices. A Linux distribution ships a kernel alongside a selected set of other programs and defaults. An update to an individual utility does not have to change the kernel release. On macOS, the release printed here belongs to Darwin, not the version number used to market macOS. Do not infer a product release by guessing from these numbers.
+
+\begin{terminal}
+uname -m
+\end{terminal}
+
+\texttt{-m} selects the machine hardware name as reported by the system. It can look like \texttt{x86\_64}, \texttt{arm64} or another label; the same general kind of hardware can receive different labels on different systems. A compatibility environment may also alter what a program sees. You don't need to decode the label to understand this example: system name, release and hardware name answer three different questions. These queries don't need your account name or computer's network name. Avoid sending a full dump of system information when the short system name is all a helper needs.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-2/identity.tikz}
+\caption{Three system clues, none of which identifies your shell.}\label{fig:2-identity}
+\VisualDescription{The name, release and hardware name are three separate fields. The three switches are minus s, minus r and minus m respectively.}
+\end{figure}
+
+Read one result at a time if you aren't sure what a combined output means. This next command requests two fields in a single invocation:
+
+\begin{terminal}
+uname -s -r
+\end{terminal}
+
+It prints the system name followed by the release on one line, separated by whitespace. Compare with the individual probes rather than trying to deduce what the punctuation in a release string means. Don't assume the fields themselves are always single words. Notice that the two options have the same sort of spelling, a hyphen and a letter, but ask for independent fields.
+
+\section{How the resemblance came about}
+\label{sec:2-family}
+\index{Unix}\index{BSD}\index{Linux distributions}\index{POSIX}
+
+Unix began at Bell Labs around 1969. Early versions ran on machines that were very different from today's laptops. A printer or a text display could serve as the interface. The significant idea for us isn't the shape of the equipment: it is that a person could ask a small command to do one job and use its result to guide the next job. A short text instruction could be written down, sent to someone and tried again. Later chapters put that ability to work with commands whose results can feed other commands.
+
+In the 1970s, researchers at the University of California, Berkeley extended and distributed Unix software as the Berkeley Software Distribution, or BSD. Different systems took shape over the following years. FreeBSD, OpenBSD and NetBSD share BSD ancestry, but are maintained as distinct operating systems; a fix, feature or menu from one does not automatically appear in the others. Apple's own XNU documentation describes the kernel in Darwin as combining Mach with components from FreeBSD and other work. That ancestry helps explain the resemblance; it doesn't make macOS a copy of FreeBSD or promise that their current utilities accept the same options.
+
+The GNU project began in the 1980s to build a free Unix-compatible operating system. Many of its utilities are used on Linux systems today. Linux began separately as a kernel in 1991. A typical desktop distribution combines Linux with a range of utilities, often including GNU utilities, and many other projects. There are Linux systems that use alternatives, such as BusyBox for some everyday commands. So ``Linux means GNU'' is as unreliable as ``BSD means FreeBSD.'' The projects and families in Figure~\ref{fig:2-families} are a set of influences and distinctions, not a certified family tree.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-2/families.tikz}
+\caption{Two routes to familiar command-line tools.}\label{fig:2-families}
+\VisualDescription{The left route links early Unix with Berkeley BSD and then marks the later BSDs and BSD influence on Darwin. On the right, GNU utilities and the Linux kernel can be combined in a distribution. Neither route guarantees identical utilities.}
+\end{figure}
+
+There is also a separate question of a marketed system's UNIX certification. The Open Group maintains a register of certified products and configurations. Certification applies to particular entries and does not follow simply from resembling Unix, running on the same hardware or containing inherited source code. In this book, ``Unix-like'' is a useful descriptive term for systems that share these conventions; it is not a certification claim. Where a command differs, the difference matters even if both systems have impressive credentials.
+
+\begin{dialoguebox}[unbreakable]{The familiar name}
+\Brian{If both computers have a command called \texttt{ls}, why shouldn't they take the same instructions?}
+\Stephen{They share many instructions, because the command comes from a common tradition.}
+\Brian{That sounds like a promise. My friend's extra option still failed.}
+\Stephen{I overstated it. Tradition explains the resemblance; a standard specifies a common set of behavior.}
+\Brian{And the extra option might not be in that set?}
+\Stephen{Exactly. It could be a useful addition that only one implementation offers.}
+\Brian{Then we keep the common request and look up the extra part locally.}
+\DialogueConclusion{A shared name does not promise shared extras.}
+\end{dialoguebox}
+
+\section{Locate the boundary of a portable instruction}
+\label{sec:2-boundary}
+
+POSIX is a family of standards that specifies interfaces, including shell syntax and the behavior of many common utilities. An \emph{implementation} is an actual piece of software that provides an interface. A standard can specify one way to request a particular result without prohibiting implementations from accepting additional requests. A feature that works here but lies outside the standard is often called an \emph{extension}. If you know exactly where a feature comes from, you can keep using it on the systems you control and make your notes clear about the requirement.
+
+Take a familiar command as an example:
+
+\begin{terminal}
+printf '%s\n' 'A familiar request'
+\end{terminal}
+
+This prints the literal words \texttt{A familiar request} and ends the line. The format and operand are portable; the command might be provided by the shell itself or by a separate program. The \emph{operands} are items the utility works with, rather than options that select a mode. Chapter~\ref{ch:3} explores how to tell which kind of implementation the shell found. POSIX can specify the output without demanding that you know where the utility lives.
+
+Now contrast a narrow standard feature with one familiar outside it. These probes ask for the names in your current directory, not the contents of files; names may be private, so don't share the results. \texttt{ls} is a directory listing utility. Use the full spelling of the option, including both hyphens, in the second probe.
+
+\begin{terminal}
+ls -a
+\end{terminal}
+
+The short \texttt{-a} option requests all entries, including names beginning with a dot. You may see \texttt{.} and \texttt{..}, names for this directory and its parent; both are explained in Chapter~\ref{ch:6}. Compare:
+
+\begin{terminal}
+ls --all
+\end{terminal}
+
+GNU \texttt{ls} accepts \texttt{--all} as its long spelling of \texttt{-a}. The long option is not required by POSIX and can be rejected by BSD or macOS implementations. Some non-GNU implementations accept it too, and a Mac can have GNU tools installed, so success is not proof that the operating system is Linux. If the second probe fails, the common request is still available in the first. If \texttt{ls} is customized in your shell, local results may reflect that customization too.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-2/portability.tikz}
+\caption{A portable spelling and a possible extension for the same request.}\label{fig:2-portability}
+\VisualDescription{The intention is to list all directory entries. The top route uses minus a, the portable spelling. The lower route uses double minus all, available for GNU ls but not a POSIX requirement.}
+\end{figure}
+
+\begin{quicktable}{lY}
+\toprule
+Question & Evidence to prefer \\
+\midrule
+What system am I on? & Read the system name; note the distribution or product version separately if relevant. \\
+Is this option portable? & Read the standard for the utility, not just a popular tutorial. \\
+What accepts it here? & Check the command the shell selects, then consult its own documentation. \\
+Is a tool optional? & State the tool and availability requirement instead of assuming it comes with the OS. \\
+\bottomrule
+\end{quicktable}
+
+It is possible to write portable instructions that still produce different-looking output. Directory listings can be arranged according to language settings, window width and local preferences. File names are obviously different on two machines. When sharing a verification criterion, say ``the listing includes the dot-prefixed name we created,'' rather than requiring the reader's screen to look exactly like yours. Diagnose the smallest mismatch first: command missing, option rejected, or expected information displayed differently. Each outcome suggests a different repair.
+
+\section{Write instructions someone else can use}
+\label{sec:2-handoff}
+
+Start with the goal, not the command that just happened to work. For the directory example, the goal is to include names starting with a dot. The portable request \texttt{ls -a} is sufficient. In a different example, the nonstandard option might express something you can't replace with a short portable spelling. In that case it's fine to require a particular tool; say which implementation you mean. ``Use GNU \texttt{ls} for this GNU long option'' is actionable; ``use the one on a real Unix machine'' is not. Say what to do on a system where the extra isn't available. That might be using a different tool, looking up the feature locally, or simply skipping an optional display preference.
+
+When an instruction is forwarded through several people, context gets stripped. A script written for a Linux distribution might reach a Mac user with all mentions of the original setting removed. Even ``runs on Linux'' is not very precise: it could mean one maintained distribution's standard desktop installation or a stripped-down environment with only a handful of utilities. ``Uses POSIX sh and POSIX \texttt{ls -a}'' is more precise about the interfaces that concern us. It still doesn't promise that the reader has access to your files or that their output will use the same language. State assumptions about inputs separately from assumptions about tools.
+
+The medium also matters. In a terminal on the desktop, you usually talk to a shell on that system. Later you may open a terminal tab whose shell runs elsewhere. The tab label and the window's visual style can stay the same while the utility behaves like it does on the other system. \texttt{uname -s}, run in the session you're actually using, is more useful than reporting what logo is on the laptop. You do not need to test a remote connection here; the principle matters whenever the interface and the program aren't in the same place.
+
+For an example you intend to share, annotate a known answer rather than pasting the entire window. If a command fails, preserve the exact option and the relevant part of the diagnostic, but omit directory names or other details that don't contribute to the question. For a reproducible example later in the book, use an invented folder with predictable names. At this stage you can report that \texttt{ls -a} worked and that the double-hyphen spelling did or didn't work without publishing a directory listing at all. A short report with a precise difference gives a reader a better starting point than a long transcript plus ``didn't work.''
+
+Finally, notice the advantage of keeping the portable and local forms in separate lines. A reader who wants only the common action does not have to separate the optional feature from a big combined instruction. When you later compose several utilities into a workflow, this is even more useful: check the portability of each step before testing the whole. Familiar names and familiar-looking switches give you a place to start asking questions, not permission to assume the answers.
+
+Specifications age just as software does. The online standard cited here is POSIX.1-2024. A machine released earlier may target an earlier revision, and even a currently maintained system may not implement every interface you read about. The simple examples in this chapter use long-standing features except where deliberately marked as an extension. When a later example calls for a recently added feature, verify what your installed utility actually documents. A citation helps locate the rule; it is not evidence that your copy has caught up with it.
+
+\begin{exercise}{Describe the session without a data dump}
+\label{ex:2-identify}
+Request the name, release and hardware name individually. Decide which single field would help a person tell Linux and OpenBSD apart. Do not publish the other fields. Nothing is created; close your practice tab when done.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+uname -s
+uname -r
+uname -m
+\end{terminal}
+The first prints the name. The other two describe the release and reported hardware identity, which do not answer the same question.
+\end{solution}
+
+\begin{exercise}{Preserve the intention}
+\label{ex:2-replace}
+A tutorial says to run \texttt{ls --all}. Try it and then try the portable spelling, without sharing your directory listing. Which command would you put into instructions intended for several different systems? No file cleanup is needed.
+\end{exercise}
+\begin{solution}
+Use \texttt{ls -a}. If the long spelling works, the results should express the same request; if it fails, the short spelling remains the portable test. The difference tells you about available spellings, not about whether the system is Unix-like.
+\end{solution}
+
+\begin{exercise}{Separate the two questions}
+\label{ex:2-field}
+Compare plain \texttt{uname} with \texttt{uname -s -r}. Locate the field in the second output that matches the first, then explain why these commands do not decide whether an \texttt{ls} option is accepted. Close the spare tab or keep it for Chapter~\ref{ch:3}; no practice files were written.
+\end{exercise}
+\begin{solution}
+The first field of \texttt{uname -s -r} should match plain \texttt{uname}. The release is the second field. Use the separate probes to identify the fields if either contains spaces. Neither invocation identifies the implementation of \texttt{ls}, which is a separate utility.
+\end{solution}
+
+\begin{takeaways}
+\item Common ancestry explains similarities; it does not define current command behavior.
+\item POSIX specifies a common set of interfaces. Local utilities may offer useful extras.
+\item Ask one focused question at a time: system identity, command identity or accepted option.
+\end{takeaways}
+
+\begin{furtherreading}
+\ReadingItem{The Open Group: History and Timeline}{A historical introduction to Unix and standardization.}{https://unix.org/what_is_unix/history_timeline.html}
+\ReadingItem{The Open Group: Product Register}{Certified products and configurations.}{https://www.opengroup.org/openbrand/register/}
+\ReadingItem{GNU: The GNU Project}{The project history in its own words.}{https://www.gnu.org/gnu/thegnuproject.html}
+\ReadingItem{FreeBSD Handbook: Introduction}{The origins and goals of FreeBSD.}{https://docs.freebsd.org/en/books/handbook/introduction/}
+\ReadingItem{Apple Open Source: What is XNU?}{The Darwin kernel's Mach and FreeBSD origins.}{https://github.com/apple-oss-distributions/xnu}
+\ReadingItem{POSIX uname}{Definitions of the individual system fields.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/uname.html}
+\ReadingItem{GNU Coreutils: Which files are listed}{The short and long GNU spellings of the option.}{https://www.gnu.org/software/coreutils/manual/html_node/Which-files-are-listed.html}
+\end{furtherreading}

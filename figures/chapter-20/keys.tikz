@@ -1,0 +1,7 @@
+\begin{tikzpicture}
+\node[utp node] (a) at (-2,0.65) {Line: \texttt{02}};
+\node[utp node] (b) at (-2,-0.65) {Line: \texttt{2}};
+\node[utp node] (c) at (2,0) {Numeric key: 2};
+\draw[utp arrow] (a)--(c);
+\draw[utp arrow] (b)--(c);
+\end{tikzpicture}

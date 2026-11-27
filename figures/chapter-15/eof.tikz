@@ -1,0 +1,9 @@
+\begin{tikzpicture}
+\node[utp node] (one) {Name 1\\Enter};
+\node[utp node,right=5mm of one] (two) {Name 2\\Enter};
+\node[utp node,right=5mm of two] (eof) {Empty line\\Ctrl+D};
+\node[utp node,right=5mm of eof] (count) {Count\\2};
+\draw[utp arrow] (one)--(two);
+\draw[utp arrow] (two)--(eof);
+\draw[utp arrow] (eof)--(count);
+\end{tikzpicture}

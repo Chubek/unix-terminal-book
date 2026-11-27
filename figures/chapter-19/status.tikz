@@ -1,0 +1,9 @@
+\begin{tikzpicture}
+\node[utp node] (result) at (0,1.25) {Search status};
+\node[utp node] (match) at (-3,0) {0\\match};
+\node[utp node] (none) at (0,0) {1\\no match};
+\node[utp node] (error) at (3,0) {Greater than 1\\error};
+\draw[utp arrow] (result)--(match);
+\draw[utp arrow] (result)--(none);
+\draw[utp arrow] (result)--(error);
+\end{tikzpicture}

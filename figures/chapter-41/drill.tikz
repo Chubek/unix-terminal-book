@@ -1,0 +1,9 @@
+\begin{tikzpicture}
+\node[utp node] (a) {Choose\\a date};
+\node[utp node,right=4mm of a] (b) {Verify,\\then list};
+\node[utp node,right=4mm of b] (c) {Extract\\separately};
+\node[utp node,right=4mm of c] (d) {Open or\\compare};
+\draw[utp arrow] (a)--(b);
+\draw[utp arrow] (b)--(c);
+\draw[utp arrow] (c)--(d);
+\end{tikzpicture}

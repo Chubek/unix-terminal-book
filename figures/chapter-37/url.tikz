@@ -1,0 +1,9 @@
+\begin{tikzpicture}[every node/.style={font=\small\sffamily,align=center}]
+\node[utp node] (a) {\texttt{https}\\Scheme};
+\node[utp node,right=2mm of a] (b) {\texttt{booking.example.org}\\Host};
+\node[utp node,right=2mm of b] (c) {\texttt{443}\\Port};
+\node[utp node,right=2mm of c] (d) {\texttt{/rooms/tuesday}\\Resource};
+\draw[utp arrow] (a)--(b);
+\draw[utp arrow] (b)--(c);
+\draw[utp arrow] (c)--(d);
+\end{tikzpicture}

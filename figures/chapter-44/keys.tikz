@@ -1,0 +1,15 @@
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[node distance=7mm]
+\node[utp node] (key) {Keystroke};
+\node[utp node,right=of key] (reader) {Access tool?};
+\node[utp node,right=of reader] (term) {Terminal?};
+\node[utp node,below=of term] (shell) {Foreground tool?};
+\draw[utp arrow] (key) -- (reader);
+\draw[utp arrow] (reader) -- (term);
+\draw[utp arrow] (term) -- (shell);
+\end{tikzpicture}
+\caption{Check which foreground component handles a shortcut before remapping anything.}
+\label{fig:44-keys}
+\VisualDescription{An access tool or the terminal may handle a keystroke before the foreground command can see it. The order is an investigative model, not a platform guarantee.}
+\end{figure}

@@ -1,0 +1,23 @@
+# Chapter	Source	Broker reply	Disposition and evidence
+2	622dc5b	08b112276a3e45fe8aaf5c59fb1b4394	Apple primary source verifies Mach and FreeBSD contributions, and the corrected citation compiles. The Linux system-probes fixture passed the first review.
+11	29e00bf	048b27d2857d416c92b8a59757783bfc	Silent index correction approved from exact source; author exercised interactive editors on Linux.
+14	f1f6d12	15201ad3b26745f3898256bf7902afb9	Fresh workspace and fallback, no-match semantics and fixture membership checked under Linux sh and Zsh sh emulation.
+15	f1f6d12	d0aa208bf694498094ffbfc220e9d7d8	Verified separated setup, two-step EOF after pending text and silent indexes. Linux fixture and canonical PTY checks passed.
+17	f1f6d12	15201ad3b26745f3898256bf7902afb9	Numeric field padding parsed explicitly; Linux sh and Zsh pipeline fixtures passed.
+19	a21d14a	32b17a03e07648c48764cb690fb6dd4a	Verified capture of exact temporary directory and fail-stop cleanup. Linux success and injected mktemp failure behaved as intended; figure caption states its applicable search mode.
+20	a21d14a	d0aa208bf694498094ffbfc220e9d7d8	Normal tally and three producer failures tested independently. Each broken stage returned an error without publishing partial output; sorting switches checked with GNU tools.
+21	a21d14a	15201ad3b26745f3898256bf7902afb9	Reviewed silent index, fresh setup and listing scope. Expected TSV passed in Linux sh and Zsh sh emulation.
+22	a21d14a	fce3e136a7414b758563a0e752a816a0	Silent index correction reviewed. Original Linux checks covered sed, tr and diff, with separate preview and safe comparison.
+24	a21d14a	048b27d2857d416c92b8a59757783bfc	Valid JSON passed; malformed source, empty or wrong output and duplicate document cases failed as intended under Linux sh and jq.
+25	ab7b62c	e9efd4ac39354b9ca6e9d63bbf763b16	Guarded fixture path and rename targets approved; Linux sh success and injected setup failure checked.
+26	ab7b62c	08b112276a3e45fe8aaf5c59fb1b4394	Nine Linux sh assertions, including guarded setup and scoped glob disabling, passed. Both local proof editions built.
+30	ab7b62c	1200243550434d76b55e8dbc4b77d61e	Read-only preview checked under Linux sh with original test cases and revised symlink/empty-file examples.
+34	e902975	08e212ba6cea463694eac61d2b1c0c64	Exact path and cleanup guard independently tested against same-named Linux scratch sentinels in sh and Zsh emulation. APFS coverage is based on Apple primary documentation, not native execution.
+37	2fb79f9	b41a68ff15a748849c1f512ef38be28e	Linux sh guard failed without writes on injected failure and worked in fresh scratch. Fictional status examples and local-only probes reviewed; no live queries.
+38	2fb79f9	fce3e136a7414b758563a0e752a816a0	Exact offline fixture passed with Linux sh and observed no connect calls. Guarded practice and cleanup visible without answers. No real SSH authentication performed.
+39	2fb79f9	15201ad3b26745f3898256bf7902afb9	Distinct SCP/SFTP alternatives, authorized personal account and deferred cleanup. Local transfer checker passed in two Linux shells; no live networking.
+40	2fb79f9	d0aa208bf694498094ffbfc220e9d7d8	Absolute private socket path, guarded setup, and bounded local tmux PTY test passed on Linux. No SSH or reboot test.
+41	2fb79f9	08b112276a3e45fe8aaf5c59fb1b4394	Guarded writes and archive/checksum transitions. Restore fixture passed GNU tar and Linux bsdtar, and PDF noanswers shows cleanup.
+44	79f5e70	64996e03cd5c44c4b9d6388136db46db	Verified separate guarded setup and exact cleanup path. Positive/negative Linux sh setup passed; actual assistive technology not tested.
+45	79f5e70	fce3e136a7414b758563a0e752a816a0	Scoped helper permissions and guarded directory passed Linux sh success and injected failure; missing temp parent prevented setup output.
+46	79f5e70	d0aa208bf694498094ffbfc220e9d7d8	Setup, cleanup and redaction approved. Linux fixture checks covered match, miss, phrase and missing input.

@@ -1,0 +1,7 @@
+\begin{tikzpicture}
+\node[utp node,minimum width=44mm,align=left] (a) at (0,0) {
+ \texttt{-Close: 5}\\\texttt{+Close: 6}\\\texttt{\phantom{+}Accessible entrance}};
+\node[font=\small\sffamily,anchor=west] at (2.5,0.43) {Old line};
+\node[font=\small\sffamily,anchor=west] at (2.5,0) {New line};
+\node[font=\small\sffamily,anchor=west] at (2.5,-0.43) {Context};
+\end{tikzpicture}

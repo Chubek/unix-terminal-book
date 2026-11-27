@@ -1,0 +1,9 @@
+\begin{tikzpicture}
+\node[utp node] (a) at (0,1.5) {\texttt{May notes}};
+\node[utp node] (b) at (0,0) {\texttt{agenda}};
+\node[utp node] (c) at (0,-1.5) {\texttt{absent}};
+\node[utp node] (check) at (5,0) {Check one\\ path at a time};
+\draw[utp arrow] (a.east)--(check.north west);
+\draw[utp arrow] (b.east)--(check.west);
+\draw[utp arrow] (c.east)--(check.south west);
+\end{tikzpicture}

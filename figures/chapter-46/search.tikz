@@ -1,0 +1,13 @@
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[node distance=7mm and 8mm]
+\node[utp node] (m) {\texttt{monday.txt}, line 1};
+\node[utp node,below=of m] (t) {\texttt{thursday.txt}, line 1};
+\node[utp node,below right=2mm and 12mm of m] (o) {Two identified matches};
+\draw[utp arrow] (m) -- (o);
+\draw[utp arrow] (t) -- (o);
+\end{tikzpicture}
+\caption{Each match retains its original filename and line number.}
+\label{fig:46-search}
+\VisualDescription{Line one in each of the Monday and Thursday files matches. Both matches carry the name and line number of their own source.}
+\end{figure}

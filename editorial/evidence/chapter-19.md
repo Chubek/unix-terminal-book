@@ -1,0 +1,7 @@
+# Chapter 19 — Search the Contents
+
+- 3 TikZ diagrams: `figures/chapter-19/{search,parsers,status}.tikz`; 2 tables, 3 exercises and solutions, 1 dialogue.
+- Reusable listing: `listings/chapter-19/search-notes.sh`; POSIX-style shell, GNU grep tested; read-only input operands.
+- Reproduce from repository root with `TMPDIR=/path/to/disposable-parent python3 editorial/evidence/verify-chapters-19-24.py`. Validation uses only generated inputs in a scoped temporary directory. The driver exercises terminal blocks in manuscript order after substituting a controlled setup directory and feeds separate confirmations to the listed cleanup commands. Its status checks are per block, with selected output assertions; it does not claim to check every intermediate status or every platform.
+- Linux EndeavourOS, kernel 6.18.52-1-lts, `/bin/sh` Bash 5.3.15 in sh mode and zsh as a separate run, GNU grep 3.12-modified, Python 3.14.7 validator. Six exact output checks include filename and line-number prefixes, fixed strings, BRE and ERE, and absence vs inaccessible-file statuses. The guarded setup rejected unexpected `mktemp` output and a false `pwd` without writing data. Listing and cleanup verified, including refusal to invoke `rmdir` after a failed `cd`.
+- POSIX Issue 8 `grep` and regular expression chapters are the reference for the examples. Linux execution is not evidence of execution on macOS, FreeBSD, OpenBSD or NetBSD.

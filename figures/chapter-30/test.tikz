@@ -1,0 +1,7 @@
+\begin{tikzpicture}
+\node[utp node] (test) at (0,1.7) {Regular file?};
+\node[utp node] (yes) at (-2.6,0) {Zero: found};
+\node[utp node] (no) at (2.6,0) {Nonzero: not found};
+\draw[utp arrow] (test.south)--(yes.north);
+\draw[utp arrow] (test.south)--(no.north);
+\end{tikzpicture}

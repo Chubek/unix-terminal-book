@@ -1,0 +1,10 @@
+\begin{tikzpicture}
+\node[utp node] (a) {Client\\attached};
+\node[utp node,right=29mm of a] (b) {Client\\detached};
+\path (a.south)--coordinate[midway] (mid) (b.south);
+\node[utp node,below=7mm of mid] (c) {Same named session};
+\draw[utp arrow] ([yshift=2mm]a.east)--node[above,font=\small]{Detach}([yshift=2mm]b.west);
+\draw[utp arrow] ([yshift=-2mm]b.west)--node[below,font=\small]{Attach}([yshift=-2mm]a.east);
+\draw[densely dashed] (a.south)--(c);
+\draw[densely dashed] (b.south)--(c);
+\end{tikzpicture}

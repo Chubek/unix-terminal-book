@@ -1,0 +1,12 @@
+\begin{tikzpicture}
+  \node[utp node] (unix) at (0,0) {Early Unix};
+  \node[utp node] (bsd) at (0,-1.25) {Berkeley BSD};
+  \node[utp node] (desc) at (0,-2.6) {Later BSDs;\\influence on Darwin};
+  \draw[utp arrow] (unix) -- (bsd);
+  \draw[utp arrow] (bsd) -- (desc);
+  \node[utp node] (gnu) at (4.45,0) {GNU utilities};
+  \node[utp node] (linux) at (4.45,-1.25) {Linux kernel};
+  \node[utp node] (distro) at (4.45,-2.6) {Example Linux\\distribution};
+  \draw[utp arrow] (gnu.east) -- ++(.55,0) |- (distro.east);
+  \draw[utp arrow] (linux) -- (distro);
+\end{tikzpicture}

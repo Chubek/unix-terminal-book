@@ -1,0 +1,7 @@
+\begin{tikzpicture}
+\node[utp node] (id) {\texttt{001}\\ID};
+\node[utp node,right=5mm of id] (caption) {\texttt{"Bridge, east side"}\\caption};
+\node[utp node,right=5mm of caption] (route) {\texttt{River}\\route};
+\node[font=\large] at ([xshift=2.5mm]id.east) {,};
+\node[font=\large] at ([xshift=2.5mm]caption.east) {,};
+\end{tikzpicture}

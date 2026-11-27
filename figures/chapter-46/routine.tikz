@@ -1,0 +1,13 @@
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[node distance=8mm]
+\node[utp node] (sources) {Known inputs};
+\node[utp node,right=of sources] (read) {Read-only check};
+\node[utp node,right=of read] (decision) {Human decision};
+\draw[utp arrow] (sources) -- (read);
+\draw[utp arrow] (read) -- (decision);
+\end{tikzpicture}
+\caption{A repeatable command can provide evidence without deciding what to publish.}
+\label{fig:46-routine}
+\VisualDescription{Known input files feed a read-only check. Its result goes to a person who chooses the next action.}
+\end{figure}

@@ -1,0 +1,9 @@
+\begin{tikzpicture}
+\node[utp node] (a) {Resolver};
+\node[utp node,right=7mm of a] (b) {IPv4 or IPv6\\candidates};
+\node[utp node,right=7mm of b] (c) {Client chooses\\address to try};
+\node[utp node,below=5mm of c] (d) {Attempt to reach\\the chosen port};
+\draw[utp arrow] (a)--(b);
+\draw[utp arrow] (b)--(c);
+\draw[utp arrow] (c)--(d);
+\end{tikzpicture}

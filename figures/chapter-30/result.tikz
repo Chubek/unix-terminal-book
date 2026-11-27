@@ -1,0 +1,7 @@
+\begin{tikzpicture}[node distance=6mm]
+\node[utp node] (a) {Start\\ Result: 0};
+\node[utp node,right=of a] (b) {Rejection\\ Result: 1};
+\node[utp node,right=of b] (c) {Later pass\\ Result: 1};
+\draw[utp arrow] (a)--(b);
+\draw[utp arrow] (b)--(c);
+\end{tikzpicture}

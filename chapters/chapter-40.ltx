@@ -1,0 +1,404 @@
+You sign in to the class server from a crowded train. You have a
+half-read report open and a shell waiting in the right directory.
+At the next station the wireless link vanishes. When you reconnect,
+will you see the same shell? A new SSH login generally gives you a new
+shell. If you want to return to the previous work area, arrange for
+it to have a life of its own \emph{before} the link fails.
+
+\begin{objectives}
+\item Distinguish a remote login, a running task, and a detachable workspace.
+\item Practice attaching and detaching with a private local tmux server.
+\item Decide when a saved file or a managed job is a better safeguard.
+\end{objectives}
+
+\section{The connection isn't the workspace}
+\index{remote session}\index{terminal multiplexer}
+The remote shell from Chapter~\ref{ch:38} lives on the server, but it
+normally uses a login terminal associated with the SSH connection.
+When the link goes down, that terminal may close and its shell and
+jobs may end. Exactly what happens depends on the shell, program,
+and service policy. An interrupted connection doesn't tell you that
+every process stopped; a remote command may already have finished or
+some processes may continue independently. Conversely, setting a
+command running in the background with \texttt{\&} doesn't establish
+that it will survive logout. Background jobs in Chapter~\ref{ch:32}
+described who controls a current terminal, not a policy for keeping
+processes across sessions.
+
+\index{tmux@\texttt{tmux}}\index{detaching}
+The optional tool \FirstUse{tmux} is a terminal multiplexer. It runs
+its own server process on the machine where you invoke it. That server
+maintains a collection of named sessions, with windows and panes in
+which shells and other programs run. A pane is a space that displays
+one terminal; this chapter uses just one pane. The client is the
+program showing that session in the window you're looking at.
+Outside of tmux, you can have a regular shell and no tmux client
+attached. Inside, the client connects back to its server and displays
+one of the sessions. Detach the client and the session can keep its
+pane and shell. A later client can attach to the same session.
+In Figure~\ref{fig:40-location}, notice where the pane shell is:
+closing a window on your laptop doesn't move it back to the laptop.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-40/location.tikz}
+\caption{A remote tmux session lives where the tmux server runs.}\label{fig:40-location}
+\VisualDescription{The laptop terminal reaches a server through SSH. The tmux workspace and its pane shell are both on that server.}
+\end{figure}
+
+The word ``server'' does double duty: both the class machine and
+the tmux process may be called a server. In this chapter the
+\emph{host} is the machine and the \emph{tmux server} is the process
+on it. If you start tmux on your laptop, it keeps a workspace on your
+laptop. Running SSH inside a local pane doesn't make a remote login
+independent of the connection. To keep remote panes, start tmux
+inside the verified remote login. If you later reconnect to a different
+host behind the same service name, the process may not be there.
+Ask the provider before relying on tmux on a shared service.
+
+This distinction is easier to remember if you ask which process
+would still be there after disconnecting. The text you saw in a
+terminal window was a view of a process, not the process itself.
+With tmux in the middle, the client provides the view and the
+server maintains the pane terminal. With an ordinary login there's
+no independent tmux server to provide that terminal. An occasional
+disconnect doesn't warrant adding a multiplexer to everything.
+If you only need to read a finished report, a saved report is a
+simpler thing to carry from one session to the next.
+
+\begin{quicktable}{p{1.45in}Y}
+\toprule
+Action or event & What to expect \\
+\midrule
+Detach a client & The pane shell and its tasks may continue; your underlying shell becomes visible again. \\
+Exit the only pane shell & The pane closes, and with no more windows the session normally disappears. \\
+Lose an SSH link & A remote tmux client can disconnect while its session survives on the host; ordinary SSH shells have no such workspace to reattach to. \\
+Reboot the host & The running tmux server and unsaved in-memory state do not normally survive. Files you saved may remain. \\
+\bottomrule
+\end{quicktable}
+
+\section{Start a workspace you can safely close}\label{sec:40-lab}
+Use a real interactive terminal with a shell accepting the \texttt{sh}
+syntax. Do not start this exercise from inside another multiplexer;
+its shortcuts could go to the wrong client. \cmd|command -v| shows
+the shell's interpretation of a command name. \cmd|tmux -V|
+prints the version without starting a server. On Linux, macOS,
+FreeBSD, OpenBSD and NetBSD, use the installed manual and the
+package or base tools available on your system. tmux is not specified
+by POSIX. If it isn't installed, read the steps as an illustrated
+walkthrough; don't install software on a remote machine without
+the operator's permission.
+
+A short disposable exercise is also a way to tell whether tmux
+works well with your terminal settings before committing much work
+to it. Check whether you can recognize the status line and send
+the prefix reliably. A screen reader or terminal not configured for
+full-screen applications may make it harder to locate the cursor or
+distinguish the shell prompt from the status line. The session list
+and a known value printed in the pane are checks that don't depend
+on appearance. If display fails, stop and use a normal shell to
+continue with saved files, rather than adjusting an unfamiliar
+production account to make the screen match a printed example.
+
+\begin{terminal}
+command -v tmux
+tmux -V
+\end{terminal}
+
+Make a private workplace. \texttt{-d} asks \cmd|mktemp| for a new
+directory and \texttt{mktemp} replaces the final \texttt{X}s
+with a unique suffix. Save its path under \texttt{sessionlab}.
+The example uses a trusted local \texttt{/tmp}; use another
+trusted absolute temporary directory if your system requires it.
+Each \texttt{\&\&} continues only after success. If \cmd|pwd|
+does not show the newly made \texttt{utp-tmux} directory,
+stop before setting up the socket. The variables belong to
+this outer shell, not a different window or a later login.
+
+\begin{terminal}
+unset labsock
+sessionlab=$(mktemp -d /tmp/utp-tmux.XXXXXXXX) &&
+  cd "$sessionlab" &&
+  pwd
+\end{terminal}
+
+Here \cmd|unset labsock| clears any old value before setup.
+At the confirmed prompt, record a socket path only if the lab's
+path begins with a slash (the \cmd|/*| case pattern) and
+still matches the working directory. If this prints no path,
+stop; the next block needs a name inside that private lab.
+
+\begin{terminal}
+case "$sessionlab" in
+  /*) test "$(pwd)" = "$sessionlab" &&
+      labsock="$sessionlab/lab.sock" &&
+      printf '%s\n' "$labsock" ;;
+esac
+\end{terminal}
+
+The first tmux invocation sets up a separate server. A \FirstUse{socket}
+is a local endpoint through which a tmux client can talk to the
+tmux server. \texttt{-S} gives its pathname. This socket is named
+\texttt{lab.sock} in your new directory, not a default socket that
+might belong to existing work. For the initial start, \texttt{-f /dev/null}
+chooses an empty configuration instead of loading a site or personal
+tmux configuration. \texttt{new-session} starts the session;
+\texttt{-s lesson} gives it a name, and the final \texttt{sh} is
+the pane program to launch. The specific \texttt{sh} found in your
+environment may have local shell settings independent of tmux.
+The \cmd|${labsock:?}| expansion requires that the socket variable
+be set and nonempty; if not, the shell reports an error rather
+than invoking tmux with an unintended path.
+
+\begin{terminal}
+tmux -S "${labsock:?}" -f /dev/null new-session -s lesson sh
+\end{terminal}
+
+You should now see a shell prompt with the tmux status line, often at
+the bottom of the window. The status line normally includes a session
+name and window information; don't require it to have a certain
+color. If your terminal reports an unknown terminal type or no
+terminal, use the steps in Chapter~\ref{ch:36} to describe the error.
+Do not randomly assign \texttt{TERM} values to force it: that
+environment variable describes capabilities of the terminal, and
+misidentifying them can make output or keys harder to use.
+
+At the prompt inside tmux, check \cmd|pwd|. It should be the
+practice directory because you started tmux there. If not, don't
+write files: detach and check the setup. The next command puts a
+short string in a shell variable without exporting it or saving it
+to disk. Use it to see that the original pane shell is still running
+after you return. This is not where to keep a real document.
+
+\begin{terminal}[title={In the tmux pane shell}]
+pwd
+marker=still-here
+printf '%s\n' "$marker"
+\end{terminal}
+
+\section{Leave without closing, then return}
+The default tmux \FirstUse{prefix} is \KeyChord{Ctrl}{b}: press
+\texttt{b} while holding Control, release them, then press
+\Key{d} on its own. The second key tells tmux to detach.
+Don't type the words \texttt{Ctrl-b d} at a shell prompt.
+Your earlier prompt should return, possibly with a notice that
+the client detached. By contrast, \cmd|exit| inside the pane
+would close its shell. These are two different operations.
+Figure~\ref{fig:40-detach} shows attach and detach as inverse operations
+on the client, with the workspace unchanged beneath them.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-40/detach.tikz}
+\caption{Detach changes the client state, not the pane's shell.}\label{fig:40-detach}
+\VisualDescription{An attached client becomes detached while the session and its pane remain. Attaching again restores the display.}
+\end{figure}
+
+Back at the outer shell, continue to specify the private socket.
+\texttt{list-sessions} asks that server about its sessions rather
+than about all programs on the machine. Look for a line starting
+with \texttt{lesson:}; the rest varies by version and environment.
+\texttt{attach-session} opens a client view of the named
+session and \texttt{-t} selects the target. On current tmux
+versions \texttt{=lesson} requests an exact session name.
+No effect on your normal tmux server is intended.
+
+\begin{terminal}[title={Back at the shell outside tmux}]
+tmux -S "${labsock:?}" list-sessions
+tmux -S "${labsock:?}" attach-session -t '=lesson'
+\end{terminal}
+
+In the pane, the same variable still has its earlier value. An
+empty line would not demonstrate that the variable survived:
+recheck whether you are really looking at the original pane shell.
+This calculation is local even if you are reading about remote use.
+
+\begin{terminal}[title={Inside the reattached pane}]
+printf '%s\n' "$marker"
+\end{terminal}
+
+Here is a compact map of the steps. A real remote workflow differs
+chiefly in where the steps happen: connect with SSH first; detach;
+leave the remote shell if finished for now; later sign back in to
+the same host and attach to the same session under the same account.
+The lesson's private socket is an isolation device for practice.
+On a real server follow local instructions about where to put session
+state. In particular, the temporary area might be cleaned automatically
+and a provider's session limits might stop idle jobs.
+
+If you leave by detaching first, you can see the remote shell
+return and choose whether to close the SSH login. Deliberately
+leaving is a better rehearsal than pulling a network cable.
+For real work, tell yourself the host, account, and session name
+before signing out. If the provider has separate front-end and
+worker hosts, ask where a user session belongs. Remembering just
+the session name is not enough if the same account has different
+workspaces on different machines. A session name that describes
+the work, such as \texttt{minutes-review}, is more useful than
+one you will mistake for the previous week's task.
+
+The saved name isn't a password. On a properly configured multiuser
+machine, access to your tmux socket is restricted separately from
+the name you assign to a session. Anyone already allowed to attach
+to that workspace can potentially see what's on its screen and
+type into the pane. If your provider supports a shared session,
+learn the approved access controls before contributing anything
+sensitive. With more than one client attached, text or a cursor
+can move because someone else is using it; don't assume the
+terminal has started to misread your keys. Our isolated socket
+is specifically for practice as one user and isn't intended as a
+connection-sharing mechanism.
+
+\begin{quicktable}{p{1.55in}Y}
+\toprule
+Context & Operation \\
+\midrule
+Outer shell on the host & A tmux command can create, list, or attach to sessions on the selected socket. \\
+Terminal attached to tmux & Default prefix followed by \texttt{d} detaches this viewing client. \\
+Shell in a pane & Shell commands run on the host. The pane shell's variables remain local to that shell. \\
+Remote login outside tmux & \texttt{exit} closes that login; it doesn't normally end a previously detached tmux session. \\
+\bottomrule
+\end{quicktable}
+
+\begin{dialoguebox}{A workspace is not a save button}
+\Brian{If I leave my editor open in tmux, am I backed up?}
+\Stephen{You can return to the editor if the session is still alive.}
+\Brian{That's not what I asked. What if the server restarts?}
+\Stephen{Then the editor's unsaved changes may be gone. I should distinguish returning from restoring.}
+\Brian{So saving protects me from losing the session, but not from losing the disk.}
+\Stephen{Right. A separate recoverable copy addresses a different problem again.}
+\Brian{Then I'll save before detaching instead of trusting the status line.}
+\Stephen{And restore a test copy when you make a backup.}
+\DialogueConclusion{Detaching preserves a session, not a backup.}
+\end{dialoguebox}
+
+\section{When something is missing}
+Suppose the SSH connection returns, but the session doesn't appear.
+First check machine and account, as in Chapter~\ref{ch:38}. Check
+the spelling of the session and, if you used a private socket, the
+socket path. The local and remote shells can both run the same tmux
+command, but they won't see a shared list just because the words
+are identical. Also check whether you deliberately closed the last
+pane shell rather than detaching. If a long operation was running,
+find out whether it finished before starting a duplicate. For
+example, a file conversion may have produced a complete file already,
+or left a partial one that should not be delivered.
+Figure~\ref{fig:40-recover} makes the check of existing work the
+next step when no session appears.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-40/recover.tikz}
+\caption{Recover by checking the host, account, session, and saved files.}\label{fig:40-recover}
+\VisualDescription{After reconnecting, check host and account first, then check the session. If absent, inspect saved outputs before restarting any work.}
+\end{figure}
+
+A detachable workspace is convenient when you need to see or interact
+with a program after returning. If the job must finish unattended,
+investigate the managed job facilities your provider offers. These may
+impose time limits, capture logs, or give the job a recoverable
+identifier. If what matters is the document itself, write changes to
+disk at sensible points and make a separate backup (Chapter~\ref{ch:41}).
+A live shell isn't a durable record, and its scrollback can contain
+filenames, credentials accidentally displayed, or other private
+output. Don't share a session, change socket permissions, or let another
+user attach just to show them a screenshot. Send a redacted diagnostic
+instead, through a channel approved for the work.
+
+The time to decide whether an operation can be resumed is before
+you start it. Suppose you're editing a short note. Saving to a
+new draft and reviewing it on your next login may be all you
+need. Suppose you're converting a large recording. Decide where
+the completed output belongs, how you'll recognize it, and where
+error messages will go. Choose an unused output name, so an
+interrupted conversion cannot erase your only finished derivative.
+Suppose instead that your job is to review a long interactive
+report from the middle. Leaving a multiplexer session may make
+sense, but write down where you stopped in the report as a
+fallback. ``I can recover by going to page 28'' is a plan
+whether or not the tmux session returns.
+
+If you close the pane in the practice exercise, don't start a
+new one automatically to hide the result. There should no longer
+be a variable to recover. In real work the previous shell might
+also have had several environment settings that a newly started
+shell doesn't know about. A short, private note about the current
+directory, which tool you used, and what output you expected can
+make it easier to restart safely. Don't record secrets as part
+of that note. It is meant to let you resume the task, not turn
+the entire terminal state into a log.
+
+\section{Close the practice session deliberately}
+Do the first two exercises before the final cleanup. At the pane prompt
+type \cmd|exit|. It closes the one pane shell. The original outer shell
+returns; it still has the variable with the practice directory.
+If you explicitly detach instead, attach to \texttt{lesson} again
+before exiting. Do not close other tmux sessions to find your way
+back to this one.
+
+\begin{terminal}[title={In the practice pane only}]
+exit
+\end{terminal}
+
+In the outer shell check that the practice tmux session no longer
+appears. With no remaining sessions the server ordinarily exits;
+the socket path might disappear or remain as a stale entry. A
+message saying no server is running or the socket is missing is
+then expected. If it still reports a session, don't remove the
+socket while the server is live.
+
+\begin{terminal}[title={Outside tmux}]
+tmux -S "${labsock:?}" list-sessions
+pwd
+ls -a "$sessionlab"
+\end{terminal}
+
+If the directory is empty apart from the directory entries
+\texttt{.} and \texttt{..}, use \cmd|cd && rmdir "$sessionlab"|.
+For a leftover socket, stop and check that no practice server is
+running before removing only that socket with \cmd|rm -i|.
+Unexpected files are not a reason to use recursive removal.
+
+\begin{exercise}{Find the original shell again}\label{ex:40-reattach}
+In your practice pane change the marker to \texttt{returned}. Detach,
+list the practice sessions and attach again. Check that the new value
+appears; leave the lab running for the second exercise.
+\end{exercise}
+\begin{solution}
+Run \cmd|marker=returned| at the pane prompt. Press the prefix
+then \Key{d}, use the same private socket path with \texttt{list-sessions}
+and \texttt{attach-session}, and run \cmd|printf '%s\n' "$marker"|
+in the pane. Expect \texttt{returned}, not a new prompt's default value.
+\end{solution}
+
+\begin{exercise}{Compare the outer and inner shell}\label{ex:40-context}
+Set \texttt{marker=outside} in the outer shell after detaching. Inspect
+its value there, reattach, and inspect the value inside. Explain why these
+don't overwrite one another and keep the lab for the final exercise.
+\end{exercise}
+\begin{solution}
+The outer shell prints \texttt{outside} with
+\cmd|printf '%s\n' "$marker"|. The pane should still print its previous
+value. The two shell processes don't share ordinary shell variables
+and reattaching doesn't create a new pane process.
+\end{solution}
+
+\begin{exercise}{Check that the practice session ended}\label{ex:40-cleanup}
+Exit from the only practice pane, then check the private server
+from the outer shell. Remove the practice directory only after the
+session is gone and you know what the directory contains.
+\end{exercise}
+\begin{solution}
+At the pane prompt use \cmd|exit|, then follow the listing and
+cleanup steps above. Expect no remaining practice session; the
+client may report a missing server socket. Once the directory is
+empty, \cmd|cd| and \cmd|rmdir "$sessionlab"| finish the lab.
+\end{solution}
+
+\begin{takeaways}
+\item Start remote workspaces on the host where the work must continue.
+\item Detach to leave a workspace running; exit a pane shell to close it.
+\item Save your work and plan for a host restart, not just a broken link.
+\end{takeaways}
+
+\begin{furtherreading}
+\ReadingItem{tmux(1)}{Session lifetime, options, sockets and default key bindings.}{https://man.openbsd.org/tmux}
+\ReadingItem{Getting started with tmux}{The upstream guide to sessions, windows and clients.}{https://github.com/tmux/tmux/wiki/Getting-Started}
+\end{furtherreading}

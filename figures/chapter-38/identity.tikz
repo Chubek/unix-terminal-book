@@ -1,0 +1,9 @@
+\begin{tikzpicture}
+\node[utp node] (a) {Connection's\\key claim};
+\node[utp node,right=6mm of a] (b) {Compare\\fingerprints};
+\node[utp node,right=6mm of b] (c) {Provider's\\trusted record};
+\node[utp node,below=7mm of b] (d) {Match: proceed\\to account sign-in};
+\draw[utp arrow] (a)--(b);
+\draw[utp arrow] (c)--(b);
+\draw[utp arrow] (b)--(d);
+\end{tikzpicture}

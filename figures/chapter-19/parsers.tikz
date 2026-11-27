@@ -1,0 +1,7 @@
+\begin{tikzpicture}
+\node[utp node] (shell) {Shell input\\\texttt{'[urgent]'}};
+\node[utp node,right=8mm of shell] (arg) {One argument\\\texttt{[urgent]}};
+\node[utp node,right=8mm of arg] (tool) {Grep with \texttt{-F}\\literal brackets};
+\draw[utp arrow] (shell)--(arg);
+\draw[utp arrow] (arg)--(tool);
+\end{tikzpicture}

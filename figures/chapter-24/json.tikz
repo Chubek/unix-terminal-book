@@ -1,0 +1,7 @@
+\begin{tikzpicture}
+\node[utp node] (a) at (0,1.25) {Array of photos};
+\node[utp node] (b) at (-2.5,0) {Object 0\\ID: \texttt{"001"}\\Share: \texttt{true}};
+\node[utp node] (c) at (2.5,0) {Object 1\\ID: \texttt{"002"}\\Share: \texttt{false}};
+\draw[utp arrow] (a)--(b);
+\draw[utp arrow] (a)--(c);
+\end{tikzpicture}

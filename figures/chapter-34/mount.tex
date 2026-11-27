@@ -1,0 +1,8 @@
+\begin{tikzpicture}
+\node[utp node] (root) at (0,1.5) {root tree};
+\node[utp node] (proj) at (-2.25,0) {Projects\\main filesystem};
+\node[utp node] (media) at (2.25,0) {Media\\attached filesystem};
+\draw[dashed,rounded corners] (.1,-.68) rectangle (4.4,.67);
+\draw[utp arrow] (root)--(proj);
+\draw[utp arrow] (root)--(media);
+\end{tikzpicture}

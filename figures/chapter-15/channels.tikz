@@ -1,0 +1,8 @@
+\begin{tikzpicture}
+\node[utp node] (keyboard) at (0,0) {Terminal input};
+\node[utp node] (cmd) at (4,0) {Command};
+\node[utp node,minimum height=17mm] (screen) at (8,0) {Terminal\\display};
+\draw[utp arrow] (keyboard)--node[above,font=\small]{0} (cmd);
+\draw[utp arrow] ([yshift=2mm]cmd.east)--node[above,font=\small]{1} ([yshift=4mm]screen.west);
+\draw[utp arrow] ([yshift=-2mm]cmd.east)--node[below,font=\small]{2} ([yshift=-4mm]screen.west);
+\end{tikzpicture}

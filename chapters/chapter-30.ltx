@@ -1,0 +1,553 @@
+Before every committee meeting you take the same handful of
+drafts and decide which ones are ready for the packet. The
+files may have spaces in their names; one person might forget
+to supply an attachment. You don't need a program to run the
+meeting. A small shell script can do the repetitive part:
+check the paths and report what would be included. It will
+not move, copy, open or publish the documents.
+
+\begin{objectives}
+\item Move a proven command sequence into a plain-text script with an explicit interpreter.
+\item Use a test, a branch and a loop to check a short list of arguments.
+\item Run a preview on safe fixtures and interpret its separate output streams and status.
+\end{objectives}
+
+\section{Start with a single decision}
+\label{sec:30-if}
+\index{shell scripts}
+\index{conditionals}
+\index{test@\texttt{test}}
+
+The first useful thing to decide is whether one candidate is
+a regular file. Start a fresh \texttt{sh} in the directory
+containing the book's downloaded source; later you will run
+the supplied script without copying it. Type each of these
+lines separately. The first saves the absolute path of that
+script, using \texttt{pwd -P} to obtain the physical path of
+the current directory. \texttt{-P} resolves symbolic links
+in the working-directory path. Stop unless the displayed
+status is \texttt{0}; see Chapter~\ref{ch:11} if making a plain
+text file yourself instead. The \texttt{-f} test checks for
+a regular file and the \cmd|$?| expansion reads the latest
+exit status before another command replaces it.
+
+\begin{terminal}
+script="$(pwd -P)/listings/chapter-30/preview-notes.sh"
+test -f "$script"
+printf 'Script found? status %s\n' "$?"
+\end{terminal}
+
+Once you know the script path, set up the fixture. Stop if
+\texttt{mktemp -d} reports an error or if the \texttt{cd}
+line does not show the new directory. This convenient form
+is common on GNU and BSD systems; if unavailable, use a new
+empty practice directory from Chapter~\ref{ch:12} and save
+its absolute path as \texttt{practice}. The output redirections
+below are safe in that newly created directory, not in a
+directory where the names might already hold real notes.
+
+\begin{terminal}
+practice=$(mktemp -d)
+cd "$practice" && pwd
+printf '%s\n' 'Sample minutes' > 'May notes.txt'
+printf '%s\n' 'Sample agenda' > agenda.txt
+mkdir 'Handouts'
+\end{terminal}
+
+The three fixture entries represent a name with a space, a
+simple name and a directory. A fourth candidate, \texttt{absent.txt},
+will be deliberately missing. This spread matters. If you
+test only a simple file that exists, you learn neither whether
+quotes survived nor whether the script distinguishes a
+directory from a regular file.
+
+\begin{terminal}
+test -f './May notes.txt'
+printf 'Present: %s\n' "$?"
+test -f './Handouts'
+printf 'Directory: %s\n' "$?"
+\end{terminal}
+
+Expect \texttt{Present: 0} and \texttt{Directory: 1}. The
+ordinary shell convention is that zero signals success or a
+true condition. False is often one; a malformed invocation
+may have a different nonzero status. The test prints nothing
+when it can answer normally. You have read status both times
+rather than trying to interpret an empty screen.
+
+\begin{terminal}
+if [ -f './May notes.txt' ]; then
+    printf '%s\n' 'Found a regular file'
+else
+    printf '%s\n' 'No regular file there'
+fi
+\end{terminal}
+
+This is the first piece worth keeping. \texttt{if} runs
+the command before \texttt{then} and branches according
+to its status. The opening bracket is another spelling of
+the \texttt{test} command; the closing bracket is its final
+argument, so leave spaces around both brackets. The
+semicolon ends the test command on the same line as
+\texttt{then}. \texttt{else} gives the other branch and
+\texttt{fi} ends the whole structure. Expect \texttt{Found
+a regular file}. Replace the fixture filename with
+\texttt{./Handouts} to see the other branch.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-30/test.tikz}
+\caption{The test's status selects the branch.}
+\label{fig:30-test}
+\VisualDescription{A regular-file test branches at status zero to report a found file, and at nonzero status to report no regular file.}
+\end{figure}
+
+\section{Repeat the decision on existing arguments}
+\label{sec:30-loop}
+\index{loops}
+\index{positional parameters}
+
+There is a short way to apply one decision to a group of
+filenames, without writing a separate command for each. Try
+a loop that merely displays its words. First, in your practice
+shell, use \texttt{set --} to create a list of arguments as
+in Chapter~\ref{ch:27}. Then let \texttt{for} assign each
+argument in turn to the variable \texttt{note}. The action
+between \texttt{do} and \texttt{done} runs once per argument.
+
+\begin{terminal}
+set -- './May notes.txt' './agenda.txt' './absent.txt'
+for note in "$@"; do
+    printf 'Candidate: <%s>\n' "$note"
+done
+\end{terminal}
+
+Expect one candidate line for each path, including the
+missing one. No file test happens here; the loop works with
+strings. The quotation marks around \cmd|"$@"| preserve the
+boundary around each existing argument, and the marks around
+\cmd|"$note"| preserve that boundary during the current
+iteration. Breaking either boundary can make a valid
+space-containing name look like several missing files.
+To turn the display into a check, place the test from
+Figure~\ref{fig:30-test} inside the loop and use
+\cmd|"$note"| in place of the fixed pathname.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-30/loop.tikz}
+\caption{One body runs three times, once per argument.}
+\label{fig:30-loop}
+\VisualDescription{Three candidates, May notes, agenda and absent, enter the same check individually. The space in May notes stays inside one candidate.}
+\end{figure}
+
+\section{Read the complete preview before running it}
+\label{sec:30-listing}
+\index{dry run}
+
+The listing adds a few rules around the loop. No arguments
+means a usage error. The \texttt{-eq} test compares numbers:
+here it asks whether the argument count \cmd|$#| is zero.
+\cmd|>&2| directs the message to standard error, leaving
+standard output free for successful candidates. The script
+uses status two for misuse. For each supplied name, the
+\texttt{case} checks its spelling against shell patterns:
+\cmd|./*| accepts a relative path prefixed with dot-slash
+and \cmd|/*| accepts an absolute path. The vertical bar
+separates acceptable alternatives, and \cmd|;;| ends a
+branch. Those pattern stars match text in the word;
+unlike a standalone shell argument they do not enumerate
+directory entries. \texttt{continue} skips to the next
+iteration after an unacceptable spelling.
+
+\ShellFile{listings/chapter-30/preview-notes.sh}
+
+In the file check, \texttt{-f} asks for a regular file and
+\texttt{-r} asks whether the file is readable; \cmd|&&|
+requires the first test to succeed before running the second.
+The script itself does not read file contents. A symbolic link
+to a readable regular file may pass; this is not a check for
+links or a promise that any path points within a certain
+directory. Likewise, a result can become stale if the file
+changes later. The script is intentionally only a preview,
+not an authorization step or a production publishing tool.
+
+\begin{quicktable}{p{1.3in}YY}
+\toprule
+Input case & Effect for this invocation & Where to look \\
+\midrule
+No path arguments & Show usage and stop, status 2. & Standard error \\
+Every candidate passes & Report each candidate and return status 0. & Standard output \\
+Some candidate fails & Report the failure, keep checking and return status 1. & Standard error for the failure; standard output for passing items \\
+\bottomrule
+\end{quicktable}
+
+The \texttt{result} variable remembers failure across
+iterations. A successful item after a rejected one does not
+set it back to zero. At the end \texttt{exit} returns the
+remembered result to whoever ran the script. It exits
+the child shell, not the caller's interactive session,
+because we run a separate \texttt{sh}, rather than reading
+the file as source in the current shell.
+
+\begin{figure}[htbp]
+\centering
+\input{figures/chapter-30/result.tikz}
+\caption{One rejection determines the final status even if other checks pass.}
+\label{fig:30-result}
+\VisualDescription{The script starts with result zero. A rejected item changes it to one. A later passing item leaves it at one for the final exit.}
+\end{figure}
+
+\begin{dialoguebox}{Why stop at a preview?}
+\Brian{The script already knows which files pass. Why not add a copy command now?}
+\Stephen{Because passing means only that a pathname passed two checks. We haven't decided where to copy or what to do if the destination already has that name.}
+\Brian{But I can see where the names would go next. Isn't that enough?}
+\Stephen{To decide what to include, yes. To change files, we also need a destination rule, an overwrite policy and a way to verify the result.}
+\Brian{So I can use this script regularly even if it never copies anything?}
+\Stephen{Exactly. A quick check before handling files by hand is already a useful repeatable task.}
+\DialogueConclusion{A useful preview need not change files.}
+\end{dialoguebox}
+
+\section{Run the fixture and check all three outcomes}
+\label{sec:30-run}
+
+First run the syntax check, then display its exit status.
+\texttt{sh -n} reads commands without executing them. It
+can catch an omitted \texttt{fi} or an unclosed quote, but
+it cannot tell whether the test checks the right file.
+
+\begin{terminal}
+sh -n "$script"
+printf 'Syntax status: %s\n' "$?"
+\end{terminal}
+
+Expect \texttt{Syntax status: 0}. If it is nonzero, stop and
+examine the first error before running the file. Next, invoke
+the file with a good path and read the status:
+
+\begin{terminal}
+sh "$script" './May notes.txt'
+printf 'Preview status: %s\n' "$?"
+\end{terminal}
+
+Expect \texttt{Would include: <./May notes.txt>} and status
+zero. \texttt{sh} opens the script from the stored absolute
+path, while the candidate \texttt{./May notes.txt} is resolved
+relative to the working directory printed during setup. The
+directory holding the script and the directory holding the
+candidate are independent; starting a script does not
+automatically change the working directory.
+
+\begin{terminal}
+sh "$script" './absent.txt' './agenda.txt'
+printf 'Preview status: %s\n' "$?"
+sh "$script"
+printf 'Usage status: %s\n' "$?"
+\end{terminal}
+
+Expect a rejection for the absent name, an inclusion for the
+agenda and \texttt{Preview status: 1}. With no arguments, a
+usage message and \texttt{Usage status: 2} should follow.
+If you use different stream redirections or a different
+display, do not infer status from the visible order of
+standard output and standard error.
+
+\begin{quicktable}{YY}
+\toprule
+Observation & Next useful check \\
+\midrule
+All files rejected after moving to another folder & Use \texttt{pwd}; relative candidates follow the current directory. \\
+An argument with spaces became two failures & Check the caller's quotes first, then inspect \texttt{"\$@"} inside the loop. \\
+No candidates but a usage message & Check that you supplied arguments after the script path. \\
+Syntactically valid script, wrong inclusion & Add a fixture that distinguishes the intended condition from the one written. \\
+\bottomrule
+\end{quicktable}
+
+If you save the listing yourself, save plain text, not a
+word-processing document. Run it explicitly as shown; it
+does not need an executable permission change for
+\texttt{sh} to read it. The first line records its intended
+interpreter for other invocation methods discussed in
+Chapter~\ref{ch:29}. Use these checks on invented inputs
+before adopting an edited version. Do not feed the resulting
+report into a shell: it is for your eyes, and a filename can
+contain angle brackets, newlines and other misleading
+characters. Keep real paths as individually quoted arguments.
+
+\section{Write down a contract before adding a feature}
+\label{sec:30-contract}
+
+You can now explain the script in four questions. What
+does it accept? A list of individually supplied paths.
+What does it reject? The specified bad spellings, missing
+files, directories and paths that fail the readability
+test. How does it respond? A passing path goes to standard
+output; rejections go to standard error with a nonzero
+status, even if another item passed. What does it change?
+Nothing on disk during an ordinary invocation. Those
+answers form a small contract the reader can verify.
+
+An attractive extension would be to include every text
+file without typing their names. Try the existing
+script with an intentional glob in the calling shell,
+not with a string containing an apparent list:
+
+\begin{terminal}
+printf 'Candidate: <%s>\n' ./*.txt
+sh "$script" ./*.txt
+printf 'Preview status: %s\n' "$?"
+\end{terminal}
+
+The fixture should yield two candidates and status zero.
+The caller has expanded the glob, so the script receives
+two actual path strings. The space in \texttt{May notes.txt}
+does not split a later time because the loop preserves its
+arguments. If there were no matches, a POSIX \texttt{sh}
+would pass the original pattern and our file test would
+reject the nonexistent path. With a shell that stops on
+an unmatched glob, the script would not run at all. If
+you experiment after creating \texttt{accepted.txt} or
+\texttt{rejected.txt} in an exercise, remove those fixture
+reports first: otherwise they also match the pattern.
+
+Adding a feature such as actually copying files would change
+the last answer in the contract. Before doing that, the
+destination must be explicit and non-overwriting behavior
+must be decided and proven on disposable files. A file
+manager could be the right tool for that last step if its
+preview and confirmations already do what you want.
+Do not weaken the tests just to automate the entire task.
+It may be enough to run the preview, resolve the missing
+items, and then assemble the packet by hand.
+
+Keep a known-good invocation alongside the saved script.
+For this example it names one file containing spaces and
+one missing file first, followed by a passing one. That
+checks argument handling and proves that processing continues
+after a rejection without forgetting the final status.
+When the script grows, change one behavior and rerun the
+previous checks before adding another. A live folder with
+dozens of files is a poor way to tell whether a change works:
+when the result differs you don't know if the script,
+the inputs or the working directory changed.
+
+\section{Debug the caller before rewriting the loop}
+\label{sec:30-debug}
+
+The committee's next run returns two errors for a
+document you know exists. Before making the script
+more complicated, replace it at your practice prompt
+with the old argument probe. Compare the two versions
+below. They print rather than open anything.
+
+\begin{terminal}
+printf '<%s>\n' ./May notes.txt './agenda.txt'
+printf '<%s>\n' './May notes.txt' './agenda.txt'
+\end{terminal}
+
+The first shows \texttt{<./May>} and \texttt{<notes.txt>}
+before the agenda; the second shows the intended two
+path arguments. The script never had the missing
+space to recover in the first version. It might even
+pass one of those unintended names if another file
+of that name happened to exist. You cannot fix a
+misdelivered list by adding quotes inside the receiver
+after the split. Correct the invocation and keep using
+\cmd|"$@"| inside the script.
+
+A different failure is ``right arguments, wrong
+directory.'' Check the absolute script location with
+the argument probe and the input location with
+\texttt{pwd}. The former tells you which source file
+the interpreter should read; the latter tells you the
+base for a relative input path. They can differ and
+that need not be a problem. What matters is which one
+the caller expected to use. When sending a procedure
+to someone else, include both pieces explicitly:
+which interpreter and source file to open, and from
+which folder to run the invocation.
+
+Another check is whether the script prints a rejection
+but returns success. Run the failure first and again
+last when checking edits. A script that blindly uses
+the last test status may look fine with the failure
+last and get the other ordering wrong. The stored
+\texttt{result} avoids that mistake. Your record of
+the run should include the status and both streams,
+not just a screenshot of the last line. If the
+correct output arrives with a wrong status, the
+script is still misleading to anything making a
+decision from its result.
+
+For an everyday task, stop once this procedure is
+small enough to understand and easy enough to repeat.
+Keep a copy of the working script alongside the
+documentation that says how to invoke it. Don't change
+your login shell, edit workplace policy or schedule
+the job just to see whether it works. A repeatable
+manual invocation is already automation: it moves
+the tedious checks out of your memory while leaving
+the final decision in your hands.
+
+\section{Check the boundary of a passing test}
+\label{sec:30-boundary}
+
+The word ``regular'' describes what the path leads to,
+not a promise that the path names the original directory
+entry. To see the difference, add a symbolic link in
+the disposable practice directory only. Check \texttt{pwd}
+first and stop if it isn't the new fixture directory.
+In \texttt{ln -s}, the first operand is the stored
+target and the second names the new link. If that
+name already exists, do not replace it; stop and
+inspect the lab before proceeding.
+
+\begin{terminal}
+ln -s 'May notes.txt' ./May-link.txt
+sh "$script" './May-link.txt'
+printf 'Preview status: %s\n' "$?"
+\end{terminal}
+
+The target spelling is relative to the link's own
+directory (Chapter~\ref{ch:8}). The script should print
+\texttt{Would include: <./May-link.txt>} and status
+zero. It never says ``this is not a link.'' A
+different task might require excluding links entirely,
+or might allow them only after verifying their
+targets. In either case, the requirement would need
+a separate check and its own test fixture. Avoid
+interpreting a pass as a promise that the test
+didn't make.
+
+When you finish this contrast, verify you are still
+in the practice directory and use
+\cmd|rm -i './May-link.txt'| to remove only the link.
+Leave \texttt{May notes.txt} in place for the exercises.
+If you have already moved out of the practice folder,
+do not run that relative removal until you have
+returned and confirmed the location.
+
+This experiment also shows a limit of timing. A path
+can pass now and name something different when you
+use it later. A preview should remain separate from
+an operation that changes files, so you can review
+what it intends to do; it cannot freeze the system
+in the state it observed. If the underlying inputs
+keep changing, work with an approved stable copy
+or recheck just before use. Don't replace the human
+decision with a single status code. A documented
+zero means no specified check rejected an argument
+on this invocation, not that every future operation
+using that name will work.
+
+One consequence can look odd at first: the script can
+say a file is readable without knowing whether it is a
+valid note. To test that distinction in the fixture, confirm
+that \texttt{./Blank.txt} is unused, then run
+\cmd|touch './Blank.txt'| followed by
+\cmd|sh "$script" './Blank.txt'|. Here \texttt{touch} creates
+an empty file; if the name is already taken, skip the exercise.
+After checking the preview, use \cmd|rm -i './Blank.txt'| in
+the fixture. The preview tests type and readability, not
+length or contents. A zero-byte file can therefore pass. If the
+committee asks for a nonempty document, that is a new
+policy. A size check would still not prove the author's
+name, that the contents contain the latest decisions, or
+that another reader knows how to open the format. Test
+each property that matters, and describe the others as
+outside the preview instead of implying that they passed.
+
+For a quick write-free comparison now, pass the
+ordinary \texttt{./May notes.txt} candidate and the
+\texttt{./Handouts} directory in one invocation. A
+passing file and a rejected directory give two different
+messages even though both names exist. Return status
+one describes the whole invocation; the two messages
+explain which argument needs attention. Preserve that
+distinction in any handoff you write. ``The preview
+returned one'' is less useful than ``The notes passed;
+Handouts was a directory and was rejected.''
+
+\section{Exercises and cleanup}
+
+\begin{exercise}{Include two real fixtures}
+\label{ex:30-passes}
+Invoke the script once with both regular fixture files.
+Check whether it knows the names separately and what status
+it gives. This should not create a report file.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+sh "$script" './May notes.txt' './agenda.txt'
+printf '%s\n' "$?"
+\end{terminal}
+Expect two inclusion lines and zero. The fixtures stay
+unchanged; remove them with the general cleanup below.
+\end{solution}
+
+\begin{exercise}{Separate failures and successes}
+\label{ex:30-streams}
+Run the preview with \texttt{./Handouts} and
+\texttt{./agenda.txt}. In the practice directory only,
+save the two streams in distinct new files, then read them.
+Confirm the status before reading either file. The
+\texttt{2>} operator opens a file for standard error.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+sh "$script" './Handouts' './agenda.txt' > accepted.txt 2> rejected.txt
+printf '%s\n' "$?"
+cat accepted.txt
+cat rejected.txt
+rm -i './accepted.txt' './rejected.txt'
+\end{terminal}
+Expect one, then the inclusion line, then the rejection
+line. Confirm that you are still in the fixture directory
+before approving the two explicit removals.
+\end{solution}
+
+\begin{exercise}{Challenge a command-like spelling}
+\label{ex:30-operand}
+Pass a candidate called \texttt{-n} and then a valid
+fixture path to the script, without creating any new file.
+Check that the first argument does not become a \texttt{sh}
+option or corrupt the second argument.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+sh "$script" '-n' './May notes.txt'
+printf '%s\n' "$?"
+\end{terminal}
+The first candidate gets the dot-slash or absolute path
+diagnostic. The second still passes. Expect status one;
+there is nothing extra to clean up. The arguments after
+the script path belong to that script.
+\end{solution}
+
+Verify the practice directory with \texttt{pwd} before
+removing the two named files. The empty \texttt{Handouts}
+directory is removable with \texttt{rmdir}; after
+leaving your practice folder, use the same command on the
+folder itself. If it is not empty, inspect the contents rather
+than forcing removal. If you made your own copy of the script,
+keep it wherever you chose to save it or remove just that copy.
+
+\begin{terminal}
+pwd
+rm -i './May notes.txt' './agenda.txt'
+rmdir './Handouts'
+cd / && rmdir "$practice"
+exit
+\end{terminal}
+
+\begin{takeaways}
+\item Build a modest script from one tested decision, then repeat it on individually quoted arguments.
+\item Use separate output streams and a documented status so that both people and later commands can interpret the result.
+\item A syntax check is not a behavior test; try known passes and failures in a disposable workspace.
+\end{takeaways}
+
+\begin{furtherreading}
+\ReadingItem{POSIX Shell Command Language, section 2.9}{Lists, control structures and shell compound commands}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/V3_chap02.html}
+\ReadingItem{POSIX test}{File tests and exit status}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/test.html}
+\ReadingItem{POSIX sh}{Interpreter invocation and options}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/sh.html}
+\end{furtherreading}

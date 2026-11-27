@@ -1,0 +1,30 @@
+\newcommand{\UTPElevenBuffer}{%
+\begin{tikzpicture}
+\node[utp node] (a) {file on disk};
+\node[utp node,right=24mm of a] (b) {editor buffer\\type here};
+\draw[utp arrow] (a.north east) to[bend left=22]
+  node[above,font=\small] {open} (b.north west);
+\draw[utp arrow] (b.south west) to[bend left=22]
+  node[below,font=\small] {save} (a.south east);
+\end{tikzpicture}}
+\newcommand{\UTPElevenVi}{%
+\begin{tikzpicture}
+\node[utp node] (a) {command mode};
+\node[utp node,right=18mm of a] (b) {insert mode};
+\node[utp node,below=12mm of a] (c) {colon command};
+\draw[utp arrow] (a.north east) to[bend left=22]
+  node[above,font=\small] {\texttt{o}} (b.north west);
+\draw[utp arrow] (b.south west) to[bend left=22]
+  node[below,font=\small] {Esc} (a.south east);
+\draw[utp arrow] (a)--node[right,font=\small] {\texttt{:}}(c);
+\end{tikzpicture}}
+\newcommand{\UTPElevenNano}{%
+\begin{tikzpicture}
+\node[utp node] (a) {edit buffer};
+\node[utp node,right=19mm of a] (b) {filename prompt};
+\node[utp node,below=8mm of b] (c) {buffer saved};
+\node[utp node,left=19mm of c] (d) {shell prompt};
+\draw[utp arrow] (a)--node[above,font=\small] {Ctrl+O}(b);
+\draw[utp arrow] (b)--node[right,font=\small] {Enter}(c);
+\draw[utp arrow] (c)--node[above,font=\small] {Ctrl+X}(d);
+\end{tikzpicture}}

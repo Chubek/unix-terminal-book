@@ -1,0 +1,7 @@
+\begin{tikzpicture}
+\node[utp node] (input) {\texttt{./march*.txt}};
+\node[utp node,right=5mm of input] (shell) {Shell};
+\node[utp node,right=5mm of shell] (args) {Four path arguments\\including one with a space};
+\draw[utp arrow] (input)--(shell);
+\draw[utp arrow] (shell)--(args);
+\end{tikzpicture}

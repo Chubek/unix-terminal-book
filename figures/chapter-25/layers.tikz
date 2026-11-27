@@ -1,0 +1,7 @@
+\begin{tikzpicture}
+\node[utp node] (input) {\texttt{'[draft]'}};
+\node[utp node,right=of input] (shell) {Shell passes\\ \texttt{[draft]}};
+\node[utp node,right=of shell] (grep) {\texttt{grep -F} searches\\ for exact text};
+\draw[utp arrow] (input)--(shell);
+\draw[utp arrow] (shell)--(grep);
+\end{tikzpicture}

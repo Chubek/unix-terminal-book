@@ -1,0 +1,11 @@
+\begin{tikzpicture}
+  \node[utp node] (s) at (0,0) {\ttfamily uname -s};
+  \node[utp node] (r) at (3.3,0) {\ttfamily uname -r};
+  \node[utp node] (m) at (6.6,0) {\ttfamily uname -m};
+  \node[utp node,below=5mm of s] (name) {System name};
+  \node[utp node,below=5mm of r] (release) {System release};
+  \node[utp node,below=5mm of m] (machine) {Hardware name};
+  \draw[utp arrow] (s) -- (name);
+  \draw[utp arrow] (r) -- (release);
+  \draw[utp arrow] (m) -- (machine);
+\end{tikzpicture}

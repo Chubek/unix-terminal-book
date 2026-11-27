@@ -1,0 +1,9 @@
+\begin{tikzpicture}
+\node[utp node] (file) {Donations file};
+\node[utp node,right=4mm of file] (tail) {\texttt{tail}};
+\node[utp node,right=21mm of tail] (wc) {\texttt{wc}};
+\node[utp node,right=4mm of wc] (count) {Count};
+\draw[utp arrow] (file)--(tail);
+\draw[utp arrow] (tail)--node[above,font=\small]{Box lines} (wc);
+\draw[utp arrow] (wc)--(count);
+\end{tikzpicture}

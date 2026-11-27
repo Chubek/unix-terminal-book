@@ -1,0 +1,9 @@
+\begin{tikzpicture}[node distance=4mm]
+\node[utp node] (a) {Produce values};
+\node[utp node,right=of a] (b) {Split fields};
+\node[utp node,right=of b] (c) {Match names};
+\node[utp node,right=of c] (d) {Remove quotes};
+\draw[utp arrow] (a)--(b);
+\draw[utp arrow] (b)--(c);
+\draw[utp arrow] (c)--(d);
+\end{tikzpicture}

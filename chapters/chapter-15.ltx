@@ -1,0 +1,425 @@
+You ask someone to count the names on a sign-up sheet. Halfway through
+they say, ``One page is missing,'' then carry on counting. You would not
+write ``One page is missing'' into the list of names. On a terminal,
+though, the count and such a warning can appear in the same place.
+They can still travel by different channels. Once you know which
+channel carries what, you can keep a warning visible without treating
+it as part of your data.
+
+\begin{objectives}
+\item Identify standard input, standard output, and standard error even when they use the same terminal.
+\item Tell when a command reads the terminal and finish an interactive input with end-of-file.
+\item Distinguish a command's output, its diagnostic messages, and its exit status.
+\end{objectives}
+
+\section{Read a file, then read the keyboard}
+\label{sec:15-read}
+\index{cat@\texttt{cat}}%
+\index{wc@\texttt{wc}}%
+\index{standard input}%
+Start a practice \cmd|sh| if necessary; leave it with \cmd|exit|
+after the exercises. Make a new directory. \cmd|mktemp -d| creates
+it; \cmd|$(...)| captures the name for \cmd|lab| and \cmd|&&| makes
+each subsequent command depend on the success of the previous one.
+Stop if the new path isn't printed. Record it for cleanup.
+
+\begin{terminal}
+lab=$(mktemp -d) && cd "$lab" && pwd
+\end{terminal}
+
+Only run the fixture setup below after \cmd|pwd| has confirmed
+the new practice directory.
+
+\begin{terminal}
+printf '%s\n' Asha Bea Chen > roll.txt
+\end{terminal}
+
+\cmd|printf| prints each name followed by a newline; the shell's
+\cmd|>| sends that text to the named file rather than to the screen
+and would overwrite an existing file. Here the directory is new.
+You can display the text or count its lines:
+
+\begin{terminal}
+cat roll.txt
+wc -l roll.txt
+\end{terminal}
+
+\cmd|cat| copies the file's contents to its output in order. The
+\cmd|wc| command counts things in its input; \cmd|-l| selects
+newline characters. In this fixture every name ends with a newline,
+so the answer is three. The count may be padded with spaces and is
+followed by the filename because you supplied it as an operand.
+Neither command opens a special window to show the result. Both
+write into an output channel that is normally connected to the
+terminal during an interactive session.
+
+\begin{terminal}
+wc -l
+\end{terminal}
+
+This version of the command names no file. Ordinarily it reads
+from \emph{standard input}, its regular incoming channel, which
+for this command at an interactive prompt is usually connected
+to the terminal. The absence of a new shell prompt means the
+program still has your attention. Type \texttt{Asha}, press
+\EnterKey, then type \texttt{Bea} and press \EnterKey.
+At the start of the otherwise empty next line press
+\KeyChord{Ctrl}{D}. Expect the number two without a filename, then
+the shell's prompt. The names you saw while typing were generally
+echoed by the terminal settings; they weren't an early report from
+\cmd|wc|. Reports that count an entire input have to wait until
+the input ends.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-15/channels.tikz}
+\caption{A keyboard and a screen can serve three different channels.}
+\label{fig:15-channels}
+\VisualDescription{Standard input leads into the command from the terminal. Standard output and standard error leave through separate channels, both leading to the terminal display in this example.}
+\end{figure}
+
+In that example a file operand meant that \cmd|wc| opened the
+named file itself. Leaving the operand out meant that it used a
+connection the shell passed to it. Both ways can deliver the same
+bytes, but they are not the same mechanism. Later you will connect
+that incoming channel to a file or another command. Learning
+that distinction now prevents a common confusion: when a command
+has an input file operand, changing its standard input may have
+no effect at all on the data it reads.
+
+\begin{quicktable}{M{1.4in}Y}
+\toprule
+Channel & During a typical terminal session \\
+\midrule
+0: standard input & A program that reads this channel can use your terminal input; if it reads a named file instead, this channel may sit unused. \\
+1: standard output & Expected results, for example the line count from wc, normally appear on your terminal. \\
+2: standard error & Diagnostics and sometimes progress or prompts normally appear on the same terminal, but arrive through a separate connection. \\
+\bottomrule
+\end{quicktable}
+
+\section{Know when you have finished typing}
+\label{sec:15-eof}
+\index{end-of-file}%
+With normal terminal settings, \KeyChord{Ctrl}{D} on an empty
+line lets a program reading from the terminal see that there is
+no more input at that read. This is an \emph{end-of-file}
+condition, often shortened to EOF. It is not the text
+\texttt{EOF} and not a newline. With pending text on a line,
+the first \KeyChord{Ctrl}{D} ordinarily makes those pending characters
+available without a newline. For a command still reading, such as
+\cmd|wc -l|, press \KeyChord{Ctrl}{D} again with no pending text
+to let the next read see EOF. For this chapter press \EnterKey\ after
+the text and use \KeyChord{Ctrl}{D} on the empty line that follows.
+Terminal controls can be changed; the instructions assume the usual
+interactive line settings.
+
+\begin{terminal}
+cat
+\end{terminal}
+
+Type \texttt{blue table}, then \EnterKey. You are likely to see
+this phrase twice: once as the terminal shows what you typed
+and once as \cmd|cat| writes it back through its output channel.
+Finish on an empty line with \KeyChord{Ctrl}{D}. Don't type another
+shell command before the prompt returns. If you do, it may go to
+\cmd|cat| as data, not to the shell as a command. In an ordinary
+interactive session, \KeyChord{Ctrl}{C} interrupts a foreground
+command instead; if a practice command is stuck, that is a way
+to stop it rather than claiming you finished supplying input.
+An EOF lets the command finish its job; an interrupt is a
+request to stop it.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-15/eof.tikz}
+\caption{A newline completes a line; end-of-file lets the count finish.}
+\label{fig:15-eof}
+\VisualDescription{Two complete name lines enter the counter. End-of-file on the following empty line, not the second newline, releases the total.}
+\end{figure}
+
+\section{A screen is not a channel label}
+\label{sec:15-diagnostics}
+\index{standard output}%
+\index{standard error}%
+\index{file descriptor}%
+A running program can have several open connections to files,
+devices, or other endpoints at the same time. A \emph{file
+descriptor} is the number it uses to refer to one of those open
+connections. By convention, descriptor 0 means standard input,
+1 means standard output, and 2 means standard error. The numbers
+are not permanent addresses for a particular keyboard, screen,
+or file on disk. They describe where to read or write in this
+running program. A shell can rearrange what those descriptors
+are connected to when it launches a command.
+
+\begin{terminal}
+cat roll.txt not-here.txt
+printf 'Status: %s\n' "$?"
+\end{terminal}
+
+The two operands prompt two file reads. Find the three names,
+a complaint about the file that wasn't created, and a nonzero
+status printed by the separate \cmd|printf| call. The exact
+diagnostic wording varies. The three names are ordinary output;
+the complaint is on standard error. The status came back to
+the shell, which then handed it to \cmd|printf| as data.
+It was not a line \cmd|cat| printed. The example also shows
+why partial results and failure can coexist: a command can
+succeed in reading the first file and still fail to finish
+the overall request.
+
+\begin{terminal}
+cat roll.txt not-here.txt > visible.txt
+printf 'Status: %s\n' "$?"
+cat visible.txt
+\end{terminal}
+
+In this fresh directory the first call creates \texttt{visible.txt}
+from descriptor 1 without moving descriptor 2. The diagnostic
+still appears on the terminal. Reading the new file shows only
+the three names; \cmd|cat| still returned nonzero for the
+compound file request. The filename \texttt{visible.txt} is
+intentionally ironic: the normal output doesn't become visible
+on your screen until you read the file. Chapter~\ref{ch:16}
+covers why the file may appear even when a command cannot
+produce any output at all.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-15/separate.tikz}
+\caption{When results go to a file, the warning can stay on the terminal.}
+\label{fig:15-separate}
+\VisualDescription{The command sends the valid name lines through descriptor 1 to the output file and the missing-file diagnostic through descriptor 2 to the terminal. A separate completion status returns to the shell.}
+\end{figure}
+
+\begin{quicktable}{M{1.35in}Y}
+\toprule
+What you notice & One useful check \\
+\midrule
+No prompt, no output & Is the command reading from the terminal? Was a file operand intended? \\
+Output and complaint & Check whether the data is complete; look up the meaning of the exit status. \\
+Output file but no screen result & Read the file if you redirected output; check the status before trusting the file. \\
+Screen text while typing & Ask whether the terminal itself echoed input instead of the command printing a result. \\
+\bottomrule
+\end{quicktable}
+
+\section{Name a file or supply the channel}
+\label{sec:15-file-or-channel}
+The \cmd|-| operand tells \cmd|cat| to read standard input at
+that point in its list of inputs. You can use it to place a
+short handwritten line before the names from the file:
+
+\begin{terminal}
+cat - roll.txt
+\end{terminal}
+
+Type \texttt{Saturday names}, press \EnterKey, then press
+\KeyChord{Ctrl}{D} at the start of the next line. Expect your
+own input back as data and then the three names from the file.
+\cmd|cat| processes its input operands in order. It doesn't
+know whether the first input is a heading and doesn't change
+letter case or add spacing. A real file named exactly \texttt{-}
+would need to be written \cmd|./-| here, because this utility
+treats the bare operand specially (see Chapter~\ref{ch:13}).
+
+\begin{terminal}
+wc -l < roll.txt
+\end{terminal}
+
+\cmd|<| asks the shell to connect standard input to the file.
+There is now no named file operand for \cmd|wc| to print
+alongside the count. Expect three and the prompt, without
+having to type \KeyChord{Ctrl}{D}: the file's end supplies
+EOF. If two commands both accept standard input, a file
+prepared for one can sometimes be given to the other without
+creating an intermediate file in a special format. That is
+useful only if both agree on how to interpret the bytes.
+
+\begin{dialoguebox}{Same screen, different channels}
+\Brian{A result and a complaint appeared on the same screen. How can they be separate?}
+\Stephen{The program wrote them on two channels that happen to reach your terminal.}
+\Brian{Then why not call everything on the screen output?}
+\Stephen{You can casually, but when moving the results you need to know which channel you're moving.}
+\Brian{So if I save the results, the complaint can stay on my screen?}
+\Stephen{Yes, and the saved results can still be incomplete.}
+\Brian{The data and the complaint tell me different things. What tells the shell I should check?}
+\Stephen{The exit status. It is a separate report, not another line of text.}
+\DialogueConclusion{One screen can carry distinct channels.}
+\end{dialoguebox}
+
+\section{Work out who has the keyboard}
+\label{sec:15-waiting}
+If a program seems stuck, look at the recent history of
+the session before repeating the command. Did you enter
+a command that can read standard input, without naming
+a file? If so, a quiet terminal can mean the program is
+ready for data, not that the machine is frozen. If the
+shell's ordinary prompt is present instead, the shell
+probably has control. Don't press \KeyChord{Ctrl}{D} at
+the shell's prompt just to see what will happen: in that
+context it can end the session. Which program is reading
+matters as much as which keys you use.
+
+Try a deliberate interruption in the lab. Run \cmd|wc -l|,
+type one name followed by \EnterKey, and on the next line
+press \KeyChord{Ctrl}{C} instead of \KeyChord{Ctrl}{D}.
+With ordinary settings you get the prompt back without a
+count. The printed notation, such as \texttt{\^{}C}, depends
+on the terminal. Now start the same command again, type the
+same line, and finish with EOF. Expect one. Terminating a job
+doesn't give it a chance to finish its report in the same
+way that ending input does.
+
+A different reason for waiting is that a program has already
+read some data and needs more. A count of two names in a
+typed session looks immediate after EOF, but the counter
+can't say two before it knows there won't be a third.
+Contrast that with \cmd|cat|: it can copy some data before
+the entire input is available. This difference belongs to
+what the command does, not to standard input itself. Both
+used descriptor 0. A bigger task could be quiet for a long
+time while reading valid input, or could show some results
+and still be waiting. Don't send an interrupt merely because
+one program doesn't show progress the way another does.
+
+\section{Make an empty input on purpose}
+\label{sec:15-empty}
+An intentional empty input is different from an attempt to
+read a file that isn't there. All the systems discussed
+here provide \cmd|/dev/null|: as an input, it supplies
+immediate EOF, and as an output it discards the data sent
+to it. Only read from it in this example. The slash at
+the start makes the device path absolute, so your working
+directory doesn't affect where the read goes.
+
+\begin{terminal}
+wc -l < /dev/null
+printf 'Count status: %s\n' "$?"
+wc -l roll.txt < /dev/null
+\end{terminal}
+
+The first count is zero, with status zero. The second count
+is three with the filename. Connecting something to
+descriptor 0 doesn't obligate the utility to consume it.
+Its operand names the file it is to count. Reaching the
+end of a valid, perhaps empty, input is not an error.
+The earlier operation with the missing file couldn't open
+its input, so it gave a diagnostic instead. A zero can tell
+you an input was empty only if you know you received the
+data you intended to count.
+
+In a real terminal session you might want to send someone
+the result of a command and separately tell them it didn't
+process one input. Separate those claims even when writing
+by hand. Record what output you observed, where it was
+written, and whether the status signaled an issue. A note
+that says ``nothing printed'' does not settle whether a
+command was reading, finished, or redirected. State what
+you supplied and what happened to the prompt. This makes
+it easier to explain the problem without dumping an entire,
+possibly private, session transcript.
+
+\section{Compare typed input with an exact file copy}
+The way EOF arrives can change without changing the data
+the consumer receives. To see that, read the same two
+lines once from your keyboard and once from a file. Start
+the counter as before. Enter \texttt{Asha}, \EnterKey,
+\texttt{Bea}, \EnterKey, and \KeyChord{Ctrl}{D}
+on the empty line. Note the count. Now create the new
+fixture \texttt{two.txt} in the lab only, then supply it
+on the same input channel.
+
+\begin{terminal}
+printf '%s\n' Asha Bea > two.txt
+wc -l < two.txt
+\end{terminal}
+
+Both counts are two. During the second run the input
+lines aren't echoed, because the terminal isn't the source.
+The counter still sees two newline characters followed by
+EOF. The example would give a different result if you
+pressed \KeyChord{Ctrl}{D} before pressing \EnterKey\ on
+the final typed name: even if that name reaches the program,
+it doesn't contribute a newline to the count. Also do not
+confuse echo with a saved record. Typing directly into the
+counter doesn't preserve a copy for you to review. The text
+file can be reviewed and reused with another utility.
+
+When a tool asks an interactive question it may use a
+channel differently from a plain counter. A prompt can
+appear on standard error so it isn't mixed into normal
+output. Some programs deliberately open the terminal for
+conversation even when their ordinary input is attached
+to a file. The three standard descriptors are conventions
+about connections, not a rule forbidding a program from
+making others. Before sending data to an unfamiliar tool,
+find out where it expects input and whether it is meant
+to talk to a person. If you don't see a new shell prompt
+afterward, read what the program is asking rather than
+blindly typing a second command.
+
+For paper-like forms such as this roll, choosing the file
+as input means the data doesn't depend on keystrokes during
+the count. If you need to repeat the count, the same file
+can supply the same lines again. A manual test is valuable
+for learning what a stream is, but a preserved fixture
+makes it easier to decide whether a change in the answer
+came from a change in the input.
+
+\section{Practice and cleanup}
+\begin{exercise}{Count a typed attendance sheet}
+Run a newline count using the terminal as input. Type four short
+names on separate lines. Finish the stream, then decide which
+visible text is typed input and which is the program's answer.
+\end{exercise}
+\begin{solution}
+Run \cmd|wc -l| without a filename. Press \EnterKey\ after
+each name, then \KeyChord{Ctrl}{D} on the empty line. The
+program reports four without a filename. The terminal normally
+echoes the names before that report. This writes no file.
+\end{solution}
+
+\begin{exercise}{Explain a mixed result}
+Read the existing name list and a nonexistent file in a single
+command, keeping standard output on the terminal. Check the
+status immediately and identify which messages are normal data.
+\end{exercise}
+\begin{solution}
+Use \cmd|cat roll.txt not-here.txt|, then
+\cmd|printf '%s\n' "$?"|. The three name lines are normal
+output and the missing-file message is a diagnostic.
+The printed status is nonzero. This exercise leaves no files.
+\end{solution}
+
+\begin{exercise}{Count without a printed filename}
+Count the file's lines without typing the names and without
+giving the counter a file operand. Predict how the report
+differs from the original file-operand example.
+\end{exercise}
+\begin{solution}
+Use \cmd|wc -l < roll.txt|. Expect three without
+\texttt{roll.txt} alongside it. The incoming connection
+does the work, and no cleanup is needed for the count.
+\end{solution}
+
+Check \cmd|pwd| against the path you recorded before removing
+anything. The following removes the practice files with confirmation;
+omit \texttt{visible.txt} or \texttt{two.txt} if you didn't create
+them. The nonrecursive \cmd|rmdir|
+will refuse to delete a directory that still holds files;
+inspect it instead of forcing removal.
+
+\begin{terminal}
+rm -i roll.txt visible.txt two.txt
+cd ..
+rmdir "$lab"
+\end{terminal}
+
+\begin{takeaways}
+\item Standard input, output, and error are numbered connections, not fixed physical devices.
+\item End-of-file ends a read; an interrupt stops an activity rather than finishing its input.
+\item Data, diagnostics, and completion status are separate evidence about a command.
+\end{takeaways}
+
+\begin{furtherreading}
+\ReadingItem{POSIX cat}{File operands, the special dash operand, and separate output and error descriptions.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/cat.html}
+\ReadingItem{POSIX wc}{What the counter reads and what it reports.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/wc.html}
+\ReadingItem{POSIX General Terminal Interface}{Canonical input processing and the EOF control character.}{https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/V1_chap11.html}
+\end{furtherreading}

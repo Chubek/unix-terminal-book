@@ -1,0 +1,460 @@
+The file is right there in your editor, yet the terminal reports
+that it does not exist. You open another window and now the
+command itself is missing. These are different failures. Changing
+permissions would address neither if the original shell was in the
+wrong directory and the new shell had a different search path.
+The quickest useful action is not the biggest repair: find an
+observation that separates two plausible causes.
+
+\begin{objectives}
+\item Distinguish input, command lookup, working directory, and
+remote-session problems.
+\item Recover usable input without unnecessarily terminating a process.
+\item Reproduce and fix a missing command and a missing file using
+only disposable fixtures.
+\end{objectives}
+
+\section{Read the symptom before repeating the command}\label{sec:45-triage}
+
+Start by naming what you saw: ``I got a continuation prompt
+after pressing Enter,'' ``nothing new was displayed,'' or ``the
+shell printed command not found.'' The words are not a diagnosis.
+``Nothing new was displayed'' might mean a command finished
+silently, a command is waiting for input, a terminal stopped
+displaying new output after a flow-control key, or a remote
+session is no longer responsive. Look for the prompt you
+normally see. If you do not have access to the display or
+scrollback, use a known review route from Chapter~\ref{ch:44}
+rather than entering commands at a guessed input position.
+
+Take note of what changed immediately before the problem.
+``It worked in a different tab five minutes ago'' is much
+more useful than ``it usually works.'' Are the two tabs running
+the same shell, under the same account, with the same working
+directory? These are comparisons you can make without changing
+either place. Preserve one successful run as a reference. A
+fix that replaces the working configuration everywhere at once
+also destroys your best comparison. If an app has its own
+history or log, copy the small relevant portion before you
+retry; repeated attempts can push the original diagnostic out
+of view. Do not include typed secrets or unrelated entries in
+anything you share.
+
+\begin{quicktable}{p{.32\linewidth}Y}
+\toprule
+Observation & Question to answer next \\
+\midrule
+Continuation prompt & Is a quote, parenthesis, or continuation
+backslash waiting for the rest of the command? \\
+No visible prompt & Is an application still in the foreground,
+or was output paused? \\
+Command not found & Which shell is looking up which exact name
+in which environment? \\
+File not found & Which working directory and which filename
+did the command use? \\
+Permission denied & Which operation and exact path failed?
+Which machine and account own them? \\
+\bottomrule
+\end{quicktable}
+
+Figure~\ref{fig:45-triage} starts with the smallest question: who
+would receive the next key? When an editor holds unsaved work,
+quit or save using the editor's own commands. When a pager has
+the keyboard, use its documented quit key. If you knowingly
+started a harmless foreground command that is waiting, an interrupt
+may be reasonable. \KeyChord{Ctrl}{C} typically sends an interrupt
+to the foreground process group when the terminal handles that
+key in its usual mode. It is not a universal undo. A partly copied
+file can remain partly copied. If you do not know what is running,
+do not use repeated interrupts or close the entire window as a
+first guess. Moving the investigation to a spare local window
+can preserve an important process in the first.
+
+An ordinary failed command returns to the shell's main prompt,
+but a program can return control and leave the display in an
+unexpected state. Sometimes nothing is broken at all: a command
+that reads from standard input is waiting because you did not
+give it an input path, or a command intentionally produces no
+output on success. Think back to what you typed. If the command
+is supposed to wait for more input, use its documented way to
+finish. End of input and an interrupt are different requests;
+one completes the input, while the other can stop work.
+Avoid guessing either key while a tool you do not recognize
+is in the foreground.
+
+\input{figures/chapter-45/triage.tikz}
+
+\section{Recover input and display separately}
+
+Here is a safe input practice in a spare interactive POSIX-style
+shell. This deliberately unfinished input ends in a single
+unclosed quote; it starts no external program. Type the line
+and press \EnterKey{}. You may see a secondary prompt such as
+\texttt{>}, hear a cue, or see a new input line. Use
+\KeyChord{Ctrl}{C} to cancel the incomplete input, then enter
+the second block only once at the main prompt. If the spare shell
+does not respond to the interrupt, there are no practice files
+yet; leave the window open and try a known local terminal
+configuration instead.
+
+\begin{terminal}
+printf '%s\n' 'unfinished
+\end{terminal}
+
+\begin{terminal}
+printf '%s\n' 'ready for input'
+\end{terminal}
+
+Seeing ``ready for input'' shows this shell accepted a complete
+command. It does not say anything about another window.
+When output is paused because software flow control is enabled
+and the stop character was sent, the configured start character,
+commonly \KeyChord{Ctrl}{Q}, can resume display. Do not use that
+key blindly in an editor, an application that binds it to Quit,
+or a screen reader that handles it first. Flow control may be
+disabled, may use other keys, or may not explain the symptom.
+Read the existing terminal settings at a confirmed shell prompt:
+
+\begin{terminal}
+stty -a
+\end{terminal}
+
+\cmd|stty| gets or changes terminal line settings; \cmd|-a| prints
+them in readable form. Look for the start and stop characters,
+normally shown with caret notation such as \texttt{\^{}Q}, and
+whether \texttt{ixon} is enabled (a leading minus indicates it
+is disabled). The output is implementation-dependent. Standard
+input needs to be connected to the intended terminal for this
+check; do not run \cmd|stty -a < ./somefile| and expect it to
+inspect the window. For a verified local shell with broken
+echo or line input after a tool exits, \cmd|stty sane| is a
+recovery option, not a read-only probe. It sets many defaults
+and can change settings you deliberately chose. If the wrong
+application still owns input, neither it nor \cmd|reset| will
+run as a shell command. Use the app's documented recovery method
+or a separate working window. Do not practice intentionally
+breaking a terminal needed for work.
+\index{stty@\texttt{stty}}\index{terminal!flow control}
+
+\subsection{Ask for a bounded answer}
+
+When you have a confirmed prompt, a short read-only command
+is a better response test than rerunning the expensive job.
+It should produce an expected line or a small, interpretable
+diagnostic. An empty input line may be helpful while testing
+prompt redraw, but it cannot show whether standard output
+itself is visible.
+
+\begin{terminal}
+printf '%s\n' 'short response test'
+printf 'last status: %s\n' "$?"
+\end{terminal}
+
+The number is the status of the first \cmd|printf|. Expect
+zero if that write succeeded. If the line is missing but you
+can recover it from local scrollback, the problem may involve
+which portion of the display you can read rather than what
+the shell ran. If the second line never appears, do not
+assume the first succeeded. Switch to a verified window and
+investigate from there. Let the small example produce
+evidence without adding another uncertain operation.
+
+\section{Two failures that can look alike}\label{sec:45-path}
+
+Use POSIX shell syntax below; start a child \cmd|sh| if needed.
+The practice creates a helper and a report in a fresh directory.
+Run the setup block by itself. The \cmd|mktemp| utility is not
+part of POSIX but is available on the systems discussed here.
+
+\begin{terminal}
+lab=$(mktemp -d "${TMPDIR:-/tmp}/utp45.XXXXXX") &&
+    cd "$lab" && lab=$PWD && pwd
+\end{terminal}
+
+Continue only if the setup prints the absolute path of the new
+directory named \texttt{utp45.} followed by its generated suffix.
+Record the exact path for cleanup. If it did not print that path,
+stop before creating directories or redirecting output. This toy
+\cmd|sh| helper only prints a sentence. Create it and grant its
+owner execute permission only in this authorized practice directory,
+not on a shared project or managed system.
+
+\begin{terminal}
+mkdir ./work ./other
+printf '%s\n' 'Inventory: four notebooks' > ./work/report.txt
+printf '%s\n' '#!/bin/sh' "printf '%s\n' 'helper ran'" \
+    > ./utp45-report
+cat ./utp45-report
+chmod u+x ./utp45-report
+\end{terminal}
+
+The first line of the helper selects \texttt{/bin/sh} on the
+systems discussed here; the second is the only command it runs.
+\cmd|chmod u+x| adds owner execute permission to this exact
+practice file (Chapter~\ref{ch:33}). Neither superuser privileges
+nor write permission for other users is needed. If the
+temporary filesystem disallows direct execution, do not change
+its mount settings: you can read the code and use
+\cmd|sh ./utp45-report| instead. The same helper is supplied as
+\FilePath{listings/chapter-45/utp45-report}.
+
+First read the report from a different working directory.
+Parentheses run the enclosed list in a subshell. The working
+directory change stays inside it. Use \cmd|&&| so that if
+entering the directory fails, the reading commands do not run.
+The semicolon ends the first inner command. \cmd|cat| reads the
+filename relative to that subshell.
+
+\begin{terminal}
+(cd ./other && { pwd; cat ./report.txt; })
+printf 'attempt status: %s\n' "$?"
+pwd
+cat ./work/report.txt
+\end{terminal}
+
+The subshell prints a path ending in \texttt{/other}; then
+\cmd|cat| diagnoses the missing file. The status is nonzero.
+The second \cmd|pwd| shows the original directory. The working
+read prints ``Inventory: four notebooks.'' A missing report
+diagnostic is evidence that \cmd|cat| was found and ran. It is
+not evidence that \cmd|cat| needs reinstalling. Inspect the
+path in the diagnostic and compare it to the path you expect
+before thinking about permissions or storage devices.
+
+\input{figures/chapter-45/paths.tikz}
+
+Now try lookup of the helper. The \cmd|PATH| value here is
+the full path of the empty practice directory \texttt{other}.
+Setting it only for a subshell guarantees that the helper in the
+parent directory is outside the search. It also hides ordinary
+external utilities in that subshell; \cmd|command| and \cmd|printf|
+are built in on the shells used here. The alias and function
+exceptions are one reason to use a distinctive name and a spare
+shell. You should not temporarily point your real shell's path at
+an untrusted directory to diagnose a missing name.
+
+\begin{terminal}
+(PATH="$lab/other"; command -v utp45-report
+ printf 'lookup status: %s\n' "$?")
+./utp45-report
+\end{terminal}
+
+Expect no resolved path from the lookup and a nonzero lookup
+status. The direct execution should print ``helper ran'' unless
+the filesystem disallows execute. An explicit path contains
+a slash; it does not need a search through \cmd|PATH|. Both
+examples are shown in Figure~\ref{fig:45-paths}. A command may
+also resolve to an alias, function, or builtin. Read what
+\cmd|command -v| returns; do not assume every resolution prints
+an absolute executable path. For a genuinely missing optional
+tool, check its documented installation and your platform's
+package mechanism (Chapter~\ref{ch:35}); reinstalling is not
+the starting move when the name was simply mistyped.
+
+\subsection{Keep path errors distinct from access errors}
+
+If the path is right but the command denies access, first ask
+which operation failed. Reading an existing file, traversing
+its parent directories, executing a file, and creating a new
+file beside it require different permissions
+(Chapter~\ref{ch:33}). An empty report after a failure can
+mean the shell opened the output and the read then failed;
+it can also mean the shell couldn't open the output and
+never started the tool. Read the path in the diagnostic; if
+you still cannot tell, try a read-only command using just
+the input path, with no output redirection. You are narrowing
+the failure by removing an operation.
+
+\begin{terminal}
+ls -ld ./work ./work/report.txt
+if test -r ./work/report.txt; then
+    printf '%s\n' 'Report passes the read-access check.'
+else
+    printf '%s\n' 'Report does not pass the read-access check.'
+fi
+\end{terminal}
+
+\cmd|-l| asks \cmd|ls| for details, and \cmd|-d| lists the
+directory entry rather than opening its contents. Look at
+the directory's permissions as well as the file's. \cmd|test -r|
+checks read access to the named path for this shell's context.
+It should succeed in the fixture you created. It is not a
+promise about later access: the path or its permissions may
+change, and a later program might run under another identity.
+Access lists or mount settings may also matter on a real
+system. A successful lookup gives a tool a path; a successful
+read-access check gives stronger evidence about the input
+but does not tell you whether a different output directory is
+writable.
+
+Resist the reflex to make every file broadly writable or to
+run the same command with elevated privileges. That can expose
+data, create files that the original account cannot later
+edit, and make the diagnosis harder. On a managed system,
+show the owner the exact read-only check that failed and ask
+which account or route was intended. A denial may be that
+system working as designed. If an account is meant to read
+but not change a shared folder, a copy in an authorized
+workspace may be the correct solution rather than making the
+original writable.
+
+\begin{dialoguebox}{The wrong repair}
+\Brian{Both times it said something wasn't found. Why separate them?}
+\Stephen{In one case the shell couldn't locate the command.}
+\Brian{But the other error also came out of the terminal.}
+\Stephen{True. The terminal showed both. The second came from a command that had already started.}
+\Brian{Then reinstalling that command would leave it looking in the wrong directory.}
+\Stephen{Exactly. Check what issued the diagnostic before choosing a repair.}
+\Brian{I can test the directory without changing anything.}
+\DialogueConclusion{Find the source of the error first.}
+\end{dialoguebox}
+
+\section{Check the machine before changing the machine}
+
+A local shell and a remote shell can display identical prompts.
+Check at a confirmed shell prompt, then compare what you see
+with the expected context you noted earlier. \cmd|uname -n|
+reports the network node name; \cmd|id -un| asks for the
+effective user name, not the complete list of identifiers and
+groups. These two strings and a working directory are useful
+clues but not secure proof of a machine's identity. In particular,
+trust the SSH host verification from Chapter~\ref{ch:38}, not a
+hostname printed after connecting. Do not post real usernames,
+machine names, or complete home paths when sharing a diagnostic.
+
+\begin{terminal}
+uname -n
+id -un
+pwd
+command -v cat
+\end{terminal}
+
+\input{figures/chapter-45/contexts.tikz}
+
+Figure~\ref{fig:45-contexts} uses different directory and
+account context on each side of a connection. A failure before
+authentication may involve name resolution, routing, or the
+remote service; a failure after authentication may instead be
+in a command on the far end. Verify the boundary before trying
+the command again. If a host-key warning appears, stop and check
+the change using an independent trusted channel; do not silence
+the check. If you suspect a stalled remote connection, preserve
+what you saw and open a second local window to diagnose, instead
+of entering more remote commands without seeing results.
+Closing a client is not a promise that the server stopped the
+work; Chapter~\ref{ch:40} covers detachable sessions.
+
+\begin{quicktable}{lY}
+\toprule
+Context clue & What it cannot prove \\
+\midrule
+Prompt label & The prompt may be customized or duplicated on another machine. \\
+User name & The same name may exist on more than one machine. \\
+Working directory & Identical path text can refer to distinct filesystems. \\
+Node name & A name reported by a shell is not an authenticated host key. \\
+\bottomrule
+\end{quicktable}
+
+\subsection{Know when a test has answered enough}
+
+If you can read the fixture from \texttt{work} but not from
+\texttt{other}, and the two calls use the same spelling,
+you have a small explanation that doesn't require knowing
+every shell setting. Save it: one test failed with the wrong
+working directory; another succeeded with the right path.
+The investigation can stop there. If the small test fails
+too, compare it in the ordinary and clean shell from
+Chapter~\ref{ch:43}. The difference still doesn't prove that
+every startup file is faulty. It says to inspect the
+particular name, environment value, or setting that the
+small test used.
+
+Suppose the failure only happens on a borrowed machine.
+Get its tool name, operating system, and exact diagnostic
+before deciding to ask for help. A command example written
+for GNU tools may not accept the same options on a BSD
+system. If the other machine reports an unknown option,
+read that tool's local manual rather than replacing its
+tools to resemble your own environment. If you need a
+common recipe, test the simpler documented form with the
+same practice input on each system. Often the difference is
+an option spelling or an output heading, not the absence of
+the underlying function.
+
+\begin{takeaways}
+\item Check which layer is receiving input before attempting a repair.
+\item Distinguish command lookup from the paths a running command opens.
+\item Prefer one low-impact test to a bundle of speculative changes.
+\end{takeaways}
+
+\begin{exercise}{Fix a missing file, not the command}\label{ex:45-file}
+From inside a subshell that changes into \texttt{other}, read the
+report in \texttt{work} by a relative path, without moving or
+copying it. Verify that the parent shell remains in the practice
+directory. No new file is needed.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+(cd ./other && cat ../work/report.txt)
+pwd
+\end{terminal}
+The relative path walks up to the fixture root and down into
+\texttt{work}. The line of inventory appears and the parent
+working directory is unchanged.
+\end{solution}
+
+\begin{exercise}{A name versus a path}\label{ex:45-name}
+In a subshell with the empty search path directory used above,
+compare \texttt{command -v} for the helper's bare name and its
+explicit relative path. Do not execute it in this exercise.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+(PATH="$lab/other"; command -v utp45-report
+ command -v ./utp45-report)
+\end{terminal}
+Expect a miss, then a path for the executable on the tested
+shells. An execute restriction can prevent use of the path;
+look at the exact diagnostic if you get a different result.
+The parent path setting and files are unmodified.
+\end{solution}
+
+\begin{exercise}{A small report for someone else}\label{ex:45-report}
+In the spare shell, gather the exact command and observable
+result for the failed report read. Capture standard error in
+\texttt{problem.txt}. Replace the temporary root path with
+the words ``practice directory'' if it appears in the report
+you would share. Clean up that file at the end.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+(cd ./other && cat ./report.txt) 2> ./problem.txt
+printf 'attempt status: %s\n' "$?"
+cat ./problem.txt
+\end{terminal}
+The shell opens the diagnostic file in the parent practice
+directory before entering \texttt{other}. Verify a nonzero
+status and the diagnostic about \texttt{./report.txt}; wording
+varies by tool and locale. Report that the same read succeeded
+from the parent using \texttt{./work/report.txt}. Leave out
+irrelevant diagnostics and identifiers.
+\end{solution}
+
+Cleanup: compare \cmd|pwd| with the exact practice path you
+recorded at setup. Stop if they differ. Omit \texttt{problem.txt}
+if you skipped that exercise.
+If a directory is not empty, inspect it rather than increasing
+the power of the removal command.
+
+\begin{terminal}
+rm ./work/report.txt ./utp45-report ./problem.txt
+rmdir ./work ./other
+cd / && rmdir "$lab"
+\end{terminal}
+
+\begin{furtherreading}
+\ReadingItem{POSIX stty}{Terminal status and recovery modes.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/stty.html}
+\item \WebLink{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/command.html}{\textbf{POSIX command}}.
+What lookup reports without executing a command.
+\ReadingItem{OpenSSH client manual}{Remote connection, authentication, and escape behavior.}{https://man.openbsd.org/ssh}
+\end{furtherreading}

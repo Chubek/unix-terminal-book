@@ -1,0 +1,9 @@
+\begin{tikzpicture}
+\node[utp node] (tail) {\texttt{tail}};
+\node[utp node,right=7mm of tail] (tee) {\texttt{tee}};
+\node[utp node,right=7mm of tee] (wc) {\texttt{wc}};
+\node[utp node,below=6mm of tee] (file) {\texttt{box-rows.txt}};
+\draw[utp arrow] (tail)--(tee);
+\draw[utp arrow] (tee)--(wc);
+\draw[utp arrow] (tee)--(file);
+\end{tikzpicture}

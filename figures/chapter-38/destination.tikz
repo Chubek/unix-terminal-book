@@ -1,0 +1,7 @@
+\begin{tikzpicture}
+\node[utp node] (a) {\texttt{-p 2222}\\Service port};
+\node[utp node,right=4mm of a] (b) {\texttt{learner}\\Remote user};
+\node[utp node,right=4mm of b] (c) {\texttt{unix.example.org}\\Destination host};
+\node[font=\small\ttfamily,anchor=south] at (a.north) {ssh};
+\draw[utp arrow] (b)--node[above,font=\scriptsize\ttfamily]{@}(c);
+\end{tikzpicture}

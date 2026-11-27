@@ -1,0 +1,3 @@
+#!/bin/sh
+# Shell: POSIX sh. OS: Linux, macOS, BSD; intended for a disposable directory.
+printf '%s\n' 'helper ran'
