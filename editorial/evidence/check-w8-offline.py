@@ -137,6 +137,7 @@ def check_47(cwd, shell):
     b = examples(47)
     script = ROOT / "listings/chapter-47/catalog.py"
     out, err = shell_run(shell, get(b, "lab=$(mktemp") +
+                         get(b, "mkdir ./intake") +
                          f'cp "{script}" ./catalog.py\n' +
                          "\n".join(get(b, x) for x in [
                              "file ./intake", "printf '%s\\n' 'filename,album,title'",
@@ -144,8 +145,12 @@ def check_47(cwd, shell):
                              "cmp ./intake/canal.jpg ./stage/water",
                              "cksum < ./intake/canal.jpg", "grep -n -F",
                              "printf '%s\\n' 'filename,album,title' \\\n    'canal.jpg,parking",
-                             "cmp ./intake/canal.jpg './stage/street", "rm './stage/street",
-                         ]), cwd)
+                             "cmp ./intake/canal.jpg './stage/street",
+                         ]) + "\n" +
+                         # Simulate a separate affirmative confirmation per known fixture.
+                         re.sub(r"^rm -i ", r"printf 'y\\ny\\ny\\ny\\n' | rm -i ",
+                                get(b, "rm -i './stage/street"), flags=re.M),
+                         cwd)
     catalog = json.JSONDecoder().raw_decode(out[out.index("["):])[0]
     assert [row["title"] for row in catalog] == ["Canal, after rain", "Green front door"]
     assert [row["destination"] for row in catalog] == [
@@ -160,7 +165,7 @@ def check_47(cwd, shell):
 def check_48(cwd, shell, tar="tar"):
     b = examples(48)
     code = "\n".join(get(b, x) for x in [
-        "lab=$(mktemp", "find ./source", "tar -cf", "cksum < ./round",
+        "lab=$(mktemp", "mkdir ./source", "find ./source", "tar -cf", "cksum < ./round",
         "cp -i ./round", "ls -a ./restored", "cmp ./source/contact.txt ./restored/source/contact.txt",
         "cksum < ./handoff", "cmp ./source/contact.txt ./restored/source/notes",
         "printf '%s\\n' 'round-01.tar: offline", "rm ./restored",
@@ -182,7 +187,7 @@ def main():
         for shell in [["sh"], ["bash", "--noprofile", "--norc"], ["zsh", "-f"]]:
             if not shutil.which(shell[0]):
                 continue
-            for n in (44, 45, 46):
+            for n in (44, 45, 46, 47, 48):
                 check_setup_gate(n, shell, root)
             check_44(root, shell)
             check_45(root, shell)

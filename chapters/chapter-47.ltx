@@ -21,8 +21,10 @@ if needed. The optional catalog converter needs Python 3:
 \cmd|python3 --version| reports the version without opening a
 catalog. Do not install an unfamiliar package from instructions
 found inside a data file. If Python 3 is missing, you can still
-inspect the written CSV and complete the copying and verification
-parts. Installation belongs to your normal platform workflow
+inspect the written CSV and trace the plan by hand: match each
+filename to its album, then read the title as one field even
+when it contains a quoted comma. Continue with copying and
+verification without saving JSON. Installation belongs to your normal platform workflow
 (Chapter~\ref{ch:35}).
 
 \begin{terminal}
@@ -30,17 +32,29 @@ command -v python3
 python3 --version
 \end{terminal}
 
-Create a fresh directory and check that \cmd|pwd| shows it
-before any writes. Stop if setup fails. The two files use camera-like
+Use \cmd|mktemp -d|, a commonly available non-POSIX utility,
+to create a private directory. If \cmd|TMPDIR| is set and
+nonempty, make sure it names a trusted absolute directory
+intended for your temporary files; otherwise stop and use an
+approved location. If unset or empty, the example uses
+\FilePath{/tmp}. Run this setup block on its own:
+
+\begin{terminal}
+lab=$(mktemp -d "${TMPDIR:-/tmp}/utp47.XXXXXX") &&
+    cd "$lab" && lab=$PWD && pwd
+\end{terminal}
+
+Proceed only if it prints the absolute path of the fresh directory
+with basename beginning \texttt{utp47.} and a generated suffix.
+Record the entire path for cleanup. Stop if setup fails or the
+path is unexpected; do not create files in some other directory.
+The two practice files use camera-like
 names but contain plain text; they are intentionally not photographs.
 Their contents are small enough to compare by eye, and their different
 bytes let you detect an accidental swap. Quote the path with the
 space. These redirections write or truncate controlled fixture files.
 
 \begin{terminal}
-lab=$(mktemp -d "${TMPDIR:-/tmp}/utp47.XXXXXX") &&
-    cd "$lab" && lab=$PWD
-pwd
 mkdir ./intake ./stage
 printf '%s\n' 'fixture A: blue canal' > ./intake/canal.jpg
 printf '%s\n' 'fixture B: green door' > './intake/front door.jpg'
@@ -429,16 +443,18 @@ The first comparison reports a difference and status one,
 the second is silent with status zero.
 \end{solution}
 
-After confirming the fixture root with \cmd|pwd|, remove only
-the practice paths. Omit the script and generated catalog if
+Run \cmd|pwd| and verify that the entire path matches what
+you recorded during setup. Stop if it differs. Remove only
+the practice paths below; \cmd|rm -i| asks before removing
+each file, so check the name before answering. Omit the script and generated catalog if
 you did not use Python, and \texttt{trial.csv} if unused.
 The originals in a real photo project would not be removed
 as part of staging cleanup.
 
 \begin{terminal}
-rm './stage/street/front door.jpg' ./stage/water/canal.jpg
-rm './intake/front door.jpg' ./intake/canal.jpg
-rm ./catalog.csv ./catalog.json ./catalog.py ./trial.csv
+rm -i './stage/street/front door.jpg' ./stage/water/canal.jpg
+rm -i './intake/front door.jpg' ./intake/canal.jpg
+rm -i ./catalog.csv ./catalog.json ./catalog.py ./trial.csv
 rmdir ./stage/water ./stage/street ./stage ./intake
 cd / && rmdir "$lab"
 \end{terminal}

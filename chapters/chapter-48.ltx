@@ -51,17 +51,28 @@ practice offline. The remote section describes only an optional
 step for a host you have confirmed you are authorized to use.
 
 Open a spare window; use \cmd|sh| first if needed for the
-POSIX shell syntax. Create a fresh private practice directory.
-Stop if the assignment or \cmd|cd| fails. The directories
+POSIX shell syntax. Create a fresh private practice directory
+with \cmd|mktemp -d|, a common utility outside POSIX. If
+\cmd|TMPDIR| is set and nonempty, verify it is a trusted
+absolute directory intended for your temporary files. If
+unset or empty, the example uses \FilePath{/tmp}. Run this
+setup by itself:
+
+\begin{terminal}
+lab=$(mktemp -d "${TMPDIR:-/tmp}/utp48.XXXXXX") &&
+    cd "$lab" && lab=$PWD && pwd
+\end{terminal}
+
+Continue only if the setup prints the absolute path of the new
+directory with basename beginning \texttt{utp48.} and a generated
+suffix. Record that exact path for cleanup. Stop if setup fails
+or prints an unexpected path. The directories
 \texttt{handoff}, \texttt{returned}, and \texttt{restored}
 are purposely distinct. None stands in for a directory that
 already holds your current documents. The writes below name
 new files, but \cmd|>| would truncate them if repeated.
 
 \begin{terminal}
-lab=$(mktemp -d "${TMPDIR:-/tmp}/utp48.XXXXXX") &&
-    cd "$lab" && lab=$PWD
-pwd
 mkdir ./source ./handoff ./returned ./restored
 mkdir ./source/notes
 printf '%s\n' 'Practice meeting: start at noon' \
@@ -447,7 +458,8 @@ before doing. The record is for people who need to know where
 to resume. It is not part of the archive.
 \end{solution}
 
-Cleanup: confirm the local fixture root with \cmd|pwd|. Remove
+Cleanup: compare \cmd|pwd| to the exact path recorded at setup;
+stop if the paths differ. Remove
 the exact practice files. Omit \texttt{drill.txt} if unused.
 If you did the optional remote route, remove only your local
 \texttt{remote-return/round-01.tar} and empty directory as
