@@ -14,6 +14,9 @@ include formulae/casks, installation prefixes, shell setup, catalog and
 inventory, updates, targeted upgrades, removal, and recovery. Reference
 transaction forms are explicitly not a sequence of runnable exercises.
 Actual availability and policy are specific to the reader's system.
+Current Fedora Quick Docs were checked for the distinction between standard
+and image-based Fedora editions. Homebrew's upstream installer and
+`shellenv` command source were checked for shell-specific setup syntax.
 
 Approximate prose: 2,592 words. Counts: 3 figures, 3 tables, 14 input
 blocks, 3 exercises with solutions, 1 dialogue.

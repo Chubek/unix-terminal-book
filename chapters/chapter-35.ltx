@@ -141,7 +141,7 @@ System & Typical optional software channel & Local inspection if already availab
 \midrule
 Debian or Ubuntu & APT and distribution repositories. &
 \texttt{apt-cache policy jq}\\
-Fedora & DNF and Fedora repositories; RPM records installs. &
+Standard Fedora editions & DNF and Fedora repositories; RPM records installs. &
 \texttt{rpm -q jq}\\
 Arch Linux & Pacman and the distribution's package repositories. &
 \texttt{pacman -Q jq}\\
@@ -182,8 +182,11 @@ For a Fedora system, \cmd|rpm -q| queries its local installed
 package database, not a server. Expect an installed package
 identification or a not-installed message, depending on
 the machine. Fedora uses DNF for operations that need
-repository selection and dependency planning. Do not use
-RPM to bypass the package manager's dependency decisions.
+repository selection and dependency planning on standard
+Fedora editions. Image-based variants such as the Fedora
+Atomic Desktops use different maintenance workflows; check
+the edition's help. Do not use RPM to bypass the package
+manager's dependency decisions.
 
 \begin{terminal}
 pacman -Q jq
@@ -514,7 +517,7 @@ into a test somebody else can repeat.}
 \ReadingItem{Homebrew terminology}{Formula, cask, tap, prefix and keg.}{https://docs.brew.sh/Formula-Cookbook}
 \ReadingItem{The jq manual}{Documented command-line options, including version reporting.}{https://jqlang.org/manual/}
 \ReadingItem{Arch Linux pacman(8)}{Querying the local package database.}{https://man.archlinux.org/man/pacman.8}
-\ReadingItem{Fedora System Administrator's Guide}{Supported software management with DNF.}{https://docs.fedoraproject.org/en-US/fedora/latest/system-administrators-guide/package-management/DNF/}
+\ReadingItem{Fedora Quick Docs: DNF}{Supported software management on standard Fedora editions.}{https://docs.fedoraproject.org/en-US/quick-docs/dnf/}
 \ReadingItem{FreeBSD Handbook}{Base software, packages, and supported package management.}{https://docs.freebsd.org/en/books/handbook/ports/}
 \ReadingItem{OpenBSD packages FAQ}{Release matching, installed packages, and package sources.}{https://www.openbsd.org/faq/faq15.html}
 \ReadingItem{The pkgsrc Guide}{Binary packages and pkgsrc on NetBSD and other systems.}{https://www.netbsd.org/docs/pkgsrc/}
