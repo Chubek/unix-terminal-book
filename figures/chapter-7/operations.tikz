@@ -7,7 +7,7 @@
 \newcommand{\UTPSevenDestination}{%
 \begin{tikzpicture}
 \node[utp node] (a) {Directory operand\\\texttt{outbox}};
-\node[utp node,right=8mm of a] (b) {New file operand\\\texttt{outbox/week 1.txt}};
+\node[utp node,right=15mm of a] (b) {New file operand\\\texttt{outbox/week 1.txt}};
 \node[utp node,below=6mm of a] (c) {\texttt{outbox/rota original.txt}};
 \node[utp node,below=6mm of b] (d) {\texttt{outbox/week 1.txt}};
 \draw[utp arrow] (a)--(c);

@@ -6,6 +6,7 @@ export LC_ALL=C
 # The -w report checks local page resolution, not pager interaction.
 man -w cp
 man -w ls
+man -w man
 man -w mv
 man -w find
 man -w 1 printf

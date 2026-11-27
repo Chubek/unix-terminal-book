@@ -144,6 +144,14 @@ man ls
 
 If it displays a page, the earlier failure was not a failure to display \emph{any} local page. If it also fails, read the error before assuming that the whole manual system is broken. A missing page isn't evidence that its command is absent.
 
+The documentation viewer is itself a documented utility. If its error or lookup behaviour is puzzling, open the local description of \cmd|man|:
+
+\begin{terminal}
+man man
+\end{terminal}
+
+The first \cmd|man| is the command; the second is the entry to look up. Check how the local synopsis permits selecting a section, and see whether the page identifies which pager it normally runs. This is a local read-only lookup, not a change to those settings.
+
 For a shell builtin, find the shell's reference for your release. For a system utility on macOS, FreeBSD, OpenBSD, or NetBSD, prefer the matching system's manuals over a random Linux search hit, while giving the local installation the final say. For software installed separately, an upstream project may publish a manual for each version or maintain its own reference. If you cannot determine what version you have, stick to the behavior you can identify and verify. A standard such as POSIX helps when your question is about rules that more than one operating system is expected to share; it does not promise that extensions found in one manual are understood by another tool. On a minimal Linux system, the startup image may include command binaries but exclude documentation; using upstream documentation in that case is a workaround, not proof that you have the latest command.
 
 Distinguish a recipe from evidence. An example that combines several options may be showing what is possible, not recommending the safest default. Read descriptions individually and look for words such as ``unless,'' ``only when,'' and ``destination directory.'' These tiny clauses often describe the failure case you care about. The question for the rota isn't ``what flags can \cmd|cp| take?'' but ``if the destination already exists, can this operation replace it?'' Write down the condition, the documented action, and what you expect to see in your practice result. That short note is much easier to check than a copied line of flags.
