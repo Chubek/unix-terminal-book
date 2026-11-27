@@ -130,15 +130,21 @@ The first command should report that it could not enter \texttt{Not-Made}. The s
 
 \subsection{Reduce the question to one component}
 
-A diagnostic refuses a destination but seldom gives you the full map. Suppose you meant to leave the holiday directory and enter the volunteer plans. Repeating a long path with several changes will not tell you which component first failed. Return to a known start and test the destination in pieces. From home, after confirming with \texttt{pwd}, use:
+A diagnostic refuses a destination but seldom gives you the full map. The failed move left you in \texttt{Holiday/Plans}. To test the route to the volunteer plans, first run \texttt{cd} without an operand, then run \texttt{pwd}. Only if it shows the same home directory you verified during setup, re-enter the practice directory and verify it:
 
 \begin{terminal}
 cd ./utp-nav-5-7319
+pwd
+\end{terminal}
+
+The result should end in \texttt{/utp-nav-5-7319}, or the suffix you chose. From that verified starting point, test the destination one component at a time:
+
+\begin{terminal}
 ls ./Volunteers
 ls ./Volunteers/Plans
 \end{terminal}
 
-Confirm the move after the first line. The second listing should show a child named \texttt{Plans}. The third should be empty because the child was newly created. Those observations establish different things: that the known root can be reached, that the first component can be looked into, and that the target exists and currently has no ordinary contents. They don't claim that the shell moved into the target. If the second check fails, there's no point trying the third with the same spelling; inspect from the current directory instead.
+The first listing should show a child named \texttt{Plans}. The second should be empty because the child was newly created. Those observations establish different things: that the first component can be looked into, and that the target exists and currently has no ordinary contents. They don't claim that the shell moved into the target. If the first check fails, there's no point trying the second with the same spelling; inspect from the current directory instead.
 
 Here's a more specific check if you need to display the name of the directory itself rather than its contents:
 
@@ -175,7 +181,7 @@ Unexpected listing & Verify the starting directory and the operand you supplied 
 \section{Clean up only what you built}
 \label{sec:5-cleanup}
 
-Use the following only after completing the exercises, and only for this chapter's successfully created practice directory. First return home and verify it again:
+Skip this section until you've finished all three exercises below; they still need the practice tree. When you return here, use these commands only for this chapter's successfully created practice directory. First return home and verify it again:
 
 \begin{terminal}
 cd
@@ -192,7 +198,7 @@ rmdir ./utp-nav-5-7319/Volunteers
 rmdir ./utp-nav-5-7319
 \end{terminal}
 
-If a removal fails, stop and inspect rather than switching to a stronger removal command. Leaving a rehearsal folder is preferable to guessing. If all five lines succeed, \texttt{ls ./utp-nav-5-7319} should now report that no such entry exists. Exit the child and close your extra window or tab. Other windows' working directories did not change.
+If a removal fails, stop and inspect rather than switching to a stronger removal command. Leaving a rehearsal folder is preferable to guessing. If all five lines succeed, \texttt{ls ./utp-nav-5-7319} should now report that no such entry exists. Run \texttt{exit} once to leave the temporary \texttt{/bin/sh} session and return to the original shell, then close your extra window or tab. Other windows' working directories did not change.
 
 \subsection{Use the same checks in a real task}
 
@@ -210,7 +216,7 @@ You can pause between these checks and return later. Reestablish the starting po
 
 \begin{exercise}{List twice, move once}
 \label{ex:5-list}
-Retain the tree. From home, enter \texttt{./utp-nav-5-7319} and check with \texttt{pwd}. List \texttt{./Volunteers}, then list \texttt{./Holiday}. Predict the results before the second listing and check that neither relocated the shell. Finish cleanup as described above after the last exercise.
+Retain the tree. Use plain \texttt{cd} and \texttt{pwd} to return home and confirm it. Then enter \texttt{./utp-nav-5-7319} and check with \texttt{pwd}. List \texttt{./Volunteers}, then list \texttt{./Holiday}. Predict the results before the second listing and check that neither relocated the shell. Finish cleanup as described above after the last exercise.
 \end{exercise}
 \begin{solution}
 \begin{terminal}
@@ -223,7 +229,7 @@ Each listing shows \texttt{Plans}. The \texttt{pwd} output still ends in the pra
 
 \begin{exercise}{Choose the other Plans}
 \label{ex:5-other}
-From the checked practice directory, enter the volunteers' \texttt{Plans}. Verify using the whole ending of the path. Return home with plain \texttt{cd}; retain the tree for the last exercise or use the empty-directory cleanup.
+From the checked practice directory, enter the volunteers' \texttt{Plans}. Verify using the whole ending of the path. Return home with plain \texttt{cd}; retain the tree for the last exercise.
 \end{exercise}
 \begin{solution}
 \begin{terminal}
@@ -236,10 +242,19 @@ The directory before returning home ends in \texttt{/Volunteers/Plans}. A prompt
 
 \begin{exercise}{Observe a failed listing}
 \label{ex:5-fail}
-From the verified practice directory, list \texttt{./Not-Made}. Get a location reading and then get an ordinary listing of the practice root. Explain the difference between the failed listing and the blank listing of an empty \texttt{Plans} directory. Complete the cleanup from home.
+Exercise 2 ended at home. Check with \texttt{pwd}, re-enter \texttt{./utp-nav-5-7319}, and verify with \texttt{pwd} that you are in the practice root. Now list \texttt{./Not-Made}. Get another location reading and then get an ordinary listing. Explain the difference between the failed listing and the blank listing of an empty \texttt{Plans} directory. Return to Section~\ref{sec:5-cleanup} to finish.
 \end{exercise}
 \begin{solution}
-The failed listing reports that its operand couldn't be used; a successful empty listing has no names to display. The check with \texttt{pwd} still ends in the practice directory, and plain \texttt{ls} shows \texttt{Holiday} and \texttt{Volunteers}.
+Run the lines separately and check each location before proceeding:
+\begin{terminal}
+pwd
+cd ./utp-nav-5-7319
+pwd
+ls ./Not-Made
+pwd
+ls
+\end{terminal}
+The failed listing reports that its operand couldn't be used; a successful empty listing has no names to display. Both checks after the move end in the practice directory, and plain \texttt{ls} shows \texttt{Holiday} and \texttt{Volunteers}.
 \end{solution}
 
 \begin{takeaways}
