@@ -1,0 +1,425 @@
+You need the March scanner receipts, not the February ones, and
+there are more names in the directory than you want to type.
+You could pick the files one by one, or you could describe the
+part of their names that matters. Before you copy anything, though,
+you want to see which names that description actually picks. A
+filename pattern is good at making a selection; checking the
+selection is still your job.
+
+\begin{objectives}
+\item Predict which pathnames match a glob with wildcards or brackets.
+\item Explain why a filename beginning with a dot needs special treatment.
+\item Preview matches and distinguish shell globs from utility patterns.
+\end{objectives}
+
+\section{Make a small set you can predict}
+\label{sec:14-practice}
+Use \cmd|sh| for the worked examples so your interactive shell's
+settings don't accidentally change what you're learning. Type
+\cmd|sh| at your ordinary prompt, then run the setup at the new
+prompt. Exit this practice shell with \cmd|exit| after cleanup.
+
+\begin{terminal}
+lab=$(mktemp -d) && cd "$lab" && pwd
+\end{terminal}
+
+Stop if the setup does not print the path of a new directory. Note
+that path; \cmd|cd| changes the working directory only if
+\cmd|mktemp -d| succeeds. Here \cmd|$(...)| captures the printed name
+and the quoted \cmd|"$lab"| passes it as one argument. Work only in
+the directory you just created. \cmd|touch| creates each named file
+if it doesn't exist; on an existing file it updates its timestamps.
+The \cmd|mkdir| call creates a separate directory for an additional
+receipt. No personal receipt is needed.
+
+\begin{terminal}
+touch march-1.txt march-2.txt march-12.txt 'march coffee.txt'
+touch feb-1.txt march-1.pdf .march-3.txt
+mkdir archive
+touch archive/march-4.txt
+\end{terminal}
+
+The files are empty. Their names, not their contents, are the
+subject of these examples. The archive receipt is one level deeper
+and the hidden one begins with a dot. The March coffee filename
+includes a space; the quotes around the name in the setup make it
+one argument rather than two. Keep the file set unchanged until
+you have finished comparing the patterns.
+
+\section{Let the shell list its choices}
+\label{sec:14-expand}
+\IndexTerm{glob}
+\IndexTerm{pathname expansion}
+\IndexTerm{wildcard}
+An unquoted pattern like \cmd|./march*.txt| is a \emph{glob}:
+the shell looks at names relative to the working directory and
+replaces the pattern with the matching pathnames, each as a separate
+argument. The \cmd|*| can match any sequence of characters, including
+an empty sequence, subject to the pathname rules below. The other
+characters in this pattern have to match literally. The dot before
+\texttt{txt} is a dot, not a wildcard. The \cmd|./| makes each
+resulting path start with a dot rather than with a possible option
+hyphen, as discussed in Chapter~\ref{ch:13}.
+
+\begin{terminal}
+printf '[%s]\n' ./march*.txt
+\end{terminal}
+
+Expect four lines naming \texttt{march coffee.txt} and the three
+March text receipts numbered 1, 2, and 12. Compare membership,
+not order: filename order depends on the shell's locale and
+sorting behavior. The \cmd|printf| format surrounds each argument
+with brackets and adds a newline. The space in the coffee name
+stays inside one argument. Pathname expansion supplies whole paths;
+it doesn't split up each path again at spaces. Quoting the whole
+pattern would keep the wildcard itself literal instead.
+
+\begin{terminal}
+printf '[%s]\n' './march*.txt'
+\end{terminal}
+
+This time the one line is \texttt{[./march*.txt]}. It prints that
+literal string even though there is no file with that name. A
+\cmd|printf| preview displays arguments, not proof that every
+argument names a file. That distinction becomes crucial when a
+pattern finds nothing. Figure~\ref{fig:14-stages} separates the
+reader's spelling, the shell's selection, and the displayed list.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-14/stages.tikz}
+\caption{The receiving command prints the selected paths, not the pattern.}
+\label{fig:14-stages}
+\VisualDescription{An unquoted glob enters the shell; one separate argument leaves for each match. The receiving command sees the paths without knowing how they were found.}
+\end{figure}
+
+This order of events is why \cmd|ls| and \cmd|printf| agree about
+which filenames the shell gave them even if they display them
+differently. It also explains why enclosing the expansion in a
+single pair of quotes is not a general fix for spaces. Here we want
+many arguments, potentially including names with spaces, not one
+argument containing a wildcard. In Chapter~\ref{ch:25} you'll see
+how to quote just the literal pieces of a more complicated pattern.
+
+\section{Choose the number of characters}
+\label{sec:14-shapes}
+The question mark matches exactly one character, not ``any receipt
+number.'' That statement doesn't require you to know the alphabet
+of the filename: a letter or punctuation mark could match too.
+To express a limited list of possibilities for one position, put
+the possibilities inside brackets. Using explicit digits avoids
+subtle assumptions about how a locale treats ranges.
+
+\begin{terminal}
+printf '[%s]\n' ./march-?.txt
+printf '[%s]\n' ./march-[12].txt
+printf '[%s]\n' ./march-[!2].txt
+\end{terminal}
+
+The first line of input finds the files numbered 1 and 2 but not
+12; neither bracket expression can match the two-character
+number 12 either. The second line accepts either the character
+\texttt{1} or the character \texttt{2}; it produces the same
+selection here but wouldn't select \texttt{march-A.txt}. The
+exclamation mark immediately after the opening bracket in the third
+pattern means ``anything allowed in this position except
+\texttt{2}.'' In the fixture that matches only the file numbered
+1. A bracket expression is one choice at one position; it is not
+an instruction to match the bracket's entire contents in sequence.
+
+\begin{quicktable}{M{1.6in}Y}
+\toprule
+Pattern & Reading it as a pathname glob \\
+\midrule
+./march*.txt & Literal prefix and suffix with any sequence between. \\
+./march-?.txt & Exactly one character between the hyphen and the suffix. \\
+./march-[12].txt & Exactly one of the characters 1 and 2 at that position. \\
+./march-[!2].txt & Exactly one character there, other than 2. \\
+\bottomrule
+\end{quicktable}
+
+Bracket ranges such as \cmd|[a-z]| are common, but which characters
+fall in a range can depend on locale and implementation. For a
+portable task with a small selection, list the characters you
+actually want. If the pattern is meant to encode a naming scheme,
+start by testing its borderline cases. Would \texttt{march-01.txt}
+count? What about \texttt{March-1.txt}? A wildcard cannot decide
+whether you consider these equivalent. Case sensitivity and the
+meaning of a single character are separate questions; do not infer
+either merely from the way the name looks on your screen.
+
+\section{Respect the slash and the first dot}
+\label{sec:14-components}
+\IndexTerm{hidden file}
+For pathname expansion, a wildcard does not eat the slash that
+separates directory components. Nor does it match a leading dot in
+a component under normal \cmd|sh| rules. To see the hidden receipt
+you can ask for a pattern that explicitly begins the final component
+with a dot. To see the archive receipt, you can specify the
+directory as a separate component of the path.
+
+\begin{terminal}
+printf '[%s]\n' ./.march-?.txt
+printf '[%s]\n' ./archive/march-?.txt
+\end{terminal}
+
+Expect \texttt{./.march-3.txt} and \texttt{./archive/march-4.txt},
+respectively, each inside brackets. The leading dot rule applies
+to each component, not just to the beginning of the full path.
+The first dot of the \cmd|./| prefix names the current directory;
+it doesn't count as explicitly matching the dot of the last
+component. Some shells have optional settings that alter hidden
+matching or give a doubled star a recursive meaning. Neither is
+needed to reason about the examples here.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-14/components.tikz}
+\caption{Crossing into a directory takes an explicit slash in the pattern.}
+\label{fig:14-components}
+\VisualDescription{The path is divided at the slashes into a current-directory marker, an archive component, and a filename pattern. The last wildcard operates only in the filename component.}
+\end{figure}
+
+\begin{terminal}
+find . -type f -name 'march-?.txt' -print
+\end{terminal}
+
+This is the find-by-name operation from Chapter~\ref{ch:9}.
+\cmd|.| tells \cmd|find| where to start, \cmd|-type f| chooses
+regular files, \cmd|-name| tests each individual final component,
+and \cmd|-print| prints matching paths. Here the quotes are
+essential: they send the pattern intact for \cmd|find| to interpret,
+instead of asking the shell for names before \cmd|find| starts.
+Expect the files numbered 1, 2, and 4. The hidden receipt isn't a
+match because its name begins with a literal dot but the pattern
+begins with \texttt{march}. The archive match comes from
+\cmd|find| descending into directories, not from a wildcard
+consuming a slash. \cmd|find -name| and the shell's pathname
+expansion have distinct rules; read the correct manual.
+
+\section{No match is also a result}
+\label{sec:14-no-match}
+Try an April pattern while there are still no April files:
+
+\begin{terminal}
+printf '[%s]\n' ./april*.txt
+\end{terminal}
+
+Under normal POSIX \cmd|sh| behavior, the result is the original
+pattern inside brackets, not an empty list and not an April file.
+In default Bash the behavior is similar; \cmd|nullglob| can
+remove the unmatched argument and \cmd|failglob| can cause an
+expansion error. Zsh normally reports an error for an unmatched
+pattern and doesn't run the command. Fish normally also rejects
+unmatched wildcards for ordinary commands, with exceptions for
+some builtins. Shell settings and modes matter; a shell name
+alone is not enough to describe a customized session.
+
+\begin{quicktable}{M{1.35in}Y}
+\toprule
+Situation & What the preview is telling you \\
+\midrule
+One or more matches & The shell gives each selected path its own argument. Verify the set, and check file types if that matters. \\
+No match in POSIX sh & The unchanged pattern is passed as an argument; ordinary text printed by a utility need not name an existing file. \\
+No match in default Zsh & The shell usually rejects the command before the utility runs. \\
+Pattern quoted for find & The shell passes the pattern as written; find evaluates it as it visits each entry. \\
+\bottomrule
+\end{quicktable}
+
+A matching path can name a directory as well as a regular file;
+the glob knows only the name. Preview again if you move to a
+different directory or if files have arrived since your original
+preview. A glob is not a frozen selection you can carry between
+commands. For a small, high-stakes action, explicitly naming the
+few confirmed files is sensible. Never trade away the preview
+just to save typing. These examples use harmless names; unless
+you know that your real filenames don't contain newlines, one
+line of output is not even an unambiguous representation of one
+argument. The actual argument boundaries still exist, whether
+your display makes them easy to see or not.
+
+\section{The same star can ask a different question}
+\label{sec:14-languages}
+\IndexTerm{regular expression}
+Chapter~\ref{ch:19} will introduce the regular expressions
+used to search text inside files. Don't borrow the meaning of a
+glob's star when reading a regular expression. In a glob, the
+star is itself a wildcard for a sequence. In the regular
+expression \cmd|mar*| the star means zero or more copies of
+the preceding \texttt{r}; the expression could match
+\texttt{ma}, \texttt{mar}, or \texttt{marrr}, depending on the
+surrounding text. A shell pathname glob and a text-search utility
+also look in different places, so even identical-looking
+patterns would not have the same job. Ask ``which thing reads
+this notation?'' before asking ``what does it match?''
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-14/languages.tikz}
+\caption{One pattern can be interpreted in two different places.}
+\label{fig:14-languages}
+\VisualDescription{An unquoted path pattern is expanded by the shell first. A quoted pattern reaches find untouched, and find interprets it for each visited name.}
+\end{figure}
+
+\begin{dialoguebox}{Who reads the pattern?}
+\Brian{You said the quotes stop a pattern. Why does the quoted pattern still work with \texttt{find}?}
+\Stephen{The quotes stop the shell interpreting it.}
+\Brian{Then does \texttt{find} receive the quotes as instructions?}
+\Stephen{No. It receives the pattern itself. Its own \texttt{-name} test interprets that pattern.}
+\Brian{So if I omit the quotes, \texttt{find} might receive two filenames?}
+\Stephen{Yes. With two matches it can receive two arguments where it expected one pattern.}
+\Brian{That is not a different search; I changed the question before it arrived.}
+\Stephen{Exactly. Keep the pattern intact for the command that should read it.}
+\DialogueConclusion{Name the interpreter before choosing the quotes.}
+\end{dialoguebox}
+
+\section{Plan a selection before using it}
+\label{sec:14-plan}
+Suppose the organizer wants all numbered March text receipts.
+On the original lab, \cmd|./march-*.txt| makes that selection.
+Notice how little this pattern says: it matches the literal
+hyphen and suffix with any characters between. If a file
+arrives named \texttt{march-summary.txt}, it fits the pattern
+even though no date appears in the name. You can see the
+problem without involving real files by adding a dummy name
+just long enough to try two selections.
+
+\begin{terminal}
+touch march-summary.txt
+printf '[%s]\n' ./march-*.txt
+printf '[%s]\n' ./march-[12].txt
+\end{terminal}
+
+The broad request now includes the summary; the narrow
+request doesn't, but it also leaves out number 12. A pattern
+that seems perfect for a fixed handful of names can be a poor
+contract for a directory that changes every day. For real
+receipts, decide which case matters: a short selection you
+can read individually, or a long collection that conforms
+to a verified naming rule. An unexpected name should prompt
+you to question the rule, not to accept the broadest
+wildcard. The final cleanup also names the dummy summary.
+
+In a shell set to remove unmatched patterns, the shell may
+pass \cmd|printf| the format alone. A \cmd|%s| without a
+supplied value is replaced by an empty string, so your
+screen might show \cmd|[]| rather than showing no lines.
+That is not an empty filename in the directory. In the
+default \cmd|sh| exercise the pattern doesn't disappear,
+and you see the pattern inside the same brackets. The
+receiving utility matters even in a read-only preview.
+
+You don't have to do everything with a single glob. If you
+want the March text receipts both here and one level down,
+write two paths or patterns. If you want to cover
+descendants however deep, use \cmd|find| and quote the
+name rule. A glob like \cmd|./*/march-?.txt| describes
+precisely one directory component between the working
+directory and the filename. It cannot match a receipt
+already in the working directory or one two levels down.
+
+\begin{terminal}
+printf '[%s]\n' ./march-?.txt ./*/march-?.txt
+\end{terminal}
+
+In the lab each pattern finds a match. Expect the numbered
+1 and 2 files from the first word, then the number 4 receipt
+from the second. In a new directory, one pattern could find
+matches while the other remains literal in \cmd|sh|. That
+is a reason to read the entire preview rather than stopping
+at the first name that looks right. It is also a reason
+not to substitute \cmd|ls|'s formatting for argument
+boundaries: the listing may place several names on one
+line, but the argument list still has one entry per match.
+
+Another way to check your rule is to invent one example to
+include and one near miss to exclude. The literal hyphen
+excludes the coffee filename; two bracket expressions can
+accept exactly two digits; an explicit leading dot can
+include the hidden receipt. None proves a file is a real
+receipt, or that its date belongs to March. Derive the
+selection from what you know about names, and confirm any
+other property separately before using the files.
+
+A usable naming scheme makes these checks less surprising.
+Think about receipts named after dates, such as
+\texttt{2026-03-01.txt}. You can select a month by its literal
+prefix without guessing whether \texttt{March},
+\texttt{march}, or \texttt{Mar} was used. Fixed-width day
+numbers also spare you the difference between one character
+and two. Renaming existing files to impose a scheme is a
+separate task and might affect links or shared references;
+don't try it just to prove a glob works. Test a proposed
+scheme on new sample names first. For this exercise, use
+the actual filenames and treat their inconsistent lengths
+as data, not as a mistake the shell should correct.
+
+Some extensions that look like pathname globs aren't portable
+glob syntax at all. For instance, several shells can generate
+alternatives from braces, but POSIX \cmd|sh| does not specify
+that behavior. The literal slash, question mark, star, and
+bracket forms here suffice for these tasks. Don't rewrite an
+example with a more elaborate spelling until you know which
+shell will interpret it. If you're helping someone who uses
+a different shell, share the exact command and expected
+matches rather than telling them only that the wildcard works.
+
+\section{Practice and cleanup}
+\begin{exercise}{Take just the two-digit receipt}
+Preview the March text receipts with exactly two digits after
+the hyphen. Use an explicit list of digits twice, not a range.
+Predict the one selected argument first.
+\end{exercise}
+\begin{solution}
+Use \cmd|printf '[%s]\n' ./march-[0123456789][0123456789].txt|.
+Only \texttt{./march-12.txt} is selected. This is a read-only
+preview and creates nothing to clean up.
+\end{solution}
+
+\begin{exercise}{Reach below the working directory}
+Write one shell glob for the single-digit March receipt inside
+\texttt{archive}, then use \cmd|find| from the lab root to list
+all the single-digit March receipts without selecting the hidden one.
+\end{exercise}
+\begin{solution}
+Preview \cmd|./archive/march-[123456789].txt| with \cmd|printf|
+for one match. Then use \cmd|find . -type f -name 'march-[123456789].txt' -print|
+for three matches: 1, 2, and 4. No files change.
+\end{solution}
+
+\begin{exercise}{Distinguish a literal argument from a result}
+Use the original April preview in \cmd|sh| and in your normal
+shell if it differs. Then quote the pattern in both. In each
+case, decide whether a wildcard was expanded, a string was
+passed as written, or the shell rejected the command.
+\end{exercise}
+\begin{solution}
+In normal POSIX \cmd|sh| both inputs print \texttt{[./april*.txt]};
+the unquoted form tried to match a filename before leaving the
+pattern unchanged. Default Zsh normally rejects the unquoted
+form. The quoted form passes one literal argument in either
+shell. Exit any extra practice shell; this test makes no files.
+\end{solution}
+
+Check \cmd|pwd| against the recorded lab path and stop if it
+doesn't match. The named removal with \cmd|-i| confirms each
+file; do not replace the list with a glob. If the directories
+are not empty, \cmd|rmdir| will refuse; inspect the leftovers.
+
+\begin{terminal}
+rm -i march-1.txt march-2.txt march-12.txt 'march coffee.txt'
+rm -i feb-1.txt march-1.pdf .march-3.txt archive/march-4.txt
+rm -i march-summary.txt
+rmdir archive
+cd ..
+rmdir "$lab"
+\end{terminal}
+
+\begin{takeaways}
+\item An unquoted pathname glob is processed by the shell before the utility runs.
+\item The slash divides components, and a leading dot normally needs an explicit match.
+\item Preview before acting; an unchanged pattern is not evidence of a match.
+\end{takeaways}
+
+\begin{furtherreading}
+\ReadingItem{POSIX Shell Command Language}{See Pattern Matching Notation and Pathname Expansion.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/V3_chap02.html}
+\ReadingItem{Zsh Expansion}{See Filename Generation for Zsh's glob options and no-match behavior.}{https://zsh.sourceforge.io/Doc/Release/Expansion.html}
+\ReadingItem{Fish language}{See Wildcards for Fish's selection and no-match behavior.}{https://fishshell.com/docs/current/language.html}
+\end{furtherreading}

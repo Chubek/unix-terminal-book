@@ -1,0 +1,9 @@
+\begin{tikzpicture}
+\node[utp node,minimum height=18mm] (cmd) {\texttt{cat}};
+\node[utp node] (file) at (7,1.1) {Output file};
+\node[utp node] (screen) at (7,0) {Terminal};
+\node[utp node] (shell) at (7,-1.1) {Shell};
+\draw[utp arrow] ([yshift=4mm]cmd.east)--node[above,font=\small]{1: names} (file.west);
+\draw[utp arrow] (cmd.east)--node[above,font=\small]{2: diagnostic} (screen.west);
+\draw[utp arrow,dashed] ([yshift=-4mm]cmd.east)--node[below,font=\small]{Exit status} (shell.west);
+\end{tikzpicture}

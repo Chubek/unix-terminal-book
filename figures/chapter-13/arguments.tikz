@@ -1,0 +1,7 @@
+\begin{tikzpicture}
+\node[utp node] (name) {Command\\\texttt{cmp}};
+\node[utp node,right=3mm of name] (opt) {Argument 1\\\texttt{-s}};
+\node[utp node,right=3mm of opt] (first) {Argument 2\\\texttt{schedule.txt}};
+\node[utp node,right=3mm of first] (second) {Argument 3\\\texttt{Saturday draft.txt}};
+\draw[utp arrow] (name)--(opt);
+\end{tikzpicture}
