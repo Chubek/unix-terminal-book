@@ -41,7 +41,22 @@ attachment's instructions just to be able to inspect the attachment.
 
 Use a fresh temporary directory and a shell with \texttt{sh}
 syntax. \texttt{-d} requests a new directory; \cmd|cd| changes
-the working directory. Stop if either command fails. The
+the working directory. \texttt{mktemp} is common but not
+specified by POSIX; this example asks it to replace the
+final \texttt{X}s with a unique suffix in the trusted system
+temporary directory. Use another trusted absolute temporary
+path if needed. Each \texttt{\&\&} requires the previous
+command to succeed. If \cmd|pwd| doesn't show the new
+\texttt{utp-media} lab, stop without writing anything.
+
+\begin{terminal}
+medialab=$(mktemp -d /tmp/utp-media.XXXXXXXX) &&
+  cd "$medialab" &&
+  mkdir release &&
+  pwd
+\end{terminal}
+
+Only in this confirmed fresh lab, make the first fixture. The
 \texttt{>} redirection below can overwrite a file; it's safe
 here because the directory is new and the paths are just fixtures.
 The \texttt{release} directory will hold derivative files
@@ -49,11 +64,8 @@ only. A derivative is a new copy made from the original, not the
 master you want to keep.
 
 \begin{terminal}
-medialab=$(mktemp -d)
-cd "$medialab"
-mkdir release
-printf '%s\n' 'This is only a line of text.' > ./not-a-pdf.pdf
-file ./not-a-pdf.pdf
+printf '%s\n' 'This is only a line of text.' > ./not-a-pdf.pdf &&
+  file ./not-a-pdf.pdf
 \end{terminal}
 
 Expect a text description rather than a PDF classification.
@@ -393,22 +405,25 @@ anything. Finish by removing only your fixtures.
 \cmd|ls -a ./release| should show only the derivative and the
 ordinary dot entries if conversion was performed. The master,
 pretend PDF, and optional TeX build files are unrelated to that
-image handoff. Verify the working directory with \cmd|pwd|.
-Run the following only inside the lab and skip nonexistent
-optional files. \cmd|rm -i| asks for confirmation; confirm
-only the synthetic fixtures.
+image handoff. Follow the lab cleanup steps after this review.
+\end{solution}
+
+\paragraph{Lab cleanup.}
+After finishing the exercises, use \cmd|pwd| and confirm that it
+shows your \texttt{utp-media} lab. Run the following only inside
+that directory and skip nonexistent optional outputs.
+\cmd|rm -i| asks for confirmation; confirm only the synthetic
+fixtures. If a command failed part way through the lab, inspect
+which outputs it actually created before removing them.
 \begin{terminal}
 rm -i ./not-a-pdf.pdf ./tiles.ppm
 rm -i ./tiles.png ./release/tiles-share.png
 rm -i ./program.tex ./program.pdf ./program.aux ./program.log
 rmdir ./release
-cd
-rmdir "$medialab"
+cd && rmdir "$medialab"
 \end{terminal}
 If \cmd|rmdir| refuses, inspect the directory for unexpected
 files rather than deleting everything recursively.
-\end{solution}
-
 \begin{takeaways}
 \item Check classification from contents, then use a tool that understands the format.
 \item Preserve the original and write conversion output somewhere new.

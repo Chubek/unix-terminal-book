@@ -1,6 +1,7 @@
 The coordinator of a neighborhood event publishes the meeting agenda
-from a shared Unix account. She has given you a private submissions
-directory on an authorized service, not access to the published files.
+through a Unix service. The provider has authorized your individual
+account to use a private submissions directory, not to change the
+published files.
 You have two documents called \texttt{agenda.txt}: a draft on your
 laptop and a copy already on the server. Which copy will move, where
 will it land, and how will you know it got there intact? These are
@@ -105,6 +106,16 @@ and check its own quoting instructions.
 
 \section{Use SFTP when you want to see both desks}
 \index{sftp@\texttt{sftp}}\index{SFTP}
+The SFTP sequence is an alternative to the preceding \texttt{scp}
+sequence, not a second upload to run after it. If you already submitted
+the file, don't use the same destination name again. With \texttt{scp},
+the remote path lives in the operand after \texttt{user@host:}; at
+the SFTP prompt you're connected already, so the transfer subcommands
+use pathnames without a host prefix. A relative name resolves against
+the appropriate local or remote working directory. The two access methods
+may expose different directory views; use the paths your provider
+supplies for each rather than assuming the spelling carries over.
+
 SFTP is a file-transfer protocol carried over SSH in this workflow.
 It is not unencrypted FTP, nor the same as FTP protected by TLS.
 When you start the OpenSSH \cmd|sftp| program and authenticate to your
@@ -201,15 +212,23 @@ an account or filesystem. The lab verifies only bytes and paths.
 \index{rsync@\texttt{rsync}}\index{cmp@\texttt{cmp}}
 You can exercise the same habits with two directories. This lab
 makes no remote connections. It uses POSIX shell syntax; \texttt{mktemp}
-is common but not specified by POSIX. Stop if setup fails. The
-directories stand for your desk and a staging area. The \texttt{>}
-operator writes \texttt{agenda.txt} in the just-created source directory;
-use it only for the synthetic lab.
+is common but not specified by POSIX. Use the trusted system temporary
+directory or another trusted absolute path. Stop unless
+\cmd|pwd| shows the newly created \texttt{utp-transfer} directory.
+The directories stand for your desk and a staging area.
 
 \begin{terminal}
-transferlab=$(mktemp -d)
-cd "$transferlab"
-mkdir source receive
+transferlab=$(mktemp -d /tmp/utp-transfer.XXXXXXXX) &&
+  cd "$transferlab" &&
+  mkdir source receive &&
+  pwd
+\end{terminal}
+
+In the confirmed lab, \texttt{>} writes \texttt{agenda.txt} in
+the just-created source directory. Use this command only for the
+synthetic lab.
+
+\begin{terminal}
 printf '%s\n' '18:00 open the hall' '18:15 check the chairs' \
   > source/agenda.txt
 \end{terminal}
@@ -335,12 +354,13 @@ Compare content & Tests bytes or matching digests; does not confirm sharing poli
 \DialogueConclusion{Verify the content and the destination.}
 \end{dialoguebox}
 
-Before cleanup, use \cmd|pwd| to verify you are in
+Keep both fixture directories until you have finished all exercises.
+Then, before cleanup, use \cmd|pwd| to verify you are in
 \cmd|"$transferlab"|. Confirm each named practice file with
 \cmd|rm -i ./source/agenda.txt| and then separately with
 \cmd|rm -i ./receive/agenda-received.txt|.
 Then \cmd|rmdir ./source ./receive|; this refuses to remove nonempty
-directories. Finally use \cmd|cd| and \cmd|rmdir "$transferlab"|.
+directories. Finally use \cmd|cd && rmdir "$transferlab"|.
 If you practiced with a second copy in the exercises, remove that
 explicitly before attempting the directories.
 

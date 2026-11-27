@@ -1,7 +1,7 @@
 #!/bin/sh
 # POSIX sh syntax; mktemp and upstream rsync required. No remote endpoints.
 set -eu
-lab=$(mktemp -d)
+lab=$(mktemp -d "${TMPDIR:-/tmp}/utp-transfer.XXXXXXXX")
 cleanup() {
     cd /
     rm -f "$lab/source/agenda.txt" \

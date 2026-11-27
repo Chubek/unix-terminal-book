@@ -1,7 +1,7 @@
 #!/bin/sh
 # POSIX sh syntax; mktemp required. Optional host observations are local only.
 set -eu
-desk=$(mktemp -d)
+desk=$(mktemp -d "${TMPDIR:-/tmp}/utp-desk.XXXXXXXX")
 cleanup() {
     cd /
     rm -f "$desk/desk.log"

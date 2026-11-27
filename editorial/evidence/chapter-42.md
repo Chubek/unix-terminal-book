@@ -13,5 +13,8 @@
   FFmpeg. Optional package versions and metadata behavior on macOS
   and the BSDs were not tested. The selected comment check is not
   evidence of sanitization for other images or formats.
+- Revision check: printed lab setup passed with an nvme template
+  and stopped with an invalid one. Exact cleanup was present in the
+  rebuilt screen/noanswers PDF; all local media fixtures passed again.
 - `figures/chapter-42/`: `three-checks.tikz`, `derivative.tikz`,
   `content.tikz`. Slice build and grayscale check: see `chapter-37.md`.

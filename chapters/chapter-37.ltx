@@ -260,16 +260,21 @@ HTTP 404 & Is the resource path still correct? Ask for the current link rather t
 Shell examples use \texttt{sh} syntax. The following practice uses ordinary
 text files rather than sending even one request. Save these examples for
 looking at a problem when you have enough context to describe it. Start
-with a new directory; \cmd|mktemp -d| asks for a unique directory using the
-system's default temporary location (or its temporary-directory setting);
-the utility is common but not required by POSIX. If either command fails,
-stop and don't create files. The first line saves the resulting path in
-the shell variable \texttt{desk}, whose quoted expansion is one operand;
-\cmd|cd| then makes it the working directory.
+with a new directory; \cmd|mktemp -d| asks for a unique directory,
+replacing the final \texttt{X}s in the trusted local temporary path
+with a suffix. The utility is common but not required by POSIX.
+The first line saves the resulting path in the shell variable
+\texttt{desk}, whose quoted expansion is one operand. Each
+\texttt{\&\&} runs the next command only when the previous
+one succeeds. Confirm that \cmd|pwd| shows the new
+\texttt{utp-desk} directory under \texttt{/tmp}; otherwise stop
+without creating the log. Use a different trusted absolute
+temporary-directory path if your system requires one.
 
 \begin{terminal}
-desk=$(mktemp -d)
-cd "$desk"
+desk=$(mktemp -d /tmp/utp-desk.XXXXXXXX) &&
+  cd "$desk" &&
+  pwd
 \end{terminal}
 
 Make the file once, in this new directory. \cmd|printf| repeats the format
@@ -343,9 +348,10 @@ which is often the best possible result.
 
 Keep the temporary directory until the exercises are done. To clean up,
 use \cmd|pwd| first and check that you are in \cmd|"$desk"|. Remove only
-\cmd|./desk.log| with \cmd|rm -i| (confirm only the practice file), leave
-with \cmd|cd|, then use \cmd|rmdir "$desk"|. It refuses to remove a
-directory with entries, so unexpected files are a reason to stop and look.
+\cmd|./desk.log| with \cmd|rm -i| (confirm only the practice file).
+Use \cmd|cd && rmdir "$desk"| so removal is not attempted if
+\cmd|cd| fails. \cmd|rmdir| refuses to remove a directory with
+entries, so unexpected files are a reason to stop and look.
 
 \begin{exercise}{Same host, another room}\label{ex:37-url}
 Print a version of the example URL with path \texttt{/rooms/friday}.
@@ -374,16 +380,19 @@ your machine.
 
 \begin{exercise}{Separate absence from error}\label{ex:37-status}
 In the desk directory, search first for the fixed string
-\texttt{transport:} in \texttt{desk.log}, then for the same string in
-\texttt{absent.log}, which was not created. Check each status before running
-another command. Finish by removing the desk log and its directory as above.
+\texttt{transport:} in \texttt{desk.log}, then for
+\texttt{TLS:} in the same file, then for \texttt{transport:}
+in \texttt{absent.log}, which was not created. Check each status
+before running another command. Finish by removing the desk log and
+its directory as above.
 \end{exercise}
 \begin{solution}
 \cmd|grep -F 'transport:' desk.log| prints one line and returns zero.
+\cmd|grep -F 'TLS:' desk.log| prints nothing and returns one.
 \cmd|grep -F 'transport:' absent.log| prints a diagnostic and returns a
 status greater than 1; that is not a successful search with zero matches.
 After checking \cmd|pwd|, \cmd|rm -i ./desk.log| removes the one practice
-file on confirmation; \cmd|cd| and \cmd|rmdir "$desk"| finish the cleanup.
+file on confirmation; \cmd|cd && rmdir "$desk"| finishes the cleanup.
 \end{solution}
 
 \begin{takeaways}

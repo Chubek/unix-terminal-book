@@ -3,7 +3,7 @@
 # Poppler, FFmpeg (including ffprobe); also requires mktemp and file.
 set -eu
 export LC_ALL=C
-lab=$(mktemp -d)
+lab=$(mktemp -d "${TMPDIR:-/tmp}/utp-media.XXXXXXXX")
 cleanup() {
     cd "$lab"
     rm -f ./not-a-pdf.pdf ./tiles.ppm ./tiles.png ./release/tiles-share.png \

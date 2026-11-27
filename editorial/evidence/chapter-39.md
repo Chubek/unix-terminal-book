@@ -11,5 +11,8 @@
   itemized output and source-slash behavior. No remote transfer or
   remote preview was attempted. SFTP exchange is illustrative. macOS and
   BSD rsync implementations/versions were not available for execution.
+- Revision check: reran local previews/comparisons and verified the
+  printed setup's success and failure branches on Linux. The `scp`
+  and SFTP example sequences are alternatives, not sequential uploads.
 - `figures/chapter-39/`: `direction.tikz`, `sftp.tikz`, `contents.tikz`.
   Slice build and grayscale check: see `chapter-37.md`.

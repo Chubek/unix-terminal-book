@@ -104,15 +104,35 @@ command -v tmux
 tmux -V
 \end{terminal}
 
-Make a private workplace. \texttt{-d} asks \cmd|mktemp| for a
-new directory; save its path under \texttt{sessionlab}. If setup
-fails, stop. Commands below use the variable from this original
-shell, not from a different window or a later login.
+Make a private workplace. \texttt{-d} asks \cmd|mktemp| for a new
+directory and \texttt{mktemp} replaces the final \texttt{X}s
+with a unique suffix. Save its path under \texttt{sessionlab}.
+The example uses a trusted local \texttt{/tmp}; use another
+trusted absolute temporary directory if your system requires it.
+Each \texttt{\&\&} continues only after success. If \cmd|pwd|
+does not show the newly made \texttt{utp-tmux} directory,
+stop before setting up the socket. The variables belong to
+this outer shell, not a different window or a later login.
 
 \begin{terminal}
-sessionlab=$(mktemp -d)
-cd "$sessionlab"
-pwd
+unset labsock
+sessionlab=$(mktemp -d /tmp/utp-tmux.XXXXXXXX) &&
+  cd "$sessionlab" &&
+  pwd
+\end{terminal}
+
+Here \cmd|unset labsock| clears any old value before setup.
+At the confirmed prompt, record a socket path only if the lab's
+path begins with a slash (the \cmd|/*| case pattern) and
+still matches the working directory. If this prints no path,
+stop; the next block needs a name inside that private lab.
+
+\begin{terminal}
+case "$sessionlab" in
+  /*) test "$(pwd)" = "$sessionlab" &&
+      labsock="$sessionlab/lab.sock" &&
+      printf '%s\n' "$labsock" ;;
+esac
 \end{terminal}
 
 The first tmux invocation sets up a separate server. A \FirstUse{socket}
@@ -125,9 +145,12 @@ tmux configuration. \texttt{new-session} starts the session;
 \texttt{-s lesson} gives it a name, and the final \texttt{sh} is
 the pane program to launch. The specific \texttt{sh} found in your
 environment may have local shell settings independent of tmux.
+The \cmd|${labsock:?}| expansion requires that the socket variable
+be set and nonempty; if not, the shell reports an error rather
+than invoking tmux with an unintended path.
 
 \begin{terminal}
-tmux -S "$sessionlab/lab.sock" -f /dev/null new-session -s lesson sh
+tmux -S "${labsock:?}" -f /dev/null new-session -s lesson sh
 \end{terminal}
 
 You should now see a shell prompt with the tmux status line, often at
@@ -179,8 +202,8 @@ versions \texttt{=lesson} requests an exact session name.
 No effect on your normal tmux server is intended.
 
 \begin{terminal}[title={Back at the shell outside tmux}]
-tmux -S "$sessionlab/lab.sock" list-sessions
-tmux -S "$sessionlab/lab.sock" attach-session -t '=lesson'
+tmux -S "${labsock:?}" list-sessions
+tmux -S "${labsock:?}" attach-session -t '=lesson'
 \end{terminal}
 
 In the pane, the same variable still has its earlier value. An
@@ -322,13 +345,13 @@ then expected. If it still reports a session, don't remove the
 socket while the server is live.
 
 \begin{terminal}[title={Outside tmux}]
-tmux -S "$sessionlab/lab.sock" list-sessions
+tmux -S "${labsock:?}" list-sessions
 pwd
 ls -a "$sessionlab"
 \end{terminal}
 
 If the directory is empty apart from the directory entries
-\texttt{.} and \texttt{..}, use \cmd|cd| and \cmd|rmdir "$sessionlab"|.
+\texttt{.} and \texttt{..}, use \cmd|cd && rmdir "$sessionlab"|.
 For a leftover socket, stop and check that no practice server is
 running before removing only that socket with \cmd|rm -i|.
 Unexpected files are not a reason to use recursive removal.

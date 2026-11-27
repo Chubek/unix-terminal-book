@@ -10,6 +10,9 @@
   The macOS/FreeBSD/OpenBSD/NetBSD `ifconfig lo0` syntax is a manual-based
   variant and was not run on those OSes. Lookup/HTTP records are synthetic;
   no DNS, HTTP, or other network request was run.
+- Revision check: printed setup passed with an nvme template and
+  stopped before printing a path with an invalid template. The final
+  exercise now checks a known match, a known miss and a missing file.
 - Sources are linked in the chapter: RFC 3986, RFC 9110 and the network
   utility manuals. Diagrams: `url.tikz`, `lookup.tikz`, `layers.tikz` under
   `figures/chapter-37/`, all referenced in prose.
