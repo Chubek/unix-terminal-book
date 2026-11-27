@@ -1,0 +1,333 @@
+You have two pictures for a neighborhood exhibit. The names in
+the camera folder do not tell you which exhibit album each picture
+belongs in, and the title of one picture includes a comma. You want
+organized copies and a catalog someone else can read without
+guessing at the punctuation. Do not start by renaming the originals.
+First make a plan that explains both the source and destination
+of each copy.
+
+\begin{objectives}
+\item Preview an organization plan while leaving the intake files alone.
+\item Convert a small CSV catalog to JSON without splitting quoted fields.
+\item Copy practice files, compare bytes, and distinguish catalog checks
+from content checks.
+\end{objectives}
+
+\section{Keep intake, catalog, and staging separate}\label{sec:47-layout}
+
+Use a spare terminal and POSIX shell syntax; type \cmd|sh| first
+if needed. The optional catalog converter needs Python 3:
+\cmd|command -v python3| checks resolution, and
+\cmd|python3 --version| reports the version without opening a
+catalog. Do not install an unfamiliar package from instructions
+found inside a data file. If Python 3 is missing, you can still
+inspect the written CSV and complete the copying and verification
+parts. Installation belongs to your normal platform workflow
+(Chapter~\ref{ch:35}).
+
+\begin{terminal}
+command -v python3
+python3 --version
+\end{terminal}
+
+Create a fresh directory and check that \cmd|pwd| shows it
+before any writes. Stop if setup fails. The two files use camera-like
+names but contain plain text; they are intentionally not photographs.
+Their contents are small enough to compare by eye, and their different
+bytes let you detect an accidental swap. Quote the path with the
+space. These redirections write or truncate controlled fixture files.
+
+\begin{terminal}
+lab=$(mktemp -d "${TMPDIR:-/tmp}/utp47.XXXXXX") && cd "$lab"
+pwd
+mkdir ./intake ./stage
+printf '%s\n' 'fixture A: blue canal' > ./intake/canal.jpg
+printf '%s\n' 'fixture B: green door' > './intake/front door.jpg'
+\end{terminal}
+
+\input{figures/chapter-47/layout.tikz}
+
+Figure~\ref{fig:47-layout} shows how the catalog relates to the
+files. A CSV record describes a choice about a source file; it
+does not prove that the source is present or that its extension
+matches its contents. Likewise a verified copy does not tell you
+whether the title was copied into the catalog correctly. Keep
+both checks. If more than one person can write to the intake
+directory, take a stable copy for staging or arrange a period
+when nobody is editing. A list of names taken at breakfast need
+not describe the directory at lunch.
+
+\begin{terminal}
+file ./intake/canal.jpg './intake/front door.jpg'
+ls -ld ./intake ./stage
+\end{terminal}
+
+Expect a description of text, with wording dependent on the tool
+and its database. \cmd|file| uses tests on the file rather than
+just its suffix; it is useful evidence but not proof an image is
+harmless to open. \cmd|ls -ld| shows the directory entries
+themselves, including permissions, rather than enumerating
+each directory's children. On real files, also consider metadata
+privacy: staging a byte-for-byte copy preserves any location
+information embedded in the file. This workflow does not remove
+metadata or re-encode photos. Chapter~\ref{ch:42} discusses
+inspection and non-destructive conversion.
+\IndexTerm{photos!staging}\IndexCommand{file}
+
+\section{Read punctuation as part of the title}
+
+The catalog header names three fields: \texttt{filename} is an
+intake basename (the name with no directory prefix), \texttt{album}
+chooses a folder under stage, and \texttt{title} is the display
+text. This fixture chooses only two albums. Fill a fresh file
+with the catalog below. A comma in a title is enclosed by double
+quotes in CSV. The outer single quotes in the terminal example
+hold each line together as one shell argument and are not part of
+the CSV. This is not the same use of quotation marks.
+
+\begin{terminal}
+printf '%s\n' 'filename,album,title' \
+    'canal.jpg,water,"Canal, after rain"' \
+    'front door.jpg,street,Green front door' > ./catalog.csv
+cat ./catalog.csv
+\end{terminal}
+
+Splitting every line on commas would yield four pieces on the
+canal row. A CSV parser knows that the comma in the quoted field
+belongs to the title. A spreadsheet may show a correct column
+view, but if you export it again, verify delimiters, encoding,
+and column names. Our converter expects UTF-8, comma separators,
+and the header shown in the fixture. Other exports may use
+semicolons or a different encoding. Reject a mismatched input
+rather than turning it quietly into a plausible catalog.
+See Chapter~\ref{ch:24} for more about CSV and JSON.
+\IndexTerm{CSV!quoted fields}\IndexTerm{JSON!photo catalog}
+
+\input{figures/chapter-47/fields.tikz}
+
+Figure~\ref{fig:47-fields} shows the canal record as three
+fields. Empty and whitespace-only titles are not useful in
+this exhibit; the converter refuses them. The filename rule
+allows simple names like \texttt{front door.jpg} but not a
+slash, a leading hyphen, a hidden name, or an arbitrary camera
+filename. It is a deliberately narrow practice rule, not a
+definition of a valid photo filename. Do not use it as a reason
+to delete rejected originals. For a real batch, handle case
+collisions, leading dots, Unicode normalization and re-used
+names before copying across filesystems. Two distinct names on
+one filesystem might refer to one name on the destination.
+
+\begin{quicktable}{p{.29\linewidth}Y}
+\toprule
+Input & Acceptance rule for this converter \\
+\midrule
+Header & Exactly three named columns in the shown order. \\
+Filename & A simple lower-case \texttt{.jpg} suffix with a
+restricted ASCII basename; no duplicate names even after
+case folding. \\
+Album & Either \texttt{water} or \texttt{street}; no arbitrary
+directory path is accepted. \\
+Title & Nonblank text, represented as a JSON string. CSV
+quoting determines what belongs inside this field. \\
+\bottomrule
+\end{quicktable}
+
+\section{Preview a plan without carrying it out}\label{sec:47-plan}
+
+Save the supplied \FilePath{listings/chapter-47/catalog.py} as
+\texttt{catalog.py} in the fixture root or transcribe the listing
+in an editor. No knowledge of Python syntax is needed to use it.
+The converter reads the named CSV and prints JSON only after
+validating all records. It writes no photo and runs no command
+from the CSV. The program's Python source is a script, not
+terminal input. Run it using the explicit \cmd|python3|
+interpreter. POSIX shell syntax appears in the terminal examples;
+the converter itself is optional and uses only Python's standard
+library.
+
+\lstinputlisting[style=utpcode]{listings/chapter-47/catalog.py}
+
+\begin{terminal}
+python3 ./catalog.py ./catalog.csv
+\end{terminal}
+
+Expect a JSON array with an object for each row. The canal object
+has title \texttt{Canal, after rain}. Its \texttt{source} is
+\texttt{intake/canal.jpg}, and its \texttt{destination} is
+\texttt{stage/water/canal.jpg}. The second source has a space.
+JSON quotes delimit strings; they are not shell escaping.
+Do not paste values as shell syntax, feed them to \cmd|eval|,
+or interpret the printed JSON as a list of commands. A plan
+can have syntactically valid JSON and still send photos to the
+wrong albums. Compare both entries with the CSV and the directory
+names before proceeding.
+
+After a successful preview, generate the saved catalog. The
+\cmd|&&| runs the second command only if the first succeeds.
+If validation reports an error, the redirection can still leave
+an empty file. A saved catalog is ready only after the converter
+has succeeded and you have reviewed its contents.
+
+\begin{terminal}
+python3 ./catalog.py ./catalog.csv > ./catalog.json &&
+    cat ./catalog.json
+\end{terminal}
+
+In this practice, make the two album directories inside the
+new \texttt{stage} directory, then copy only the files you
+reviewed. Stop if directory creation fails. If either destination
+already exists, stop rather than agreeing to an overwrite;
+\cmd|cp -i| asks before overwriting a file in this interactive
+exercise. An existing wrong target can also be a directory,
+which is why starting with an empty private staging area
+matters. Do not interpret \cmd|-i| as an atomic no-clobber
+guarantee in a directory someone else can change.
+
+\begin{terminal}
+mkdir ./stage/water ./stage/street
+cp -i ./intake/canal.jpg ./stage/water/canal.jpg
+cp -i './intake/front door.jpg' './stage/street/front door.jpg'
+\end{terminal}
+
+\input{figures/chapter-47/verify.tikz}
+
+\section{Verify content and placement separately}
+
+\cmd|cmp| compares bytes. Ordinarily it reports the first
+difference, if any. Silence with zero status means two readable
+files compare equal byte for byte. A nonzero status means a
+difference or trouble; investigate rather than replacing the
+copy automatically. Check the second copy too. If you were
+verifying an actual collection, the important question would
+not be ``did any comparison succeed?'' but ``was there a
+comparison for every planned copy?'' Figure~\ref{fig:47-verify}
+shows one such pair.
+
+\begin{terminal}
+cmp ./intake/canal.jpg ./stage/water/canal.jpg
+printf 'canal comparison: %s\n' "$?"
+cmp './intake/front door.jpg' './stage/street/front door.jpg'
+printf 'door comparison: %s\n' "$?"
+\end{terminal}
+
+\cmd|cksum| without algorithm options computes a POSIX checksum
+and reports a byte count. Give it standard input with \cmd|<|
+and the output will not depend on the different path spelling.
+The two numbers for the canal original and copy should match.
+This is a portable accidental-change check, not a secure
+cryptographic digest and not proof of authorship. If a project
+specifies SHA-256, choose the documented utility and record
+the algorithm and source of the expected digest. Utility names
+and options vary across GNU and BSD systems (Chapter~\ref{ch:23}).
+\IndexCommand{cmp}\IndexCommand{cksum}
+
+\begin{terminal}
+cksum < ./intake/canal.jpg
+cksum < ./stage/water/canal.jpg
+find ./stage -type f -print
+\end{terminal}
+
+\cmd|find| walks the stage tree, \cmd|-type f| selects regular
+files, and \cmd|-print| prints each selected path. Expect
+exactly the two staged files; their order is not important.
+Our controlled names do not contain newlines. For arbitrary
+files, newline-delimited output is for inspection, not reliable
+input to a script that guesses where each name ends.
+
+\begin{quicktable}{p{.30\linewidth}Y}
+\toprule
+Check & What it cannot establish \\
+\midrule
+CSV parsed & The files exist, their types are as expected, or
+the titles are the right ones. \\
+Staging tree listed & The named copies have the right bytes. \\
+Byte comparison passed & Metadata is safe to publish or the
+chosen album is correct. \\
+Checksums match & The originals are safely backed up or the
+files are authenticated. \\
+\bottomrule
+\end{quicktable}
+
+\begin{dialoguebox}{Identical but wrong}
+\Brian{The two copies match their originals. Is the exhibit ready?}
+\Stephen{The copy step worked. I was about to call that the whole job.}
+\Brian{Then why does the canal appear under street in my catalog?}
+\Stephen{Because the byte comparison checked a pair of files, not the exhibit labels.}
+\Brian{And a byte-for-byte copy has any location data the original had.}
+\Stephen{Yes. Review the plan and the metadata separately from the copies.}
+\Brian{Then keeping the originals gives me somewhere to start again.}
+\DialogueConclusion{Verify the copy and the plan separately.}
+\end{dialoguebox}
+
+\begin{takeaways}
+\item Make a reviewed staging plan before copying or renaming.
+\item Parse structured data with tools that understand the format.
+\item Verify both paths and bytes, and keep publication a separate step.
+\end{takeaways}
+
+\begin{exercise}{Keep the comma inside its field}\label{ex:47-comma}
+With the existing CSV and JSON, find the canal title in each.
+Explain the two roles of the quotes without changing either file.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+grep -n -F -e 'Canal, after rain' ./catalog.csv ./catalog.json
+\end{terminal}
+The phrase occupies one quoted CSV field and one JSON string.
+Use the printed catalog instead if you previewed it without
+saving it. No extra file is needed.
+\end{solution}
+
+\begin{exercise}{Reject the unknown album}\label{ex:47-album}
+Write \texttt{trial.csv} with the same header and a row for
+\texttt{canal.jpg} in album \texttt{parking}. Run the converter
+without redirection and check its status. Remove the trial
+file during cleanup. If Python 3 is not available, describe
+which condition rejects it and continue to the third exercise.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+printf '%s\n' 'filename,album,title' \
+    'canal.jpg,parking,Canal' > ./trial.csv
+python3 ./catalog.py ./trial.csv
+printf 'trial status: %s\n' "$?"
+\end{terminal}
+Expect a diagnostic for an unknown album, no JSON, and status
+one. Neither existing catalog is replaced.
+\end{solution}
+
+\begin{exercise}{Spot a mismatched pair}\label{ex:47-pair}
+Compare the canal intake file against the staged door file by
+mistake on purpose. Check the status and then compare the
+correct canal pair. No modification is needed.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+cmp ./intake/canal.jpg './stage/street/front door.jpg'
+printf 'mismatched pair: %s\n' "$?"
+cmp ./intake/canal.jpg ./stage/water/canal.jpg
+printf 'correct pair: %s\n' "$?"
+\end{terminal}
+The first comparison reports a difference and status one,
+the second is silent with status zero.
+\end{solution}
+
+After confirming the fixture root with \cmd|pwd|, remove only
+the practice paths. Omit the script and generated catalog if
+you did not use Python, and \texttt{trial.csv} if unused.
+The originals in a real photo project would not be removed
+as part of staging cleanup.
+
+\begin{terminal}
+rm './stage/street/front door.jpg' ./stage/water/canal.jpg
+rm './intake/front door.jpg' ./intake/canal.jpg
+rm ./catalog.csv ./catalog.json ./catalog.py ./trial.csv
+rmdir ./stage/water ./stage/street ./stage ./intake
+cd / && rmdir "$lab"
+\end{terminal}
+
+\begin{furtherreading}
+\ReadingItem{Python csv module}{CSV dialects, quoting, and opening text with newline handling.}{https://docs.python.org/3/library/csv.html}
+\ReadingItem{Python json module}{Serialization of arrays, objects, and strings.}{https://docs.python.org/3/library/json.html}
+\ReadingItem{POSIX cksum}{Portable checksum and byte count behavior.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/cksum.html}
+\end{furtherreading}

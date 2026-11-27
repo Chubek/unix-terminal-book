@@ -1,0 +1,15 @@
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[node distance=8mm and 15mm]
+\node[utp node] (report) {Numbered matches};
+\node[utp node,above right=of report] (live) {Live output};
+\node[utp node,below right=of report] (file) {Saved text};
+\node[utp node,right=of file] (review) {Preferred reader};
+\draw[utp arrow] (report) |- (live);
+\draw[utp arrow] (report) |- (file);
+\draw[utp arrow] (file) -- (review);
+\end{tikzpicture}
+\caption{Stable text can be read live or saved for review in another program.}
+\label{fig:44-routes}
+\VisualDescription{Numbered matches can go to live output or to a saved text file for reading in a preferred tool.}
+\end{figure}

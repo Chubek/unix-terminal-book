@@ -1,0 +1,313 @@
+You keep two lists for a volunteer group: the notes from meetings
+and the current handoff. On a busy morning you want to find each
+mention of the library, then see what changed in the handoff. You
+don't need an app that manages the group. You need a short routine
+whose inputs are known, whose results you can explain, and whose
+mistakes leave you with the original notes.
+
+\begin{objectives}
+\item Search two notes by a literal phrase and locate the matching lines.
+\item Compare two versions without changing them.
+\item Write a repeatable read-only routine with useful error and
+no-result messages.
+\end{objectives}
+
+\section{Give the routine a home}\label{sec:46-setup}
+
+A daily routine is easier to trust when it has a boundary. Decide
+which files belong to the routine, what success looks like, and who
+will act on the result. Make the first run small enough to check by
+reading every line. If its answers are wrong on two notes, a faster
+search across a hundred notes does not make it more useful.
+
+Use a spare terminal and POSIX shell syntax. If your usual shell
+requires different syntax, start a child with \cmd|sh| first. The
+following setup makes a fresh directory; stop if the assignment
+or \cmd|cd| fails and don't type the writes elsewhere. Local
+\texttt{notes}, \texttt{before.txt}, and \texttt{after.txt} are
+fixture names, not an existing project. The redirections replace
+their destination files if the commands are run again.
+
+\begin{terminal}
+lab=$(mktemp -d "${TMPDIR:-/tmp}/utp46.XXXXXX") && cd "$lab"
+pwd
+mkdir ./notes
+printf '%s\n' 'Library: ask for the key' 'Hall: confirm chairs' \
+    > ./notes/monday.txt
+printf '%s\n' 'Riverside library: opens at noon' \
+    > ./notes/thursday.txt
+\end{terminal}
+
+\begin{terminal}
+printf '%s\n' 'Start at ten' 'Library: ask for the key' \
+    > ./before.txt
+printf '%s\n' 'Start at noon' 'Library: ask for the key' \
+    > ./after.txt
+\end{terminal}
+
+The names show which file is the earlier version. In real work,
+date labels or a predictable exported name are often better, as
+long as the team agrees on the order. An editor's modified date
+is not a good substitute for knowing which file the team reviewed.
+Copying a file may affect dates; two files can also have identical
+times but different contents. The routine compares text, not
+timestamps or changes still unsaved in your editor.
+
+\input{figures/chapter-46/routine.tikz}
+
+Figure~\ref{fig:46-routine} separates reading, interpreting, and
+deciding. The report should not quietly make the decision for
+you. For example the start time changed, but the command cannot
+tell whether the change was approved. Keep the step that merges
+or forwards the handoff separate from the step that examines it.
+That separation gives you a stopping point if the search turns
+up unfamiliar text or the comparison has the order backwards.
+
+\section{Find evidence you can return to}\label{sec:46-search}
+
+Use a literal phrase for the first search. \cmd|-F| treats the
+pattern as a fixed string, \cmd|-i| ignores differences in case,
+and \cmd|-n| reports line numbers. \cmd|-e| identifies the
+next argument as the pattern, which matters if you later search
+for text beginning with a hyphen. Search explicit paths instead
+of every file in your home directory. With two filename operands
+and \cmd|-n|, the output identifies which file contains each
+line. A teammate can go straight to the finding without trusting
+that your terminal scrollback is saved.
+\IndexTerm{workflow!notes search}\IndexCommand{grep}
+
+\begin{terminal}
+grep -Fin -e 'library' ./notes/monday.txt ./notes/thursday.txt
+printf 'search status: %s\n' "$?"
+\end{terminal}
+
+\begin{terminaloutput}
+./notes/monday.txt:1:Library: ask for the key
+./notes/thursday.txt:1:Riverside library: opens at noon
+search status: 0
+\end{terminaloutput}
+
+The matched text is not changed to lowercase. \cmd|-i| affects
+matching; the contents are still printed as stored. The search
+does not prove the notes are about the same library. The
+relationship is a reading task. It also doesn't find alternative
+names unless the note contains the literal word you chose. Case
+folding depends on the locale, especially away from the simple
+English letters used here. Verify a multilingual search on known
+examples before calling it complete (Chapter~\ref{ch:20}).
+
+When a search appears to miss a result, first read a known
+source line and check the phrase and files you selected. Try
+a narrower read instead of changing the search to an unbounded
+recursive one. Recursive searches can reach unrelated text,
+archives, or private data and can produce valid-looking matches
+from the wrong project.
+
+\begin{terminal}
+head -n 1 ./notes/thursday.txt
+grep -Fin -e 'bookshop' ./notes/monday.txt ./notes/thursday.txt
+printf 'search status: %s\n' "$?"
+\end{terminal}
+
+Expect one line of preview, then no match line for the search
+and a status of one. If either input is missing or unreadable,
+do not label it an ordinary empty result. For this non-quiet
+search, an error returns greater than one even though some
+matches may already have been printed. This matters when deciding
+whether the routine checked both notes.
+
+\input{figures/chapter-46/search.tikz}
+
+Figure~\ref{fig:46-search} relates the result to the source file.
+The output is an aid for human review, not a universal machine
+record. A filename could itself have a colon or even a newline,
+whereas our explicit fixture names do not. Avoid splitting
+arbitrary \cmd|grep| output on colon and treating the pieces as
+a trustworthy table. When you need structured fields, make a
+purpose-built data source (Chapter~\ref{ch:24}).
+
+\section{Read a change in the right direction}\label{sec:46-diff}
+
+Use unified \cmd|diff| with the older file first. It prints
+header lines for each file and hunk headers that locate the
+changed region; date fields may vary. In the body a leading
+minus labels a line in the first file and a leading plus
+labels a line in the second. A leading space gives unchanged
+context. These markers are not part of the handoff. The
+commands below only read the inputs.
+\IndexCommand{diff}\IndexTerm{version comparison}
+
+\begin{terminal}
+diff -u ./before.txt ./after.txt
+printf 'comparison status: %s\n' "$?"
+\end{terminal}
+
+The meaningful part here is the minus for ``Start at ten''
+and the plus for ``Start at noon''. Expect the unchanged
+library instruction too, because it sits next to the change.
+Status one says the comparison found a difference, so a script
+that handles all nonzero statuses as failures would hide the
+answer you wanted. Status greater than one is the branch that
+requires investigation. If a change looks backwards, check the
+operand order before sending it to anyone.
+
+\begin{quicktable}{lYY}
+\toprule
+Status & Search with \texttt{grep} & Comparison with \texttt{diff} \\
+\midrule
+0 & At least one match & No differences \\
+1 & No matches & Differences found \\
+Greater than 1 & Error reading or applying the search & Error comparing the inputs \\
+\bottomrule
+\end{quicktable}
+
+If you need a copy for discussion, save just this comparison into
+a separate file. The output filename is new and dedicated to the
+routine. Redirection opens it before \cmd|diff| starts; the
+presence of the file does not establish success. Do not make
+either input path the output.
+
+\begin{terminal}
+diff -u ./before.txt ./after.txt > ./changes.txt
+printf 'comparison status: %s\n' "$?"
+head -n 8 ./changes.txt
+\end{terminal}
+
+This short preview should include the change. Treat saved
+comparisons as potentially sensitive: unified output generally
+shows unchanged lines next to what changed. Redact or paraphrase
+the harmless portion of a real report before sharing. Don't
+paste a full diff into a public channel just because it is short.
+
+\input{figures/chapter-46/changes.tikz}
+
+\begin{dialoguebox}{A successful difference}
+\Brian{The comparison returned one. Didn't we just call that a failure?}
+\Stephen{We called nonzero worth reading. This tool uses one to say the files differ.}
+\Brian{So we should treat it as success every time?}
+\Stephen{Not if we expected the copies to be identical. The result can be correct and still tell us not to proceed.}
+\Brian{And a difference isn't the same as a file the tool couldn't read.}
+\Stephen{Right. Give those outcomes different messages in the routine.}
+\Brian{Then I can decide from the message, not the number alone.}
+\DialogueConclusion{Interpret status in the context of the task.}
+\end{dialoguebox}
+
+\section{Keep the repeatable part small}
+
+A script is justified when you repeat the check and want the
+same source files and status handling each time. Use the copy in
+\FilePath{listings/chapter-46/check-notes.sh}, or save the text
+below as \texttt{check-notes.sh} in the practice directory using
+your editor. Do not try to enter the entire listing as commands:
+it contains \cmd|exit| for the script. Use \cmd|sh ./check-notes.sh|
+to run it without changing the file mode. It reads fixed
+relative paths, so verify you are in the intended directory.
+The braces with \cmd|:-| pick the word \texttt{library} if the
+first argument is missing or empty. Quoting preserves a phrase
+containing spaces as one pattern. The cases interpret the
+previous command's status immediately; errors leave the script
+with a nonzero status. Matches and differences are useful
+answers, not execution errors.
+
+\ShellFile{listings/chapter-46/check-notes.sh}
+
+\begin{terminal}
+sh -n ./check-notes.sh
+sh ./check-notes.sh 'library'
+sh ./check-notes.sh 'bookshop'
+\end{terminal}
+
+Expect the same comparison in both runs; the second prints a
+no-match message for the notes. \cmd|sh -n| checks syntax, not
+the validity of the inputs. If \cmd|sh -n| fails, correct the
+file before continuing. Test a typical match and a deliberate
+miss before trusting the shortcut. The headings begin on their
+own lines so a spoken listener can tell which operation came
+next. A batch job that needs to parse the match data should
+instead separate report headings from data rows.
+
+\begin{quicktable}{p{.26\linewidth}Y}
+\toprule
+When & Condition for proceeding \\
+\midrule
+Before running & The working directory and fixture names are
+correct; both handoffs are saved and their order is known. \\
+While reading & Match lines identify the source; differences
+use the expected older-to-newer order. \\
+Before sharing & A person has interpreted the findings and
+screened the text for private information. \\
+Next time & If a pathname changes, update the routine deliberately
+and repeat the small tests before trusting a larger search. \\
+\bottomrule
+\end{quicktable}
+
+\begin{takeaways}
+\item Write down the specific questions a daily routine answers.
+\item Keep searches and comparisons read-only until you understand the result.
+\item Handle no matches, differences, and execution errors as distinct outcomes.
+\end{takeaways}
+
+\begin{exercise}{A phrase with spaces}\label{ex:46-phrase}
+Find the literal phrase ``opens at'' in the fixture notes.
+Run the routine with that phrase as one argument. No extra
+files are needed.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+sh ./check-notes.sh 'opens at'
+\end{terminal}
+Expect only the Thursday line in the search section and the
+same handoff comparison as before. The quotes keep the phrase in
+one argument; without them only the first word would be used.
+\end{solution}
+
+\begin{exercise}{Read a reversed comparison}\label{ex:46-reverse}
+Run a comparison with the new file first and the old file
+second. Locate the unchanged line and explain which change
+markers swapped. Do not save the output over either handoff.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+diff -u ./after.txt ./before.txt
+\end{terminal}
+``Start at noon'' is now marked with a minus and ``Start at
+ten'' with a plus. The library instruction is still context.
+The exit status is still one.
+\end{solution}
+
+\begin{exercise}{Check what a missing input does}\label{ex:46-missing}
+Temporarily rename the Thursday fixture, run the routine, and
+capture its exit status immediately. Restore the filename
+before cleaning up. The replacement name is unused in the fresh
+fixture; \texttt{mv -i} asks before overwriting if a conflict
+does exist. Cancel rather than overwriting.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+mv -i ./notes/thursday.txt ./notes/thursday.hold
+sh ./check-notes.sh
+printf 'routine status: %s\n' "$?"
+mv -i ./notes/thursday.hold ./notes/thursday.txt
+\end{terminal}
+Expect a reading diagnostic and the script's error message;
+Monday's match may also appear. The comparison is not attempted.
+The routine exits with status two. Restore before the usual
+cleanup even if the output surprised you.
+\end{solution}
+
+Confirm the fixture root with \cmd|pwd|. Remove only the
+fixture names; omit \texttt{check-notes.sh} or \texttt{changes.txt}
+if you did not create them. Then remove the empty directories.
+
+\begin{terminal}
+rm ./notes/monday.txt ./notes/thursday.txt
+rm ./before.txt ./after.txt ./changes.txt ./check-notes.sh
+rmdir ./notes
+cd / && rmdir "$lab"
+\end{terminal}
+
+\begin{furtherreading}
+\ReadingItem{POSIX grep}{Fixed-string matching, file operands,
+and exit statuses.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/grep.html}
+\ReadingItem{POSIX diff}{Unified format and exit statuses.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/diff.html}
+\end{furtherreading}

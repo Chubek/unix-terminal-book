@@ -1,0 +1,13 @@
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[node distance=9mm and 22mm]
+\node[utp node] (local) {Local archive};
+\node[utp node,right=of local] (host) {Authorized storage};
+\node[utp node,below=of local] (ret) {New local directory};
+\draw[utp arrow] (local) -- node[above]{put} (host);
+\draw[utp arrow] (host) |- node[pos=.75,below]{get} (ret);
+\end{tikzpicture}
+\caption{SFTP puts from the local side and gets from the remote side.}
+\label{fig:48-boundary}
+\VisualDescription{Put carries the local archive into authorized storage; get carries it back into a new local directory.}
+\end{figure}

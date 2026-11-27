@@ -1,0 +1,15 @@
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[node distance=8mm and 9mm]
+\node[utp node] (q) {Who's reading the key?};
+\node[utp node,below left=of q] (a) {Foreground tool};
+\node[utp node,below=of q,yshift=-11mm] (b) {Shell editor};
+\node[utp node,below right=of q] (c) {Unknown};
+\draw[utp arrow] (q) -- (a);
+\draw[utp arrow] (q) -- (b);
+\draw[utp arrow] (q) -- (c);
+\end{tikzpicture}
+\caption{Confirm the input context before sending an interrupt or entering shell commands.}
+\label{fig:45-triage}
+\VisualDescription{The next key might be read by a foreground tool, a shell editor, or an unknown component. Establish which before acting.}
+\end{figure}

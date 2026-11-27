@@ -1,0 +1,11 @@
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[node distance=12mm]
+\node[utp node,align=center] (a) {Local shell\\local account and files};
+\node[utp node,align=center,right=of a] (b) {Remote shell\\remote account and files};
+\draw[utp arrow] (a) -- node[above]{SSH} (b);
+\end{tikzpicture}
+\caption{The terminal can display a remote shell without moving its working directory to your machine.}
+\label{fig:45-contexts}
+\VisualDescription{An SSH connection from the local side opens a remote shell; each side still has its own account and working directory.}
+\end{figure}

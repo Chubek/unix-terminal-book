@@ -1,0 +1,13 @@
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[node distance=8mm and 11mm]
+\node[utp node,align=center] (orig) {Intake\\\texttt{canal.jpg}};
+\node[utp node,align=center,right=of orig] (copy) {Stage, water\\\texttt{canal.jpg}};
+\node[utp node,below right=of orig] (comp) {Compare bytes};
+\draw[utp arrow] (orig) -- (comp);
+\draw[utp arrow] (copy) -- (comp);
+\end{tikzpicture}
+\caption{Compare the expected original and copy, not just two names with the same suffix.}
+\label{fig:47-verify}
+\VisualDescription{The intake canal file and the staged canal file from the water album both feed a byte comparison.}
+\end{figure}

@@ -1,0 +1,16 @@
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[node distance=8mm]
+\node[utp node] (file) {Read candidate};
+\node[utp node,right=of file] (check) {Check syntax};
+\node[utp node,right=of check] (trial) {Try in child};
+\node[utp node,below=of trial] (ret) {Exit child};
+\draw[utp arrow] (file) -- (check);
+\draw[utp arrow] (check) -- (trial);
+\draw[utp arrow] (trial) -- (ret);
+\draw[utp arrow] (ret) -| (file);
+\end{tikzpicture}
+\caption{A rehearsal loop before any actual startup-file change.}
+\label{fig:43-startup}
+\VisualDescription{Read and syntax-check the candidate, try it in a child shell, exit that shell, and inspect or revise the candidate again if needed.}
+\end{figure}

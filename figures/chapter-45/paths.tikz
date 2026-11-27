@@ -1,0 +1,14 @@
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[node distance=6mm and 7mm]
+\node[utp node] (lookup) {Bare command name};
+\node[utp node,right=of lookup] (path) {Search path};
+\node[utp node,below=of lookup] (file) {Relative file operand};
+\node[utp node,right=of file] (cwd) {Working directory};
+\draw[utp arrow] (lookup) -- (path);
+\draw[utp arrow] (file) -- (cwd);
+\end{tikzpicture}
+\caption{Shell lookup and relative file access start from different information.}
+\label{fig:45-paths}
+\VisualDescription{A bare external command name uses the search path after shell definitions are checked; a relative file operand usually starts at the working directory.}
+\end{figure}

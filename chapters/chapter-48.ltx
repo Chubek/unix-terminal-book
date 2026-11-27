@@ -1,0 +1,408 @@
+Your group keeps its meeting notes on a shared laptop. A teammate
+has offered authorized storage on another machine. You could copy the
+directory there and call it done. But would you recognize the right
+copy next month? Could somebody restore from it without changing the
+active notes? Rehearse the whole route with two invented documents
+first. A copy that arrives is a milestone; a copy that restores is
+the point of the exercise.
+
+\begin{objectives}
+\item Create a named bundle from a small, known source tree.
+\item Rehearse delivery and retrieval locally, then recognize the
+additional boundaries of an authorized remote transfer.
+\item Restore into a new directory and verify selected paths and bytes
+without changing the source.
+\end{objectives}
+
+\section{Choose what a successful restore must contain}\label{sec:48-plan}
+
+Our test documents are a meeting note and a contact note with
+no real names or addresses. A successful drill will recreate
+both files and their expected directory structure. It will
+not restore permissions for an entire service, reproduce a
+system disk, or establish a permanent backup schedule. For
+real documents, agree on ownership, access, retention, and
+what to do when somebody who had access leaves the group.
+Do not store sensitive files just because someone has a spare
+account on a machine. Know who can administer the storage and
+whether its backups or snapshots retain a copy after removal.
+
+\input{figures/chapter-48/roundtrip.tikz}
+
+Figure~\ref{fig:48-roundtrip} puts an explicit return path in
+the plan. Chapters~\ref{ch:39} and \ref{ch:41} introduced
+transfer and recoverable copies. Here you will use both ideas:
+what left your machine, what returned to it, and what was
+restored are three separate objects. You can do the whole
+practice offline. The remote section describes only an optional
+step for a host you have confirmed you are authorized to use.
+
+Open a spare window; use \cmd|sh| first if needed for the
+POSIX shell syntax. Create a fresh private practice directory.
+Stop if the assignment or \cmd|cd| fails. The directories
+\texttt{handoff}, \texttt{returned}, and \texttt{restored}
+are purposely distinct. None stands in for a directory that
+already holds your current documents. The writes below name
+new files, but \cmd|>| would truncate them if repeated.
+
+\begin{terminal}
+lab=$(mktemp -d "${TMPDIR:-/tmp}/utp48.XXXXXX") && cd "$lab"
+pwd
+mkdir ./source ./handoff ./returned ./restored
+mkdir ./source/notes
+printf '%s\n' 'Practice meeting: start at noon' \
+    > ./source/notes/meeting.txt
+printf '%s\n' 'Practice contact: use the club noticeboard' \
+    > ./source/contact.txt
+\end{terminal}
+
+In real use, close editors or obtain a stable source snapshot
+approved for the project. A bundle can collect inconsistent
+versions if several files are changing while it is made.
+Select known directories, inspect the names and types, and
+do not include links, special files, or private exports by
+accident. Real policy may require preserving metadata or file
+types not represented here; document those requirements before
+claiming that a backup covers them.
+
+\begin{terminal}
+find ./source -type f -print
+\end{terminal}
+
+\cmd|find| walks the source tree, \cmd|-type f| selects regular
+files, and \cmd|-print| shows paths. Expect exactly the two
+document paths, in either order. This particular selection does
+not prove that there are no other kinds of entries; before
+using a real archive input also inspect the complete tree and
+the intended inclusion rules. The practice tree was built with
+known plain files, by you, in a newly created directory.
+
+\section{Make one candidate and inventory it}
+
+Our \FirstUse{archive} is a single bundle holding tree entries
+and their contents. This one is not compressed, and its
+contents are not encrypted at rest. Use the common GNU/BSD
+\cmd|tar| options below; this exact command line is not a
+promise about every POSIX installation. The tool's manual
+for your operating system remains the authority.
+\cmd|-c| creates an archive, \cmd|-f| takes the output archive
+path as the next argument, and \cmd|./source| is the tree to
+include. The archive path is outside the source so it is not
+created inside the tree being read. A create operation may
+replace an existing archive; do not rerun it over a prior
+successful delivery. Here \texttt{round-01.tar} is a new
+fixture name.
+\IndexCommand{tar}\IndexTerm{backup!restore drill}
+
+\begin{terminal}
+tar -cf ./round-01.tar ./source
+tar -tf ./round-01.tar
+\end{terminal}
+
+Run the second command only after the first succeeds. The
+\cmd|-t| operation lists entries instead of extracting
+them; \cmd|-f| now names the archive to read. Expect the
+source directory, a notes directory and both document entries.
+Directory suffixes and ordering may vary. Inspect for missing
+or surprising paths. This inventory does not read the restored
+files and it is not a license to extract an unknown archive.
+Absolute paths, parent-directory references, links, and
+special entries need additional scrutiny. For this drill
+restore only the archive you created and verified.
+
+\begin{terminal}
+cksum < ./round-01.tar
+\end{terminal}
+
+\cmd|cksum| reads the bundle on standard input and prints the
+checksum and byte count without a filename. Keep the result
+if you want to identify accidental damage later. Do not expect
+all systems to produce identical archives from the same tree:
+format defaults, metadata, order, and other details can vary.
+We compare copies of one archive, not two independently created
+archives. A checksum may help detect accidental change; it
+does not authenticate the source or replace the byte comparison
+used below.
+
+\section{Deliver and retrieve without changing the candidate}\label{sec:48-delivery}
+
+The next two local copies simulate delivery to another machine
+and retrieval later. They do not simulate network errors,
+security, or authorization. They are not independent backups
+if all directories live on the same disk. Both target
+directories are initially empty, and \cmd|cp -i| asks before
+overwriting a file. Decline and inspect if you see a question.
+Do not continue with a stale returned file: a previous copy
+with the same name may still compare equal even if this
+attempt failed.
+
+\begin{terminal}
+cp -i ./round-01.tar ./handoff/round-01.tar
+cp -i ./handoff/round-01.tar ./returned/round-01.tar
+cmp ./round-01.tar ./returned/round-01.tar
+printf 'retrieval comparison status: %s\n' "$?"
+\end{terminal}
+
+Check each copy succeeded before moving on. The returned archive
+comparison should be silent and the status zero. Neither an
+error nor a difference meets the condition for extracting this
+copy. Keep the original bundle while you investigate. If the
+remote side were out of reach when you needed it, this local
+archive might matter; one remote copy is not a replacement for
+an agreed backup plan.
+
+\begin{dialoguebox}{The return trip}
+\Brian{It says the upload finished. Why go get the same file back?}
+\Stephen{To check that you can find and retrieve what you sent.}
+\Brian{But it's still another copy of the archive. My notes aren't in front of me.}
+\Stephen{Right. I skipped a distinction. Retrieval confirms the bundle; extraction tests the restore.}
+\Brian{Then the recovered notes go somewhere new, not over my current notes.}
+\Stephen{Yes. Compare them before deciding whether anything needs replacing.}
+\Brian{So our drill ends with evidence about documents, not just a progress bar.}
+\DialogueConclusion{A delivery is not a restore.}
+\end{dialoguebox}
+
+\subsection{An optional authorized handoff}
+
+Do not type the following connection example literally.
+\texttt{backup.example.invalid} is a placeholder, not a
+service. Confirm the intended host and account through your
+normal trusted channel, get permission to use a private
+destination with enough capacity, and verify the host key
+as in Chapter~\ref{ch:38}. If this is someone else's machine,
+ask them to provision a fresh directory for this attempt.
+Do not bypass changed-host checks, guess credentials, or use
+any system whose authorization is unclear. If the remote
+setting is not available, finish the offline route instead.
+
+\begin{terminal}
+sftp backupuser@backup.example.invalid
+\end{terminal}
+
+Start the client from the local practice root, and verify its
+local and remote locations after connection. The example
+treats \texttt{/approved/new-round-01} as an empty remote
+directory already created for this purpose; replace it with
+the actual authorized path. If you previously ran the local
+practice, choose a separate new local output directory for
+this attempt. Use \texttt{remote-return} under the local fixture
+root by making it before starting \cmd|sftp|. Stop if it
+already exists or the creation fails. Only send the practice
+archive if the host owner has approved it.
+
+\begin{terminal}
+mkdir ./remote-return
+\end{terminal}
+
+Inside the verified \texttt{sftp>} prompt, the following
+example shows OpenSSH SFTP subcommands, not shell commands.
+\texttt{lpwd} prints the local working directory; \texttt{pwd}
+prints the remote one. \texttt{cd} changes remote directory
+and \texttt{ls} checks remote entries. Verify the directory
+really is the approved new location and no archive exists
+there before \texttt{put}; it can overwrite an existing
+target. \texttt{put} takes a local source and remote target,
+whereas \texttt{get} takes a remote source and local target.
+Check each command succeeds before continuing. \texttt{quit}
+returns to the local shell. Do not assume a transfer that
+was interrupted left no file behind; inspect or coordinate
+cleanup before retrying with another fresh destination.
+
+\begin{session}
+sftp> lpwd
+sftp> pwd
+sftp> cd /approved/new-round-01
+sftp> pwd
+sftp> ls -a
+sftp> put ./round-01.tar round-01.tar
+sftp> get round-01.tar ./remote-return/round-01.tar
+sftp> quit
+\end{session}
+
+This sequence is illustrative; no particular server output is
+assumed. \texttt{ls -a} includes names beginning with a dot.
+A blank listing or one showing only the directory references
+is expected for a new directory, depending on the server.
+Ask if the remote permissions or visibility are unclear.
+Figure~\ref{fig:48-boundary} shows the opposite directions of
+the two commands. To verify the downloaded archive from the
+local shell, compare it against the original with \cmd|cmp|.
+Use the archive that actually came back in the restore
+step; nothing on the remote host should extract into your
+active documents.
+\IndexCommand{sftp}
+
+\input{figures/chapter-48/boundary.tikz}
+
+\begin{quicktable}{p{.30\linewidth}Y}
+\toprule
+Observation & What to do next \\
+\midrule
+Upload fails or disconnects & Do not assume no remote file was
+created. Check with the host owner before retrying or removing it. \\
+Download finishes & Compare against the archive you sent before
+extracting any file. \\
+Unexpected archive entries & Stop. Verify that you obtained and
+inspected the expected trusted archive. \\
+Content differs after restore & Keep the current documents and
+the evidence; investigate the candidate and the expected source. \\
+\bottomrule
+\end{quicktable}
+
+\section{Restore into space you can leave unchanged}\label{sec:48-restore}
+
+The offline drill restores the copy in \texttt{returned}; use
+the verified \texttt{remote-return} archive path instead only
+if doing the authorized variant and it has passed comparison.
+Start with an empty \texttt{restored} directory
+(\cmd|ls -a| can show hidden entries); never run this over
+a previous extraction. Use the \texttt{-t} list first and
+stop if any paths are surprising. The parentheses run the
+extraction in a subshell, so the parent shell stays in the
+fixture root. \cmd|-x| extracts rather than lists; \cmd|-f|
+names the file to read. Since the subshell changes into
+\texttt{restored}, the archive path starts with two dots and
+a slash to reach the parent directory. Check each command
+before moving to the next one.
+
+\begin{terminal}
+ls -a ./restored
+tar -tf ./returned/round-01.tar
+(cd ./restored && tar -xf ../returned/round-01.tar)
+find ./restored -type f -print
+\end{terminal}
+
+Expect two paths under \texttt{./restored/source}, not
+two paths replacing the originals. The practice archive
+was generated without symlinks or unexpected paths. Do not
+extract an unknown archive as a privileged user, and don't
+treat this simple list step as a general-purpose inspection
+tool for hostile inputs.
+
+\begin{terminal}
+cmp ./source/contact.txt ./restored/source/contact.txt
+printf 'contact comparison status: %s\n' "$?"
+cmp ./source/notes/meeting.txt ./restored/source/notes/meeting.txt
+printf 'meeting comparison status: %s\n' "$?"
+\end{terminal}
+
+Both comparisons should be silent with status zero. Look at the
+paths and the two statuses independently. Reviewing one file
+is a useful spot check for a large backup, but cannot prove
+that every file has been restored. Here you know how many
+files to expect and can check both. In an actual recovery,
+compare restored files to a manifest from the time of
+backup rather than expecting today's edited originals to
+match. Verify that the recovered documents open in the
+application where they will be used. Work on the recovered
+copies and do not replace the current files without making
+and verifying a separate recovery plan.
+
+\input{figures/chapter-48/verification.tikz}
+
+\begin{quicktable}{p{.28\linewidth}Y}
+\toprule
+Record & Why retain it with the drill notes \\
+\midrule
+Date and archive name & Identifies which attempt was actually tested. \\
+Source selection & Shows which files or tree the archive was
+supposed to cover, and what is excluded. \\
+Delivery and comparison & Distinguishes a connection attempt from
+a returned bundle with verified content. \\
+Restore checks & Names the restored paths and whether each of the
+intended checks passed. \\
+\bottomrule
+\end{quicktable}
+
+The last question in a backup drill is who can repeat it.
+Record the restore destination policy and the outcome, not
+passwords, complete private paths, or copies of the documents.
+If only the person who made the backup can locate or decrypt
+it, the group has a coordination problem to solve before a
+real outage. A drill may uncover that failure even when every
+command worked. Figure~\ref{fig:48-verify} shows the checks
+that support a successful conclusion.
+
+\begin{takeaways}
+\item Practice the entire return route with nonsensitive data.
+\item Compare the retrieved bundle, then verify the restored paths and bytes.
+\item Keep the active documents untouched until you know what
+you can recover.
+\end{takeaways}
+
+\begin{exercise}{Compare the two transport copies}\label{ex:48-sums}
+Compute a checksum and byte count for the local handoff and
+the returned archive. They represent different points in
+the practice, even though the expected contents are the same.
+No new file is needed.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+cksum < ./handoff/round-01.tar
+cksum < ./returned/round-01.tar
+\end{terminal}
+Expect the same two numbers. A checksum here is supporting
+evidence, not proof of authorization or integrity against
+deliberate tampering.
+\end{solution}
+
+\begin{exercise}{Detect a wrong restored file}\label{ex:48-wrong}
+Compare the original contact note to the restored meeting
+note, then to the restored contact note. Show the comparison
+status immediately after each. Do not overwrite either file.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+cmp ./source/contact.txt ./restored/source/notes/meeting.txt
+printf 'wrong-path comparison status: %s\n' "$?"
+cmp ./source/contact.txt ./restored/source/contact.txt
+printf 'right-path comparison status: %s\n' "$?"
+\end{terminal}
+The first differs and gives status one, the second matches
+and gives zero. Even a successful checksum of the archive
+does not answer a question about which restored path you used.
+\end{solution}
+
+\begin{exercise}{Make a short restore record}\label{ex:48-record}
+Write a plain-text record of the offline drill with the bundle
+name, scope, and result. Check that it says ``offline'' and
+does not claim an upload. Remove the record during cleanup.
+\end{exercise}
+\begin{solution}
+If all four practice stages succeeded, a minimal record is:
+\begin{terminal}
+printf '%s\n' 'round-01.tar: offline practice' \
+    'Scope: one meeting note and one contact note' \
+    'Returned bundle and both restored documents match' \
+    > ./drill.txt
+cat ./drill.txt
+\end{terminal}
+If a check failed, record which check and what you stopped
+before doing. The record is for people who need to know where
+to resume. It is not part of the archive.
+\end{solution}
+
+Cleanup: confirm the local fixture root with \cmd|pwd|. Remove
+the exact practice files. Omit \texttt{drill.txt} if unused.
+If you did the optional remote route, remove only your local
+\texttt{remote-return/round-01.tar} and empty directory as
+well. Arrange remote cleanup with the authorized host owner;
+do not remove somebody else's files or the only copy of a
+real backup. This removes scratch data, not live documents.
+
+\begin{terminal}
+rm ./restored/source/notes/meeting.txt ./restored/source/contact.txt
+rm ./source/notes/meeting.txt ./source/contact.txt
+rm ./round-01.tar ./handoff/round-01.tar ./returned/round-01.tar
+rm ./drill.txt
+rmdir ./restored/source/notes ./restored/source ./restored
+rmdir ./source/notes ./source ./handoff ./returned
+cd / && rmdir "$lab"
+\end{terminal}
+
+\begin{furtherreading}
+\ReadingItem{OpenSSH sftp}{Interactive commands and local versus remote path operands.}{https://man.openbsd.org/sftp}
+\ReadingItem{GNU tar manual}{Creation, listing and extraction.}{https://www.gnu.org/software/tar/manual/}
+\ReadingItem{FreeBSD tar manual}{A BSD tar implementation and its option syntax.}{https://man.freebsd.org/cgi/man.cgi?query=tar&sektion=1}
+\ReadingItem{POSIX cmp}{Byte comparison and exit statuses.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/cmp.html}
+\end{furtherreading}

@@ -1,0 +1,392 @@
+You open the same three directories every week. You also open enough
+terminal windows to forget which one you set aside for experiments.
+Two small changes would help: a short name for an inspection command
+and a prompt that says which session is the experiment. Neither change
+needs to affect the other windows, and neither needs to survive
+tomorrow. Start by deciding what should not change.
+
+\begin{objectives}
+\item Try an alias and a short prompt in a child shell.
+\item Distinguish session state, inherited settings, and startup files.
+\item Test a candidate startup change without installing it, and plan a rollback.
+\end{objectives}
+
+\section{A room with its own light switch}\label{sec:43-child}
+
+Open a spare terminal window. In that window type \cmd|sh| first if
+your normal shell does not read POSIX shell syntax. The practice
+commands below use that syntax except where explicitly marked Bash or
+Zsh. Check that Bash is available, then start it without its usual
+login or interactive startup files. If the first command cannot
+locate Bash, stop before the second; the POSIX practice later in the
+chapter does not require Bash.
+
+\begin{terminal}
+command -v bash
+bash --noprofile --norc -i
+\end{terminal}
+
+\cmd|command -v| asks how the current shell resolves a name. Here we
+want a Bash executable. The long options are Bash options:
+\cmd|--noprofile| skips profile files; \cmd|--norc| skips the interactive
+run-command file; \cmd|-i| requests an interactive shell. This is a
+child shell (a separate shell process), not a different terminal.
+It can still inherit exported values from its parent. It also starts
+in the parent's working directory. Do not mistake it for a security
+sandbox: it can access the same files you can.
+
+Instead of using home files, make a new practice directory. If the
+assignment or \cmd|cd| fails, stop and do not enter the examples that
+write there. \cmd|mktemp -d| makes a fresh directory; the six Xs in the
+template are replaced. \cmd|${TMPDIR:-/tmp}| uses the temporary
+directory in the environment or falls back to \FilePath{/tmp}. The
+value was created in this child, so this chapter's cleanup is done
+before typing \cmd|exit|.
+
+\begin{terminal}
+lab=$(mktemp -d "${TMPDIR:-/tmp}/utp43.XXXXXX") && cd "$lab"
+pwd
+PS1='practice> '
+printf '%s\n' 'This command runs inside the practice shell.'
+\end{terminal}
+
+\cmd|pwd| prints the working directory. Assigning to \cmd|PS1| in Bash
+or a POSIX-style interactive shell sets the main prompt. The quotes
+hold the trailing space; the space is useful when visually separating
+the prompt from what you type. Do not type the prompt itself. In a
+screen reader, listen for whether the separator is announced in a
+helpful way; not all punctuation is spoken under all settings.
+Figure~\ref{fig:43-boundary} shows why \cmd|exit| will later recover
+the parent prompt without undoing effects on files.
+
+\input{figures/chapter-43/boundary.tikz}
+
+There are two questions to ask about a proposed change. Who should
+see it? How long should it last? If it affects only the current
+shell, the answer to the first question may be ``only this tab.''
+Even that is an approximation: a tab may contain a parent shell and
+a child shell, while only one shell has the new setting. If a program
+you start needs it, export an environment value. If tomorrow's shell
+needs it, arrange for the correct startup file to define it then.
+These are separate choices, not three spellings of the same thing.
+
+\begin{quicktable}{lY}
+\toprule
+Change & What inspecting a second shell may reveal \\
+\midrule
+Alias or prompt & Definitions made in the first shell need not appear in the second. \\
+Exported setting & Child processes can inherit it; an existing sibling window does not acquire it. \\
+Edited startup file & Future applicable shells may read it; existing ones keep their state. \\
+File written by a command & Both shells can encounter it if they can access the path. \\
+\bottomrule
+\end{quicktable}
+
+\section{A name that still lets you see the command}\label{sec:43-alias}
+
+Try shortening a read-only command. \cmd|ls -l| requests a long
+listing; \cmd|-d| lists a directory operand itself rather than
+its contents. These options make \cmd|inspect .| a way to inspect the
+current directory entry. The alias expands the first command word
+before ordinary execution; it does not erase the operand.
+
+\begin{terminal}
+alias inspect='ls -ld'
+alias inspect
+inspect .
+command ls -ld .
+\end{terminal}
+
+Both listing commands should report the same directory entry. The
+printed permission, owner, size, and date fields will depend on your
+system. The invocation \cmd|command ls -ld .| puts \cmd|command| in
+the first command-word position, so any ordinary alias called
+\cmd|ls| does not expand there, and the \cmd|command| utility also
+suppresses shell function lookup for its operand. This is not a
+promise about the executable found through your \cmd|PATH|.
+If a name does not behave as expected, consult
+Chapter~\ref{ch:36} before changing \cmd|PATH|.
+\IndexCommand{alias}\IndexCommand{unalias}\IndexTerm{aliases}
+
+\begin{terminal}
+unalias inspect
+if command -v inspect; then
+    printf '%s\n' 'Another definition exists.'
+else
+    printf '%s\n' 'The shortcut is gone.'
+fi
+\end{terminal}
+
+The test prints the resolution if one exists and chooses a message
+from the exit status. It does not execute \cmd|inspect|. Avoid
+redefining familiar names for unfamiliar behavior: your hands will
+remember the spelling on a machine that lacks your definition. In
+particular an alias that asks before deleting files is not a backup
+or a portable safety rule. The next person's shell and scripts need
+not read your alias. Pick names that announce intent and leave
+standard names intact. This also reduces the work of explaining a
+shared recipe; write the underlying command, not your alias, in team
+instructions.
+
+An alias is useful when the pieces that vary can simply follow the
+replacement. Consider a shortcut that always verifies a file before
+copying it to an argument-dependent destination. An alias cannot put
+one user-supplied argument into two independent places in the way
+that recipe needs. Use a small script with explicit arguments and
+checks instead (Chapter~\ref{ch:30}). The boundary in
+Figure~\ref{fig:43-lookup} is the practical difference: command text
+changes before execution; it is not a new executable file.
+
+\input{figures/chapter-43/lookup.tikz}
+
+\begin{dialoguebox}{A safer name}
+\Brian{Couldn't I make the ordinary delete command ask every time?}
+\Stephen{An alias could add a question in the interactive shell.}
+\Brian{Then why not count that as a safety net?}
+\Stephen{It works only where the alias takes effect. I was too quick to call that protection.}
+\Brian{So a script could use the same spelling and never ask.}
+\Stephen{Yes. Use a distinct name for convenience, and don't rely on a prompt to recover deleted files.}
+\Brian{I'd rather learn which files I'm acting on than remember which machine asks.}
+\DialogueConclusion{A shortcut is not a safety rule.}
+\end{dialoguebox}
+
+\section{A setting that travels, and a prompt that stays}
+
+Use a made-up variable instead of experimenting with your search
+path. Set it, then use \cmd|sh -c| to run the same small string of
+shell code in a new process twice. Single quotes around that string
+leave the expansion to the child; the double quotes around the
+expansion inside the string keep its result in one argument.
+\cmd|${UTP43_NOTE-unset}| means use the word \texttt{unset} only
+when the variable is unset. If the variable name was already in
+the environment, the initial \cmd|unset| clears it in this child
+Bash only.
+
+\begin{terminal}
+unset UTP43_NOTE
+UTP43_NOTE=visible
+sh -c 'printf "%s\n" "${UTP43_NOTE-unset}"'
+export UTP43_NOTE
+sh -c 'printf "%s\n" "${UTP43_NOTE-unset}"'
+unset UTP43_NOTE
+\end{terminal}
+
+Expect \texttt{unset} and then \texttt{visible}. No confirmation
+appears after the final \cmd|unset|; it removes the variable from
+this shell and the environment of children launched afterwards.
+An export is not a way to push a setting into a program already
+running. Nor is a shell variable necessarily a good place for a
+secret: a command line, an environment value or its expansion can show
+up in diagnostic information or history, depending on how it is used.
+This is deliberately a made-up word.
+
+Give a shell a prompt it can print simply. A plain word tends to work
+across terminals and assistive tools. A prompt that runs a command to
+collect data every time can make a slow operation look like a frozen
+shell. It can also reveal details of the directory or host on a shared
+screen. A prompt is a cue, not proof of context: before acting on
+relative paths, verify with \cmd|pwd|. A remote terminal that looks
+just like a local one still runs commands where the shell lives.
+
+\section{Test a proposed startup setting}
+
+A \FirstUse{startup file} is a file a shell reads automatically under
+specified circumstances. It may include commands with side effects.
+Do not source a file you did not inspect, and do not install a copied
+startup file as a shortcut to learning it. Even a shell's syntax
+check is only a grammar check: valid commands can still fail, run
+slowly, or do unwanted work. Our candidate contains only two known
+assignments of state: a prompt and an alias.
+
+\begin{terminal}
+printf '%s\n' "PS1='review> '" "alias inspect='ls -ld'" \
+    > ./candidate.sh
+cat ./candidate.sh
+sh -n ./candidate.sh
+\end{terminal}
+
+The backslash at the end of the line continues the command and is
+not followed by spaces; \cmd|>| writes a new file or truncates an
+existing one. It is safe here because this is your fresh fixture
+and the name is reserved for the candidate. \cmd|sh -n| reads
+commands without executing them and reports syntax errors to
+standard error. Silence with success status is expected. The
+separate \cmd|cat| check matters because valid syntax alone does
+not describe intent. The file is available as
+\FilePath{listings/chapter-43/candidate.sh}.
+
+For Bash-specific startup syntax, check it with \cmd|bash -n| but
+do not claim that a successful result makes it portable. To see
+the effect of our small candidate, make a new interactive Bash and
+explicitly read the file inside it. Run each of the following
+commands separately once you see a prompt. In particular, reading
+the file and invoking its alias on the same input line can fail
+because the shell reads that line before the alias exists.
+
+\begin{terminal}
+bash --noprofile --norc -i
+. ./candidate.sh
+inspect .
+exit
+\end{terminal}
+
+The dot is the POSIX command to read shell code into the current
+shell. The slash in \cmd|./candidate.sh| selects the file by path
+rather than letting the shell search for it. Expect \texttt{review>}
+in the nested child and \texttt{practice>} again after \cmd|exit|.
+The candidate still exists. The alias does not remain in the
+outer practice shell. Zsh users can try the same experiment with
+\cmd|zsh -f| in place of the Bash invocation; \cmd|-f| skips most
+startup files, not necessarily the system's \texttt{zshenv}. The
+plain prompt works in that shell too.
+
+\input{figures/chapter-43/startup.tikz}
+
+Figure~\ref{fig:43-startup} separates editing, checking, and trying.
+None of these steps automatically installs the candidate. Check the
+following routes before deciding a real file is the right place.
+Login and interactive are two distinct properties: the former is how
+the shell was invoked, the latter is whether the shell expects
+an interactive conversation. Terminal applications can choose
+how to launch the shell. The existence of a particular filename in
+your home directory does not prove that your terminal uses it.
+
+\begin{quicktable}{lY}
+\toprule
+Shell & Where to check for user-level interactive settings \\
+\midrule
+Bash & Non-login interactive normally reads \texttt{.bashrc}.
+Login shells take a profile route; a profile can explicitly read
+\texttt{.bashrc}. See the startup-files manual for ordering. \\
+Zsh & Interactive shells normally read \texttt{.zshrc} under
+\texttt{ZDOTDIR} (home if unset); login shells also have a separate
+profile and login sequence. \\
+POSIX sh & For interactive shells, check the \texttt{ENV} mechanism
+and your implementation's manual; do not assume \texttt{.shrc}
+is universal. \\
+Fish & Use Fish's own configuration syntax and startup locations.
+It does not use a POSIX \texttt{PS1} assignment for its prompt. \\
+\bottomrule
+\end{quicktable}
+
+\section{Give a lasting edit a way back}
+
+The practice stops short of modifying your actual home startup
+files. On a machine you administer for yourself, first identify the
+active shell and how your terminal launches it. Open its manual
+to the startup rules. Inspect the existing file in an editor;
+look for earlier definitions, especially for the name you plan
+to add. Keep a working terminal open, save a separate known-good
+copy under a new name that does not overwrite another backup, and
+make only one small, clearly commented change. Open a second terminal
+using the normal launch settings. Check both the changed behavior
+and that ordinary tasks still work. Do not close the working
+terminal until that new test succeeds. Terminal themes, key
+interception, and scrollback are usually application preferences
+instead, not failures of a shell startup file.
+
+If an actual edit fails, the clean child commands above are one
+possible rescue route; starting a fresh ordinary shell may just
+read the broken file again. In the working terminal, inspect the
+exact paths of the edited file and its known-good copy before
+restoring. If you also made useful edits since the copy, compare
+the two instead of overwriting blindly. Restoring a file fixes the
+next shell that reads it, not necessarily the shell already showing
+wrong behavior. In Fish use its documented startup bypass and syntax
+rather than feeding Fish configuration through Bash. If something else
+manages the file for you, such as a system administrator or setup tool,
+ask where personal configuration belongs instead of bypassing the
+manager.
+
+\begin{terminal}
+diff -u ./candidate.sh ./candidate.sh
+printf 'comparison status: %s\n' "$?"
+\end{terminal}
+
+This preliminary comparison uses the same file to give an expected
+status of zero. The \cmd|-u| option requests a unified diff, which
+shows surrounding lines for differences. Compare a candidate with
+a known-good copy this way before a real edit; status one means
+differences, not a failed comparison. Higher status means trouble.
+Check the status immediately after \cmd|diff|; another command
+would replace it. The status reports comparison, not the safety of
+the changes.
+
+\begin{takeaways}
+\item Try a shortcut in one shell before asking every new shell to load it.
+\item A child shell isolates shell state, not access to files.
+\item Retain a working session and a known-good copy for recovery.
+\end{takeaways}
+
+\begin{exercise}{A shortcut with an honest name}\label{ex:43-name}
+In the outer practice Bash define \texttt{whereami} to run \texttt{pwd}.
+Inspect its definition, invoke it, then remove it. Confirm that lookup
+no longer reports the alias. This exercise creates no files.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+alias whereami='pwd'
+alias whereami
+whereami
+unalias whereami
+command -v whereami
+\end{terminal}
+Expect the current practice path when invoking the alias. Final lookup
+has no output and a nonzero status unless the name has another definition.
+\end{solution}
+
+\begin{exercise}{A one-command setting}\label{ex:43-export}
+Pass \texttt{UTP43\_NOTE} with the value \texttt{once} to just one
+\texttt{sh} invocation without exporting it for subsequent commands.
+Rerun the child without that assignment. Leave the variable unset.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+unset UTP43_NOTE
+UTP43_NOTE=once sh -c 'printf "%s\n" "${UTP43_NOTE-unset}"'
+sh -c 'printf "%s\n" "${UTP43_NOTE-unset}"'
+\end{terminal}
+The command prefix supplies the value to this invocation of the
+external \texttt{sh} utility. Expect \texttt{once}, then \texttt{unset}.
+\end{solution}
+
+\begin{exercise}{Compare without installing}\label{ex:43-rollback}
+Copy the candidate to \texttt{before.sh}; then write a new
+\texttt{candidate.sh} with only a \texttt{second} prompt. Compare
+the versions, syntax-check the candidate, and clean up both files
+when finished. Do not install either file.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+cp ./candidate.sh ./before.sh
+printf '%s\n' "PS1='second> '" > ./candidate.sh
+diff -u ./before.sh ./candidate.sh
+sh -n ./candidate.sh
+\end{terminal}
+Expect two removed lines and one added line in the diff body. The
+syntax check should succeed. Use the chapter cleanup below to remove
+both fixtures. If you want to try before/after behavior, use a
+separate child for each candidate rather than sourcing repeatedly
+into one child: the replacement file does not itself remove an
+alias previously loaded.
+\end{solution}
+
+Cleanup: check with \cmd|pwd| that you are in the outer practice
+directory, not a different tab or shell. Remove only the two names
+you created (omit \texttt{before.sh} if you skipped that exercise).
+Then leave the empty directory and the practice shell. If
+\cmd|rmdir| refuses, inspect what you left instead of recursively
+deleting it.
+
+\begin{terminal}
+rm ./candidate.sh ./before.sh
+cd / && rmdir "$lab"
+exit
+\end{terminal}
+
+\begin{furtherreading}
+\ReadingItem{Bash startup files}{The login and interactive cases,
+including invocation as sh.}{https://www.gnu.org/software/bash/manual/html_node/Bash-Startup-Files.html}
+\ReadingItem{Zsh files}{Startup file order, including ZDOTDIR.}{https://zsh.sourceforge.io/Doc/Release/Files.html}
+\ReadingItem{Fish documentation}{Prompt and configuration in Fish syntax.}{https://fishshell.com/docs/current/}
+\ReadingItem{POSIX sh}{Invocation and the interactive ENV rule.}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/sh.html}
+\end{furtherreading}

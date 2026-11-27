@@ -1,0 +1,13 @@
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[node distance=8mm]
+\node[utp node] (app) {Report tool};
+\node[utp node,right=of app] (term) {Terminal display};
+\node[utp node,right=of term] (person) {Reader or user};
+\draw[utp arrow] (app) -- (term);
+\draw[utp arrow] (term) -- (person);
+\end{tikzpicture}
+\caption{The command chooses the output; the terminal and access tools present it.}
+\label{fig:44-layers}
+\VisualDescription{A report tool produces output, a terminal displays it, and the user reads the result directly or with an assistive reader.}
+\end{figure}

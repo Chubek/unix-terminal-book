@@ -1,0 +1,14 @@
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[node distance=6mm and 12mm]
+\node[utp node] (old) {Earlier: ten};
+\node[utp node,below=of old] (new) {Later: noon};
+\node[utp node,right=of old] (minus) {Removed: ten};
+\node[utp node,right=of new] (plus) {Added: noon};
+\draw[utp arrow] (old) -- (minus);
+\draw[utp arrow] (new) -- (plus);
+\end{tikzpicture}
+\caption{In the comparison body, minus refers to the first operand and plus to the second.}
+\label{fig:46-changes}
+\VisualDescription{Ten from the earlier version is marked removed, and noon from the later version is marked added.}
+\end{figure}
