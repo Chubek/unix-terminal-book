@@ -1,0 +1,245 @@
+You volunteer at a repair café, where each event has its own notes but the same intake form. You want a folder for each event, a stable home for the form, and a convenient way to reach it from the current event. Making copies everywhere seems easy until someone revises one and the copies stop agreeing. The trick is to decide which things need independent contents and which only need another way to reach the same contents.
+
+\begin{objectives}
+\item Create a directory and a nested directory tree, then remove only empty directories.
+\item Distinguish copying a file, adding a hard link, and creating a symbolic link.
+\item Predict why a relative symbolic link works, breaks, or starts working again.
+\end{objectives}
+
+\input{figures/chapter-8/directory-links.tikz}
+\section{Build a place for each kind of work}
+\index{mkdir@\texttt{mkdir}}
+Use a spare local \cmd|/bin/sh| shell. Choose a writable parent, such as your home directory, and check it with \cmd|pwd|. Type the lines separately; if the first name exists or its creation fails for any reason, stop and choose a fresh practice name. Don't continue inside an existing directory. Make sure \cmd|cd| succeeds and \cmd|pwd| ends in your new directory's name before continuing. The other examples begin inside the directory you create.
+
+\begin{terminal}
+mkdir ./utp-08-repair
+cd ./utp-08-repair
+pwd
+mkdir ./forms
+mkdir ./events
+mkdir ./events/june
+ls -a ./events
+\end{terminal}
+
+The last listing shows \cmd|june| together with \cmd|.| and \cmd|..|. There is no \cmd|forms| in the list because the operands describe different branches: \cmd|forms| is beside \cmd|events|, not inside it. Try saying the relative paths from your present location: ``in forms'' and ``in events, then in June.'' Naming the parent explicitly means you don't need to change into each directory to create its children. That's useful when your task spans branches of one working area.
+
+\begin{figure}[htbp]
+\centering\UTPEightTree
+\caption{The repair café tree shows the planned July branch alongside June.}
+\label{fig:8-tree}
+\VisualDescription{Forms and events are children of the practice directory. June is already a child of events; July will be another child after the next command.}
+\end{figure}
+
+Try building the July branch in one step. The \cmd|-p| option tells \cmd|mkdir| to create missing parents as needed and to accept an already existing directory at the final path. It does not say that the path was new when you typed the command. We used plain \cmd|mkdir| for the practice root precisely because it should fail rather than quietly reuse someone else's files.
+
+\begin{terminal}
+mkdir -p ./events/july/check-in
+ls -a ./events
+ls -a ./events/july
+\end{terminal}
+
+Use \cmd|pwd| if you lose track of where these commands are relative to. As Figure~\ref{fig:8-tree} shows, ``July'' alone doesn't tell you from which level to start. When building an ordinary directory hierarchy in a personal working area, naming the full branch from a known base helps avoid two common mistakes: placing a directory at the wrong depth and creating a duplicate far from the one you intended to use. If a component is a regular file instead of a directory, \cmd|mkdir -p| still cannot traverse it as a directory; read the diagnostic rather than treating the option as a general repair.
+
+\section{An empty directory is an easy test}
+\index{rmdir@\texttt{rmdir}}
+If the July work is canceled, test removal on the directory that contains \cmd|check-in|. Unlike a recursive removal, \cmd|rmdir| refuses a directory that still holds entries besides its own dot and dot-dot. In this practice case the first command fails intentionally; exact wording varies. Inspect what was left, then work from child to parent:
+
+\begin{terminal}
+rmdir ./events/july
+ls -a ./events/july
+rmdir ./events/july/check-in
+rmdir ./events/july
+ls -a ./events
+\end{terminal}
+
+If removing an apparently empty directory fails, look for dot-prefixed names with \cmd|ls -a| and also read the error. ``Not empty'' and ``permission denied'' ask for different responses. The presence of a hidden file is a reason to investigate, not to add an option that removes more than you planned. Project and application directories sometimes hold preferences or markers that are intentionally hidden from a default listing. Don't remove those just to make \cmd|rmdir| succeed.
+
+It helps to distinguish a directory's own name from the entries you can find by opening it. Your working directory's parent contains the name you used to enter it. Inside the directory are the names for its contents. Removing an empty child is a change to its parent: the child name disappears from the parent listing, but neighboring entries remain. This also explains why renaming a whole directory can affect every address beneath it without having to rename all the child entries individually. The June folder can keep the same internal filename even if the cafe renames the events branch. If a colleague arrives with a saved address beginning with the old branch name, that address will no longer lead through the hierarchy. Thinking in terms of steps along an address makes this easier to predict than thinking only in terms of icons.
+
+\begin{quicktable}{M{1.22in}Y Y}
+\toprule
+Command & Intended use & Important refusal or exception\\
+\midrule
+mkdir ./name & Create one new directory. & Fails if that path already exists or the parent cannot be used.\\
+mkdir -p ./a/b & Ensure these directory components exist. & Can succeed without creating anything; cannot turn a regular file into a directory.\\
+rmdir ./name & Remove one empty directory. & Refuses a nonempty one; other errors can include permission problems.\\
+\bottomrule
+\end{quicktable}
+
+\section{Two names for one underlying file}
+\index{ln@\texttt{ln}}
+\index{hard link}
+Construct a practice master and add another name for it. Use the \cmd|printf| recipe from Chapter~\ref{ch:7} only with this fresh file. With no option, \cmd|ln| makes a \FirstUse{hard link}: it inserts another directory entry for the existing file. This is different from copying. In Figure~\ref{fig:8-hard}, neither name points to the other name; they both refer to the same file. The word ``original'' describes which name existed first, not a special job the first name retains afterward.
+
+\begin{terminal}
+printf '%s\n' 'Item to repair:' > ./forms/intake.txt
+ln ./forms/intake.txt ./events/june/intake-same.txt
+ls -li ./forms/intake.txt ./events/june/intake-same.txt
+\end{terminal}
+
+The \cmd|-l| option requests the long listing; \cmd|-i| adds a file serial number, often called the inode number, at the start. In the long listing, the link count follows the permissions field. Inside this ordinary same-filesystem exercise, look for an equal serial number for the two paths and a link count of two. Don't compare inode numbers from different filesystems to establish identity: the same number can be used independently on each. Other columns report details such as owner, size, and modification time; don't rely on their alignment or spelling across systems.
+
+\begin{figure}[htbp]
+\centering\UTPEightHard
+\caption{A hard link adds a directory entry for the same underlying file.}
+\label{fig:8-hard}
+\VisualDescription{Arrows from the two intake filenames end at one file. Removing or renaming one entry need not affect the other.}
+\end{figure}
+
+If an application writes new bytes \emph{into} that file, both names reach the change. Not every application saves by writing into the same file: some editors construct a fresh file and replace the directory entry. Then the name the editor saved and the other hard-link name can refer to different files. Here is a gentler way to distinguish name from file. Rename one entry within the same practice filesystem, and check both names that remain:
+
+\begin{terminal}
+mv -i ./forms/intake.txt ./forms/intake-master.txt
+ls -li ./forms/intake-master.txt ./events/june/intake-same.txt
+cmp ./forms/intake-master.txt ./events/june/intake-same.txt
+\end{terminal}
+
+If the destination already exists, refuse the move and inspect. Otherwise, the renamed entry and the June entry still refer to the same file. The comparison is silent, as expected, but \cmd|cmp| alone wouldn't tell you that the names share a file: two independent copies might also have equal bytes. Hard links normally require the names to be on the same filesystem and are not a way for ordinary users to link directories. If a volume or filesystem doesn't support your planned link, don't try to force it. Make a verified copy if independent contents are appropriate, or use a symbolic link where the arrangement and filesystem permit it.
+
+\section{A symbolic link stores a route}
+\index{symbolic link}
+With \cmd|ln -s|, the new entry is a \FirstUse{symbolic link}, often shortened to \emph{symlink}. It carries the target path as text, not the target file's contents or the same underlying file identity. The two operands deserve separate attention. In the next command, the second operand describes where the new link will be created, relative to your working directory; the first describes what route the link stores. Because the stored route is relative, it will be interpreted from the directory \emph{containing the link}, namely \cmd|events/june|. Two \cmd|..| steps get back to the practice root and then \cmd|forms| leads to the master.
+
+\begin{terminal}
+ln -s ../../forms/intake-master.txt ./events/june/intake-way.txt
+ls -l ./events/june/intake-way.txt
+cmp ./forms/intake-master.txt ./events/june/intake-way.txt
+\end{terminal}
+
+Run this from the practice root. An arrow in the long listing normally displays the stored target. The comparison reads through that route and succeeds. Figure~\ref{fig:8-route} traces it without relying on the shell remaining in the linking directory. If you had given \cmd|./forms/intake-master.txt| as the target text, the shell would not rewrite it into a route starting at the practice root. That path would ask for \cmd|forms| inside \cmd|events/june| when you followed the link.
+
+\begin{figure}[htbp]
+\centering\UTPEightRoute
+\caption{A relative symbolic link is followed starting at the link's parent.}
+\label{fig:8-route}
+\VisualDescription{Start in June, step up to events, step up again to the practice root, and then descend through forms to the master.}
+\end{figure}
+
+You can store an absolute target instead, but then the link may stop working if you move the whole collection or take it to another machine. With a relative target, moving the whole tree together can preserve the same internal route. Moving just the link to a different depth can break it; renaming its target also can. This behaviour is useful when you intentionally want a role such as ``current form'' to resolve to a chosen path without having to copy its contents into each event.
+
+\begin{terminal}
+mv -i ./forms/intake-master.txt ./forms/intake-revised.txt
+ls -l ./events/june/intake-way.txt
+cmp ./forms/intake-revised.txt ./events/june/intake-way.txt
+cmp ./forms/intake-revised.txt ./events/june/intake-same.txt
+\end{terminal}
+
+The first comparison reports a read problem: the link still exists, but the path it stores cannot be followed to a file. That is a \emph{dangling link}. The next comparison succeeds through the hard link, which did not depend on the target name. Before putting the master back, list the forms directory and confirm that the revised name is present and the intended return path is free.
+
+\begin{terminal}
+ls -a ./forms
+mv -i ./forms/intake-revised.txt ./forms/intake-master.txt
+cmp ./forms/intake-master.txt ./events/june/intake-way.txt
+\end{terminal}
+
+Returning the master to its earlier name makes the symbolic link work again. Don't judge link health from color in a directory listing: colors vary with terminal settings, and some listings have no color. Inspect the stored route and verify the operation that actually needs to reach the target.
+
+\subsection{When the link leads to a directory}
+Chapter~\ref{ch:6} described navigation through an ordinary tree. A link lets the shell present two different routes to one working directory. Here is a separate practice link whose target is \cmd|forms| instead of a single document. Verify the practice root first and type the lines separately. If you cannot enter the new link, stop before running the final change of directory.
+
+\begin{terminal}
+ln -s ../forms ./events/current-forms
+cd -L ./events/current-forms
+pwd -L
+pwd -P
+cd -L ../..
+pwd
+\end{terminal}
+
+The \cmd|-L| option asks the shell to use the logical route: in this example \cmd|pwd -L| should end with \cmd|/events/current-forms|. The \cmd|-P| form of \cmd|pwd| asks for the physical path, which leads to the actual forms directory instead. Both are reports about the same working directory. The final change deliberately uses the logical parent steps to return to the practice root; check this before continuing. Two physical parent steps from forms would not reach the same place. This is why using \cmd|..| by guesswork after entering an unfamiliar link can be misleading, and why a link's visible position in a tree doesn't necessarily describe the underlying filesystem relationship.
+
+If your coworker saved the physical route while you saved the logical one, the two addresses can both be right today. Which should appear in a shared instruction? For a stable link whose purpose is to keep a friendly name while targets change, the logical address is meaningful. If someone needs to investigate where the files really are, a physical path helps identify the target. Neither report adds access rights, and in a changing shared tree you should recheck the result before writing.
+
+\section{Choose for the next person who opens it}
+Imagine it is the week after the June event. Someone fixes a typo in the intake form and asks whether the fix will show up in June's folder. With independent copies, it doesn't update the June copy; that is sometimes exactly what you want for old records. With a symbolic link to the master path, the June entry leads to whichever file is now at that address, so it can show the revised form even if the editor replaced the master file with a fresh one. A hard link refers to the same underlying file only while both entries still refer to that file. It follows changes written into the shared file, but won't automatically follow a replacement at a particular name.
+
+There is no single kind of link that means ``make sure our two copies stay in sync.'' A symbolic link has no separate copy to synchronize. A hard link has no knowledge of which name is the master. A copy doesn't share later changes. If the cafe needs to preserve the form June actually used while letting future events open the latest one, keep an independent June copy under a date and a separately named route to the current master. Avoid giving those two items interchangeable names; the distinction should be visible to someone who didn't make the links.
+
+Links also change what it means to share one item. A colleague who receives only a relative symbolic link may not have the target where its stored route expects it. Sending the document itself requires confirming that the transfer produces a readable regular file on the other side, or providing the surrounding collection with its internal layout intact. Do not take a symbolic link shown in an archive listing as evidence that the archive contains its target. In an ordinary shared project, ask whether the person receiving your package needs a route or the actual document. A quick read from their destination is better evidence than success in your source directory.
+
+The same thinking helps diagnose a mistaken link. Start by reading the name and route without writing to the target. Work out which directory contains the link, then trace relative components using that directory as the base. If the path arrives somewhere unexpected, keep both the link and the files until you know which entry was meant to move. A correction to a link's route is not a correction to the underlying file. If an application instead says it opened a document but its contents are stale, check whether the old item is an independent copy or a hard link to an older file. A byte comparison can confirm a difference, but the link information explains how the difference arose.
+
+\begin{platformnote}{Linux, macOS, and the BSD systems}
+The basic forms here use the POSIX interfaces for \texttt{mkdir}, \texttt{rmdir}, \texttt{ln}, and \texttt{ls}. Formatting, error wording, and additional options differ among the GNU utilities and the utilities on macOS, FreeBSD, OpenBSD, and NetBSD. Link support depends on the filesystem as well as the operating system. Check that the practice root is on a filesystem that supports the link you are making; a removable or shared volume may behave differently from your home directory.
+\end{platformnote}
+
+\begin{quicktable}{M{1.1in}Y Y}
+\toprule
+Method & What a fresh name represents & Effect of renaming the old name\\
+\midrule
+cp -i & Independent copy of the file's bytes in this ordinary case. & Does not change the new file.\\
+ln & Second name for the same file; same filesystem required. & Does not break the second name.\\
+ln -s & Stored path; can lead to another filesystem or a directory. & Can leave a dangling route.\\
+\bottomrule
+\end{quicktable}
+
+\begin{dialoguebox}{Is a route the same as a duplicate?}
+\Brian{If two names open the same text, how can I tell whether I copied or linked it?}
+\Stephen{Compare them with \texttt{cmp}.}
+\Brian{That only tells me whether they agree today.}
+\Stephen{Right. Look for a stored route with \texttt{ls -l}; for ordinary files on one filesystem, compare their file numbers with \texttt{ls -i}.}
+\Brian{What if I want every event to keep the form it actually used?}
+\Stephen{Then use copies. A link is useful when you want ongoing access to the master instead.}
+\Brian{So I should choose by what must change together, not by what matches now.}
+\DialogueConclusion{Choose by what should stay independent.}
+\end{dialoguebox}
+
+\section{Practice and clean up}
+The repository listing \texttt{check-links.sh} in the Chapter 8 listings is a verifier for these examples, not a step to run in this exercise. It makes and removes its own separate fixture.
+
+Stay in this chapter's practice root. Clean up an exercise link with \cmd|rm -i| and its exact path, omitting a trailing slash; the link name is removed, not the file or directory it leads to. First read the listing and respond only for the link you made. When all exercises are over, the worked examples leave two entries in \cmd|./events/june|, named \cmd|intake-way.txt| and \cmd|intake-same.txt|, and the master \cmd|./forms/intake-master.txt|. If you made the link to the forms directory, you also have \cmd|./events/current-forms|. Remove those entries individually with interactive removal; this permanently removes the practice names. Use \cmd|rmdir| on \cmd|./events/june|, then \cmd|./events| and \cmd|./forms|, only if empty. Leave with \cmd|cd ..| and remove only your empty practice root. Use no recursive removal, and keep the folder if anything about its contents is uncertain.
+
+\begin{exercise}{A branch with two levels}
+\label{ex:8-branch}
+Create a branch for August with a child directory for notes, then remove the empty directories bottom-up. Check that June remains.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+mkdir -p ./events/august/notes
+ls -a ./events/august
+rmdir ./events/august/notes
+rmdir ./events/august
+ls -a ./events
+\end{terminal}
+The final listing shows June but not August; no exercise files remain.
+\end{solution}
+
+\begin{exercise}{An independent intake form}
+\label{ex:8-independent}
+Create an independent copy inside June. Verify byte equality and distinguish it from the hard link. Then remove just the copy.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+cp -i ./forms/intake-master.txt ./events/june/independent.txt
+cmp ./forms/intake-master.txt ./events/june/independent.txt
+ls -li ./events/june/independent.txt ./events/june/intake-same.txt
+rm -i ./events/june/independent.txt
+\end{terminal}
+The comparison is silent, but the serial numbers differ on the same filesystem.
+\end{solution}
+
+\begin{exercise}{A shorter route}
+\label{ex:8-next-door}
+Make a symbolic link in \texttt{events} rather than in June. Work out the relative target before typing. Check the link with a comparison and then remove only the link name.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+ln -s ../forms/intake-master.txt ./events/shortcut.txt
+ls -l ./events/shortcut.txt
+cmp ./forms/intake-master.txt ./events/shortcut.txt
+rm -i ./events/shortcut.txt
+\end{terminal}
+One parent step gets to the practice root. The stored path should match that plan and the comparison should be silent.
+\end{solution}
+
+\begin{takeaways}
+\item Create a fresh practice root with plain \texttt{mkdir}; use \texttt{mkdir -p} for planned directory trees below it.
+\item \texttt{rmdir} is a useful refusal check when a directory is supposed to be empty.
+\item A hard link refers to a file; a symbolic link stores a path followed later.
+\end{takeaways}
+
+\begin{furtherreading}
+\ReadingItem{POSIX ln}{The Open Group specifies hard-link and symbolic-link creation}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/ln.html}
+\ReadingItem{POSIX mkdir}{The Open Group specifies missing and existing directory handling}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/mkdir.html}
+\ReadingItem{FreeBSD symlink(7)}{A system manual discusses symbolic link handling by commands}{https://man.freebsd.org/cgi/man.cgi?query=symlink&sektion=7}
+\end{furtherreading}

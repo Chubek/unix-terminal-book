@@ -1,0 +1,226 @@
+A housing cooperative has sent you three folders of meeting records. You want the latest agenda to print, but nobody remembers which folder holds it. Opening every document would answer a different question: first you simply need a list of plausible filenames. \cmd|find| can make that list while leaving all the records untouched.
+
+\begin{objectives}
+\item Search below a known starting path and recognize the paths printed in the result.
+\item Pass a quoted name pattern to \texttt{find} rather than asking the shell to expand it.
+\item Combine tests for a name and a file type, including dot-prefixed names.
+\item Distinguish an empty result from an incomplete or failed search.
+\end{objectives}
+
+\input{figures/chapter-9/search.tikz}
+\section{Draw a boundary before you search}
+\index{find@\texttt{find}}
+Use a spare local \cmd|/bin/sh| shell. Choose a writable parent directory and check \cmd|pwd|. Type the lines separately. If \cmd|mkdir| fails, stop rather than continuing in an existing directory. Choose a new practice root name if necessary and use it throughout.
+
+\begin{terminal}
+mkdir ./utp-09-records
+cd ./utp-09-records
+pwd
+\end{terminal}
+
+Stop if \cmd|cd| failed or if \cmd|pwd| does not show the fresh directory inside the parent you just checked. Only then make the fixture below. The \cmd|-p| option tells \cmd|mkdir| to create missing parent directories along the requested paths. Here all three paths have the same parent, \cmd|./records|. Unlike the cooperative's real folders, this tree contains only short names and empty regular files.
+
+\begin{terminal}
+mkdir -p ./records/april ./records/may ./records/.drafts
+touch ./records/april/agenda.txt ./records/may/agenda.txt
+touch './records/may/Final Agenda.txt' ./records/.drafts/agenda.txt
+mkdir ./records/may/agenda-old.txt
+\end{terminal}
+
+The command \cmd|touch| creates an empty file at a new path; given an existing file, it can change timestamps instead. It is suitable for our freshly made fixture, not a way to inspect someone else's files. The last line deliberately makes a directory with a filename-like ending. That distinction will matter.
+
+Start with a short read-only walk. The starting directory is itself one of the paths visited. Explicit \cmd|-print| asks for each path that passes the tests; there are no tests yet, so it prints all paths reached. The word after \cmd|find| is an address, not a keyword. If you change the working directory, the same relative address can point somewhere else.
+
+\begin{terminal}
+find ./records -print
+\end{terminal}
+
+Compare the names in the result against Figure~\ref{fig:9-boundary}. Your output order can differ. \cmd|find| visits directory entries in an order you shouldn't depend on; the most recently printed path is not necessarily the newest file. The output is useful because it preserves paths: three copies of \cmd|agenda.txt| in different folders can be picked out by the parents that precede the final name.
+
+\begin{figure}[htbp]
+\centering\UTPNineBoundary
+\caption{A starting path names the branch to visit, not the whole computer.}
+\label{fig:9-boundary}
+\VisualDescription{From the practice root, the walk descends from records into April, May, and dot-drafts. The practice root itself is outside this walk.}
+\end{figure}
+
+An explicit starting path is a safety and relevance choice. \cmd|find . -print| is fine when you're already at the confirmed root of a small project. It is not interchangeable with \cmd|find ./records -print| if sibling directories exist. Starting at the filesystem root can visit huge trees and encounter unreadable directories, external storage, or unrelated private filenames. Start with the smallest directory likely to contain what you want; widen the scope only when you can explain why. If real output is too voluminous, interrupt with \KeyChord{Ctrl}{C}; it is a read-only example, so interrupting it stops the search rather than undoing file work.
+
+\section{Match the last component}
+\index{filename pattern}
+The \cmd|-name| test compares just the last path component against a pattern. To seek an exact spelling, give that spelling without a wildcard:
+
+\begin{terminal}
+find ./records -name 'agenda.txt' -print
+\end{terminal}
+
+There should be three results: one each in April, May, and \cmd|.drafts|. The quotes don't make the search insensitive to case. In particular, \cmd|Final Agenda.txt| is not a match because the name is different. Notice how the hidden parent still appears in an output path: \cmd|find| walks into directories whose names begin with a dot, rather than adopting the default visibility of \cmd|ls|. A search over real work could therefore report names a file manager is set to conceal. Treat the paths as potentially private when sharing the results.
+
+For filenames ending in \cmd|.txt|, put an asterisk before the suffix. In this use the asterisk means any sequence of characters, including no characters. It does not cross directories here because \cmd|-name| compares one final component at a time. This test doesn't examine a file's bytes, so a directory whose name ends in \cmd|.txt| can pass too. Compare these two searches:
+
+\begin{terminal}
+find ./records -name '*.txt' -print
+find ./records -type f -name '*.txt' -print
+\end{terminal}
+
+The first command lists four regular files and one directory. The second lists four regular files; \cmd|-type f| requires a regular file. Adjacent tests in these examples mean both must pass. \cmd|-print| only runs for the paths that pass everything before it. Chapter~\ref{ch:14} develops patterns further; here the working rule is to describe the path's last name and type separately. You could also use \cmd|-type d| for a directory or \cmd|-type l| for a symbolic link under the ordinary traversal used in this chapter.
+
+\begin{figure}[htbp]
+\centering\UTPNineTests
+\caption{Walk first, then test each path that was reached.}
+\label{fig:9-tests}
+\VisualDescription{A visited path goes through the file-type test and then the name test. Passing both leads to printing; other paths are not printed.}
+\end{figure}
+
+As Figure~\ref{fig:9-tests} suggests, matching and traversal answer separate questions. \cmd|-type f| doesn't tell \cmd|find| to ignore all directories; it still needs to walk into directories in order to find files. For instance this next directory-only query reports a directory, but does not change anything about its contents:
+
+\begin{terminal}
+find ./records -type d -name '*.txt' -print
+find ./records -type d -name '.*' -print
+\end{terminal}
+
+The first result is the old-agenda directory under May. The second is \cmd|./records/.drafts|. Add quotation marks around names that contain spaces as well as patterns containing an asterisk. For the title-case name in May:
+
+\begin{terminal}
+find ./records -type f -name 'Final Agenda.txt' -print
+\end{terminal}
+
+\begin{quicktable}{M{1.3in}Y Y}
+\toprule
+Element & What it controls & What it does not control\\
+\midrule
+./records & Where the walk begins. & Which reached files are printed.\\
+-name 'agenda.txt' & Whether the last component matches. & Whether the file contains a particular word.\\
+-type f & Whether the reached object is a regular file. & Whether directories are traversed.\\
+-print & Whether a selected path is displayed. & Whether a file is copied, changed, or removed.\\
+\bottomrule
+\end{quicktable}
+
+\section{Keep the star for the right reader}
+Before \cmd|find| sees any words, your shell reads the command line. An unquoted \cmd|*.txt| can match names in the working directory and be turned into literal operands. POSIX \cmd|sh| leaves an unmatched pattern unchanged, so an unquoted search can appear to work as long as nothing matches in the working directory. Don't rely on that accident: a file added here can change it, and other shells or settings can report an error or drop the pattern. With \cmd|'*.txt'|, the shell strips the quotes and passes the five literal characters inside, including the asterisk. \cmd|find| interprets that asterisk separately for each name it encounters in the search. Figure~\ref{fig:9-quotes} compares the two routes.
+
+\begin{figure}[htbp]
+\centering\UTPNineQuotes
+\caption{Quoting decides which reader gets the asterisk.}
+\label{fig:9-quotes}
+\VisualDescription{With quotes the asterisk reaches find. Without quotes the shell may replace the pattern before find runs.}
+\end{figure}
+
+Here's a way to show the difference without asking \cmd|find| to process ill-formed arguments. Create exactly one top-level sample with a \cmd|.txt| ending. \cmd|printf| uses its format once for the single argument in each line. The first line of output should be \cmd|*.txt| and the second \cmd|shell-sample.txt|:
+
+\begin{terminal}
+touch ./shell-sample.txt
+printf '%s\n' '*.txt'
+printf '%s\n' *.txt
+find ./records -type f -name '*.txt' -print
+\end{terminal}
+
+The final search still reports the four intended files and never reports the top-level sample because the sample is outside \cmd|./records|. This is a useful diagnostic pattern: if a search works in one directory and fails in another, check whether what you passed was a fixed search expression or an unquoted pattern the shell expanded before the search.
+
+\section{Inspect a result before deciding what to do}
+Suppose you want an exact name that is not present. \cmd|find| ordinarily succeeds when it searches successfully and finds no matches. The exit status, a numeric result, reports whether the walk encountered errors, not how many names passed. In \cmd|sh|, \cmd|$?| is that status for the last command; print it immediately before any other command replaces it. Compare two safe queries:
+
+\begin{terminal}
+find ./records -type f -name 'agenda-final.txt' -print
+printf '%s\n' "$?"
+find ./missing-records -print
+printf '%s\n' "$?"
+\end{terminal}
+
+The first search returns zero with no matching path; the second issues a diagnostic and returns a nonzero status because the starting path is missing. A real search can print some paths and report an error for a different branch. In that case, the printed paths might be valid, but you don't have a complete result. In an apparently successful search without matches, reconsider the starting path, spelling, case, file type, and whether the expected branch is actually a symbolic link. By default the basic walk shown here does not descend through symlinked directories. Avoid reaching for an option that follows every link until you know which branches that would add.
+
+\begin{quicktable}{Y Y}
+\toprule
+Observation & Reasonable next check\\
+\midrule
+Zero lines and status zero & Look for spelling or case differences and check the starting path.\\
+Some paths and an error & Treat the result as incomplete; read the error and identify the affected branch.\\
+Several plausible paths & Read the parent directories or inspect the individual candidates before choosing.\\
+A strange or broken-looking printed name & Do not paste it as an unquoted command argument; inspect it with a safe viewer.\\
+\bottomrule
+\end{quicktable}
+
+Real names can contain spaces, tabs, and even line breaks. A display with one path apparently on each line is not a dependable machine-readable list for arbitrary input. In this chapter you make a decision interactively from short controlled names; don't pass the displayed output directly to a tool that changes or removes files. Even in a small project, quote a name as one operand and recheck it at the time of action. If a file seems to have vanished since the result was printed, the directory may have changed while you were looking.
+
+\section{Narrow the question a little at a time}
+A search for the latest agenda starts with a word in conversation, ``latest,'' which a filename can't always answer. Maybe the coordinator uses a dated filename, or maybe each event folder has a file simply called \cmd|agenda.txt|. You could start with the broad text-ending pattern to learn the naming scheme. In the practice tree that would reveal the two capitalization styles without requiring any guess about the first letter. If you are fairly sure it is in May, narrow the starting path to that branch. The two changes answer different questions: one asks what counts as a candidate, while the other decides which part of the collection to consider at all.
+
+Names themselves can mislead. A file called ``Final'' may have been superseded; a more recently modified draft may have nothing to do with the meeting; an archive might keep last month's file under an undated filename. Report your conclusion in terms of the evidence you actually have. ``I found the two likely May candidates'' is useful if someone still needs to check the date inside. A file search doesn't need to answer all questions at once. Once you have two readable paths, inspecting them or asking the organizer is cheaper than guessing a more elaborate search expression. Chapter~\ref{ch:19} takes up searching by \emph{content} as a separate operation.
+
+Try a pattern that has text on both sides of the asterisk. In the example below, it calls for a name starting with \cmd|agenda| and ending with \cmd|.txt|. The asterisk can match no characters, so \cmd|agenda.txt| qualifies. We leave the type test out on purpose to examine the name rule by itself:
+
+\begin{terminal}
+find ./records/may -name 'agenda*.txt' -print
+\end{terminal}
+
+Expect both \cmd|agenda.txt| (the file) and \cmd|agenda-old.txt| (the directory). The file with a space and capital letters doesn't start with that sequence. This is a good stress test for your explanation: if you thought the star must match at least one letter, you would unexpectedly omit the ordinary agenda. If you thought matching a suffix only selected files, you would be surprised by the directory. Put the type test back when the next step needs a regular file rather than a folder.
+
+A dot at the beginning of a name is another place where you should ask who is matching. At the shell prompt, an unquoted wildcard often omits names beginning with a dot unless the pattern begins with a dot or a setting changes the rule. The \cmd|-name| test is not the shell's directory expansion; it considers names that the \cmd|find| walk has already reached. In the earlier example, the hidden parent doesn't appear because a wildcard matched the whole path. It appears because the walk enters that directory and the last component \cmd|agenda.txt| matches exactly.
+
+When you share a search, record the starting path along with the expression. A colleague who repeats \cmd|find .| from a different working directory hasn't repeated your search, even though the command looks identical. If a screenshot or chat paste exposes a private directory name, share the expression and a short description instead. For example, give the number of plausible matches and the general branch you checked, not a list of every unrelated path the utility reported.
+
+One more distinction helps when a heading looks familiar but your exact query misses it. The filesystem can be configured to treat some differences in spelling as interchangeable when you open a path. The \cmd|-name| test still matches the spelling it obtains from the walk. You do not need to rename the record just to find it. First use the broader suffix pattern and read the name that is actually reported. Then decide whether an exact spelling or a less specific test is the useful search. If two people work on different volumes, neither should assume the other volume looks up names by the same rules.
+
+\begin{platformnote}{Linux, macOS, and the BSD systems}
+Use the explicit starting path, \texttt{-name}, \texttt{-type}, and \texttt{-print} forms shown here rather than extrapolating from somebody's system-specific options. GNU and BSD implementations provide more tests and options, but not always the same ones. Across Linux, macOS, FreeBSD, OpenBSD, and NetBSD, consult the local page before borrowing a command that follows links, alters traversal, or does more than print.
+\end{platformnote}
+
+\begin{dialoguebox}{Does nothing mean nothing?}
+\Brian{My search printed nothing. Can I tell everyone there was no agenda?}
+\Stephen{Only if your search covered the place and spelling they meant.}
+\Brian{I gave it the right folder. Isn't that enough?}
+\Stephen{It could be a different name, or the walk might have reported an unreadable branch.}
+\Brian{So a successful walk isn't necessarily a successful guess?}
+\Stephen{Exactly. Check the errors first, then try a broader name pattern inside the same branch.}
+\DialogueConclusion{No match is not proof of absence.}
+\end{dialoguebox}
+
+\section{Practice and clean up}
+The three searches below do not change files. To remove the fixture afterward, confirm the working directory with \cmd|pwd|. Use \cmd|rm -i| one path at a time for the four exact regular-file names in \cmd|records| and \cmd|./shell-sample.txt| in the root. This is permanent removal; don't use a pattern. Then use \cmd|rmdir| on empty \cmd|./records/may/agenda-old.txt|, the three empty child directories of \cmd|records|, and \cmd|./records|, in that order. Leave with \cmd|cd ..| and remove the empty practice root using its exact name. If a directory refuses removal, inspect it; it's fine to leave it rather than delete an unexpected item.
+
+\begin{exercise}{Which agendas really are files?}
+\label{ex:9-agendas}
+Print just regular files with the exact lowercase name \texttt{agenda.txt}. Explain what limits the results and why a hidden parent is present. There is no cleanup for this read-only exercise.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+find ./records -type f -name 'agenda.txt' -print
+\end{terminal}
+Expect three paths, including one in \texttt{.drafts}. The name test selects the last component, not the parent; traversal includes dot-prefixed entries.
+\end{solution}
+
+\begin{exercise}{A scope you can explain}
+\label{ex:9-scope}
+List the regular text-named files below May, but not below April. No new files need cleanup. Explain why the directory whose name ends in \texttt{.txt} isn't printed.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+find ./records/may -type f -name '*.txt' -print
+\end{terminal}
+Expect the two regular files in May. The old-agenda directory can pass the name test but fails the file-type test.
+\end{solution}
+
+\begin{exercise}{Separate absence from failure}
+\label{ex:9-absence}
+Search for \texttt{minutes.txt} inside the fixture, then run a search with a nonexistent starting path. Check each status immediately. No changes are made.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+find ./records -name 'minutes.txt' -print
+printf '%s\n' "$?"
+find ./not-here -name 'minutes.txt' -print
+printf '%s\n' "$?"
+\end{terminal}
+The first is quiet and successful. The second issues an error and reports a nonzero result. Neither action establishes what could exist outside the starting path.
+\end{solution}
+
+\begin{takeaways}
+\item Choose the starting path before choosing a pattern.
+\item Quote patterns for \texttt{find}; distinguish the last component from the whole path.
+\item A successful read-only walk can return no match, and an unsuccessful one can return some.
+\end{takeaways}
+
+\begin{furtherreading}
+\ReadingItem{POSIX find}{The Open Group defines traversal, pattern matching, type tests and status}{https://pubs.opengroup.org/onlinepubs/9799919799/utilities/find.html}
+\ReadingItem{OpenBSD find(1)}{A BSD manual distinguishes the starting path, expression and traversal choices}{https://man.openbsd.org/find.1}
+\end{furtherreading}

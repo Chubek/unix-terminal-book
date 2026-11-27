@@ -1,0 +1,11 @@
+\begin{tikzpicture}
+\node[utp node,minimum width=33mm] (a) at (-2.4,1.15) {shell};
+\node[utp node,minimum width=33mm] (b) at (-2.4,0) {local database};
+\node[utp node,minimum width=33mm] (c) at (-2.4,-1.15) {catalog};
+\node[utp node,minimum width=40mm] (x) at (2.4,1.15) {what runs here?};
+\node[utp node,minimum width=40mm] (y) at (2.4,0) {what is installed?};
+\node[utp node,minimum width=40mm] (z) at (2.4,-1.15) {what is available?};
+\draw[utp arrow] (a)--(x);
+\draw[utp arrow] (b)--(y);
+\draw[utp arrow] (c)--(z);
+\end{tikzpicture}

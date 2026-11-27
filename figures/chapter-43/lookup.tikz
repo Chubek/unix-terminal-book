@@ -1,0 +1,13 @@
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[node distance=8mm]
+\node[utp node] (input) {\texttt{inspect .}};
+\node[utp node,right=of input] (expand) {\texttt{ls -ld .}};
+\node[utp node,right=of expand] (output) {Directory entry};
+\draw[utp arrow] (input) -- (expand);
+\draw[utp arrow] (expand) -- (output);
+\end{tikzpicture}
+\caption{An alias replaces the command word and leaves the supplied operand.}
+\label{fig:43-lookup}
+\VisualDescription{The shell replaces inspect with ls minus l d; the dot remains in the command.}
+\end{figure}

@@ -1,0 +1,14 @@
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[node distance=14mm]
+\node[utp node] (parent) {Parent shell};
+\node[utp node,right=of parent] (child) {Practice shell};
+\node[utp node,below=of child] (files) {Practice files};
+\draw[utp arrow] (parent) -- (child);
+\draw[utp arrow] (child) -- (files);
+\draw[utp arrow] (parent) |- (files);
+\end{tikzpicture}
+\caption{A shell process has its own prompt, but access to files is not isolated.}
+\label{fig:43-boundary}
+\VisualDescription{The parent starts the practice shell. Both shells can reach the same practice files.}
+\end{figure}
