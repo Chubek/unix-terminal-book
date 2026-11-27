@@ -11,7 +11,7 @@ You have finished a trip plan and want to clear away drafts. A list of four simi
 \section{Give the practice a boundary}
 \index{mktemp@\texttt{mktemp}}
 \index{practice directory}
-A folder made for practice is not a special kind of filesystem. It is an ordinary directory with three advantages: the contents are known, the paths are explicit, and none of the sample data matters. A temporary directory also is not a secure sandbox. Commands can still reach outside it if you give them other paths. Always check the working directory and use exact names you meant to make there.
+A folder made for practice is an ordinary directory with known contents, explicit paths, and data you can afford to lose. A private directory limits who can open it; it does not limit where \emph{your commands} can go. A sandbox would enforce a boundary on those commands. Here a wrong absolute path or a relative path that walks out of the directory can still affect your real files. Always check the working directory and use exact names you meant to make there.
 
 Use a spare local \cmd|/bin/sh| shell and request a fresh directory. Run the first line alone. If it prints an error, stop and don't try the \cmd|cd| line. Run the next line to see the result: it must be a nonempty absolute path, beginning with \cmd|/|, with a final name beginning \cmd|utp-12.|. If it isn't, stop and use the plain \cmd|mkdir| alternative below. \cmd|mktemp| and its \cmd|-d| form are common on GNU/Linux and contemporary macOS and BSD, not a POSIX utility requirement. If it isn't available, that is another reason to use the fallback.
 
@@ -27,7 +27,7 @@ ls -a .
 
 If changing directory fails, stop. Check that \cmd|pwd| identifies the newly created practice directory, and that the listing has only the dot and parent entries. One system may show a resolved spelling of the temporary base with \cmd|pwd| rather than the familiar shorthand; proceed only if you can establish that you entered the fresh directory. Write down its path separately. The saved variable belongs to this shell and won't automatically be present if you close the window and start over. Temporary directories may be cleaned automatically; never use this one to store anything valuable.
 
-For a fallback, choose a writable working directory, check \cmd|pwd|, and use plain \cmd|mkdir|. If it fails, do not enter a directory of that name; pick a new name. After \cmd|cd|, record the path from \cmd|pwd| for later cleanup. Use this only if you did not enter a temporary practice directory above.
+For a fallback, choose a personal, trusted parent you control, such as a private directory inside your home. Don't put this fallback in a shared or publicly writable parent. Check the parent with \cmd|pwd| and use plain \cmd|mkdir|. If it fails, do not enter a directory of that name; pick a new name. Enter the new directory only if creation succeeded, then check that \cmd|pwd| shows it in the parent you chose and record that path for later cleanup. Use this fallback only if you did not enter a temporary practice directory above.
 
 \begin{terminal}
 mkdir ./utp-12-travel
