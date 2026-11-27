@@ -1,0 +1,6 @@
+\begin{tikzpicture}
+\node[utp node] (a) {Laptop\\local path};
+\node[utp node,right=28mm of a] (b) {Server\\remote path};
+\draw[utp arrow] ([yshift=2mm]a.east)--node[above,font=\small]{Upload}([yshift=2mm]b.west);
+\draw[utp arrow] ([yshift=-2mm]b.west)--node[below,font=\small]{Download}([yshift=-2mm]a.east);
+\end{tikzpicture}

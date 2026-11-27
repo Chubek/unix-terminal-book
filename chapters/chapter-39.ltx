@@ -1,0 +1,403 @@
+The coordinator of a neighborhood event publishes the meeting agenda
+from a shared Unix account. She has given you a private submissions
+directory on an authorized service, not access to the published files.
+You have two documents called \texttt{agenda.txt}: a draft on your
+laptop and a copy already on the server. Which copy will move, where
+will it land, and how will you know it got there intact? These are
+questions to answer before you press Enter.
+
+\begin{objectives}
+\item Read file transfer commands as source followed by destination.
+\item Use SFTP's two directory contexts and recognize how they differ from SSH.
+\item Preview a transfer locally and verify a file before treating it as delivered.
+\end{objectives}
+
+\section{Give each path a machine}\label{sec:39-endpoints}
+\index{scp@\texttt{scp}}\index{file transfer}
+Chapter~\ref{ch:38} used SSH to open a remote shell. A file transfer
+over SSH uses the same host-identity and account checks, but it need
+not give you a remote shell to type in. Start from a known local
+terminal, confirm the account and host, and decide on a destination
+filename that doesn't collide with anyone else's. The owner might ask
+for a date or your team initials. That isn't bureaucracy for its own
+sake: naming a file \texttt{agenda-new.txt} explains little after next
+week's second revision.
+
+These commands show forms for a service you are explicitly allowed to use.
+The example host \texttt{files.example.org} is not a practice target.
+Do not run these against the printed name. For illustrations the
+provider has told you that \texttt{/home/learner/incoming/} exists, is
+private to the account for this task, and permits the transfer. The
+source file has been checked on your laptop and the destination filename
+is reserved and confirmed unused. Use the actual paths supplied for
+your account rather than assuming that directory layout.
+
+Work out who will read the copy before you decide where to put it.
+Your home directory may be good enough for a private rehearsal and
+entirely wrong for an official submission. The best destination is
+the one the provider intends, with the access the task requires.
+Giving the coordinator the right to open a single submitted file
+doesn't imply giving everyone the right to see everything else in
+that directory. If a transfer fails for lack of permission, check
+the path and ask the operator for the approved alternative. Don't
+make your working directory broadly readable in an attempt to fix
+an unrelated permission error. Copying a document doesn't change
+its sensitivity, either. A confidential agenda is still confidential
+after you put it in a file named \texttt{draft.txt}.
+
+\begin{terminal}[title={Illustrative upload; not a live exercise}]
+scp ./agenda.txt \
+  learner@files.example.org:/home/learner/incoming/agenda-r1.txt
+\end{terminal}
+
+The first operand is the source. A leading \texttt{./} names a file in
+the current local directory. In the second operand an account and host
+are followed by a colon; everything after the colon is the destination
+path on the server. The continuation backslash is a shell convenience,
+not part of either filename. The utility does not erase the source.
+If the target is an existing ordinary file, though, the old contents
+can be overwritten. \cmd|scp| doesn't provide a dependable
+``discard that transfer'' function. For a shared directory, asking a
+colleague not to use a name is no guarantee of exclusivity: use personal
+staging space or ask the operator for the documented submission workflow.
+In Figure~\ref{fig:39-direction}, the arrow points from the first
+operand toward the second no matter which way the bytes move.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-39/direction.tikz}
+\caption{The first path supplies bytes; the second path receives them.}\label{fig:39-direction}
+\VisualDescription{An upload starts at a local path and ends at an account, host, and remote path; a download reverses the direction.}
+\end{figure}
+
+For a download, put the remote source first. The destination below is a
+new name in your local working directory, not a command to overwrite
+your original draft. In this and the preceding example, check that the
+present paths really refer to files; if you pass a directory for a
+destination, copy tools may choose a filename inside it instead.
+
+\begin{terminal}[title={Illustrative download into a confirmed new local path}]
+scp learner@files.example.org:/home/learner/incoming/agenda-r1.txt \
+  ./agenda-received.txt
+\end{terminal}
+
+\begin{quicktable}{p{1.4in}Y}
+\toprule
+Form or option & Decision it makes \\
+\midrule
+Local path first & Upload from the current machine if the destination is remote. \\
+Remote path first & Download to the current machine if the destination is local. \\
+\texttt{user@host:/path} & In \texttt{scp}, attach the path to a remote account and host. \\
+\texttt{./draft:copy.txt} & In \texttt{scp}, a local name with a colon can be made unambiguous with an explicit local path. \\
+\texttt{-P 2222} & In OpenSSH \texttt{scp} or \texttt{sftp}, use the authorized service's supplied port. SSH itself uses lowercase \texttt{-p}. \\
+\bottomrule
+\end{quicktable}
+
+The OpenSSH tools described here are not part of POSIX. Since OpenSSH
+9.0, \cmd|scp| uses SFTP by default. An older client can behave
+differently, notably in how remote path patterns are interpreted; the
+local manual and provider's guidance matter. Avoid legacy protocol
+switches, wildcards, home-directory abbreviations, and difficult
+filenames when learning. A simple absolute remote path keeps attention on
+the direction and destination. Shell quoting protects spaces from the
+local shell, but older remote interpretation may add another parsing
+step. When names are complicated, consider an interactive SFTP session
+and check its own quoting instructions.
+
+\section{Use SFTP when you want to see both desks}
+\index{sftp@\texttt{sftp}}\index{SFTP}
+SFTP is a file-transfer protocol carried over SSH in this workflow.
+It is not unencrypted FTP, nor the same as FTP protected by TLS.
+When you start the OpenSSH \cmd|sftp| program and authenticate to your
+verified service, its prompt accepts file transfer commands. This is
+not a regular shell: commands at the SFTP prompt come from SFTP's
+own vocabulary. Check its built-in \cmd|help| for the commands available
+with your installed client. The following start command is illustrative.
+
+\begin{terminal}[title={Illustrative SFTP start; not a live exercise}]
+sftp learner@files.example.org
+\end{terminal}
+
+Some providers give an SFTP-only account access to a small view of
+their storage. The remote working directory may be \texttt{/} as
+seen by your SFTP client without being the machine's actual root
+directory. A path that a support person sees as
+\texttt{/home/learner/incoming} may appear to you as
+\texttt{/incoming}. Get paths from the instructions for the access
+method you're using. If SSH opens no interactive shell but SFTP
+connects, the restriction may be intentional. A transfer failing
+after a verified login can also mean you can read from a location
+but cannot write to it. Look at which operation was denied rather
+than assuming your password expired.
+
+Inside SFTP, \cmd|pwd| prints the remote working directory. \cmd|lpwd|
+prints the local one: the \texttt{l} is a mnemonic for local. Similarly
+\cmd|ls| lists remote names and \cmd|lls| lists local names. \cmd|cd|
+changes the remote working directory, \cmd|lcd| changes the local one.
+Use these checks immediately before a transfer, particularly after
+changing directory. The dollar-sign prompt in earlier parts of this
+book belonged to the shell; \texttt{sftp>} in the following illustrated
+session is a prompt too, not input.
+
+\begin{session}
+sftp> pwd
+Remote working directory: /home/learner
+sftp> lpwd
+Local working directory: /home/guest/practice
+sftp> cd /home/learner/incoming
+sftp> ls
+sftp> lls
+agenda.txt
+\end{session}
+
+Figure~\ref{fig:39-sftp} shows two working directories connected by a
+single SFTP prompt. The listed files do not necessarily tell you who
+else can change either directory. An empty listing means the command
+did not show any entries; it does not grant permission to place files
+there or promise that a later command won't collide.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-39/sftp.tikz}
+\caption{Inside SFTP, the two working directories are independent.}\label{fig:39-sftp}
+\VisualDescription{One prompt operates on a local directory via lpwd and lls, and on a separate remote directory via pwd and ls.}
+\end{figure}
+
+\cmd|put| takes a local source and optional remote destination.
+\cmd|get| takes a remote source and optional local destination.
+The two names here differ on purpose, so you can inspect the received
+data without changing the original. \cmd|bye| ends the SFTP session.
+
+\begin{terminal}[title={Inside SFTP only, after checking both directories}]
+put agenda.txt agenda-r1.txt
+get agenda-r1.txt agenda-received.txt
+bye
+\end{terminal}
+
+A transfer meter measures progress, not correctness. A failed copy
+can leave a partial file, depending on the tool, server, and mode. If
+the connection breaks, don't blindly rerun into the same path or send
+a partial file on to someone else. Tell anyone waiting that it hasn't
+been verified. Determine which path was being written, inspect it,
+and if the service allows, transfer to a different unused name, then
+verify and hand off that copy. For a service that consumes files
+automatically, ask where to stage a complete file before submitting
+it. Don't assume renaming can be undone or that it is safe across
+different storage locations.
+
+Names can be misleading in less dramatic ways. A coworker may
+send \texttt{agenda.txt} as regular text and someone else may save
+the new version as \texttt{Agenda.txt}. One filesystem might
+consider those distinct names while another might treat them as
+the same path. Names with spaces can be perfectly ordinary, but
+it's worth rehearsing quoting separately from a transfer that
+could replace a file. Use plain, unambiguous names for the first
+copy, check the listing, and choose a name that still means
+something to the person who has to find it later. If your exchange
+requires accurate timestamps, permissions, links, or other
+attributes, get the policy and test those attributes explicitly.
+A transfer of a readable document is not a complete migration of
+an account or filesystem. The lab verifies only bytes and paths.
+
+\section{Preview and verify on one computer}\label{sec:39-practice}
+\index{rsync@\texttt{rsync}}\index{cmp@\texttt{cmp}}
+You can exercise the same habits with two directories. This lab
+makes no remote connections. It uses POSIX shell syntax; \texttt{mktemp}
+is common but not specified by POSIX. Stop if setup fails. The
+directories stand for your desk and a staging area. The \texttt{>}
+operator writes \texttt{agenda.txt} in the just-created source directory;
+use it only for the synthetic lab.
+
+\begin{terminal}
+transferlab=$(mktemp -d)
+cd "$transferlab"
+mkdir source receive
+printf '%s\n' '18:00 open the hall' '18:15 check the chairs' \
+  > source/agenda.txt
+\end{terminal}
+
+If optional \cmd|rsync| is installed, preview a local transfer.
+\texttt{-r} means descend into subdirectories; \texttt{-n} is a dry run
+that doesn't copy bytes; \texttt{-i} itemizes planned changes.
+Here they are written separately to keep the dry-run option visible.
+A trailing slash on \texttt{./source/} means transfer the directory's
+contents, not introduce a directory named \texttt{source} under
+\texttt{receive}. Both paths are local because neither is a remote
+specification. Consult your installed manual; Linux distributions,
+macOS and the BSDs may package different versions or implementations,
+and this exercise uses the upstream rsync interpretation.
+
+\begin{terminal}
+rsync -r -n -i ./source/ ./receive/
+ls ./receive
+\end{terminal}
+
+You may see a line such as \texttt{>f+++++++++ agenda.txt}: in this
+case the initial symbol indicates transfer, \texttt{f} means an
+ordinary file, and the plus signs mark data or attributes for a new file.
+The subsequent directory listing has no entries. A dry run predicts
+what would happen given the observed state and chosen options.
+It doesn't reserve disk space, freeze the source, or promise that the
+actual write will succeed. Don't add deletion options to make a copy
+look tidy; a receiving directory often contains information absent from
+the source, and a mirror is not an archive of older versions.
+
+If the itemized list is puzzling, change one operand at a time.
+Ask what directory already exists at the destination, then ask
+whether the source is the directory or what sits inside it. Compare
+the result with Figure~\ref{fig:39-slash}. A preview can show a
+directory entry and a file entry, since this example permits
+recursion. In a real transfer, a preview that's unexpectedly empty
+can mean the files look up to date to the tool, not that the source
+was empty. Transfer utilities can compare timestamps and sizes
+to decide which files to send. Don't interpret a quiet preview as
+a byte comparison, and don't try to force an entire tree to copy
+just because the preview doesn't print the filename you expected.
+Use a small hand-picked test and verify the actual receiving bytes.
+If you are previewing a real remote plan later, remember a dry run
+can still connect, authenticate, and inspect remote filenames;
+``dry'' refers to writes, not permission to examine another machine.
+
+\begin{figure}[htbp]
+\centering\input{figures/chapter-39/contents.tikz}
+\caption{In rsync, the source slash controls the receiving layout.}\label{fig:39-slash}
+\VisualDescription{Contrasting examples place agenda.txt either inside receive/source or directly inside receive, depending on the source's trailing slash.}
+\end{figure}
+
+For the actual lab, copy just the one file to an unused name. Here
+\texttt{-i} on \cmd|cp| (interactive, ask before overwrite) is not
+rsync's itemize flag; options belong to individual commands.
+If prompted, decline and inspect the destination before proceeding.
+Neither the preview nor \cmd|cp| depends on the original agenda being
+privileged or confidential. If \cmd|rsync| wasn't installed, you
+can start with the explicit source and destination below and still do
+the content check.
+
+\begin{terminal}
+cp -i ./source/agenda.txt ./receive/agenda-received.txt
+cmp ./source/agenda.txt ./receive/agenda-received.txt
+printf '%s\n' "$?"
+\end{terminal}
+
+\cmd|cmp| compares bytes: no message and status zero indicate a match.
+Status one indicates different data, and a value greater than one
+indicates an error such as a missing file. \cmd|"$?"| must be read
+immediately after the comparison, not after another \cmd|ls|. A
+filename, date or size alone doesn't show that the right bytes arrived.
+If you can't bring both copies together, you can compare a digest made
+by the same checksum algorithm on both endpoints (see Chapter~\ref{ch:23}).
+An expected digest must come from a source you trust, not whatever was
+transferred alongside a suspicious copy. An equal digest is evidence
+about content, not the owner or access permissions. Consider an
+independent read-back using the eventual recipient's normal access
+route, with their permission, when delivery involves a restricted area.
+
+Make the verification useful to the person waiting at the other end.
+For a text agenda, opening the checked version is often enough to see
+whether it has the revisions requested. A checksum can't tell you
+that you chose the right draft if you faithfully transferred the wrong
+one. Check the source before the transfer, check the receiving bytes
+after it, and identify the version in your handoff. If the recipient
+reports that the file opens but contains last month's schedule, the
+next question is which copy was the source; moving the same bytes
+again wouldn't help. If they can't open it, check whether they are
+looking in the right location with the right account before
+resending or changing access.
+
+Finally, use the smallest transfer that meets the need. Bringing
+an entire project directory down for one agenda may unnecessarily
+copy older personnel notes and hidden configuration files. Don't
+substitute a wildcard for a deliberate list of files when preparing
+a submission. If you have several intended documents, make a private
+staging directory, inspect the exact contents and transfer only that
+set by the approved route. When tidying up afterwards, remove
+temporary copies you no longer need under the applicable retention
+rules, not the source document somebody else is still editing.
+
+\begin{quicktable}{p{1.35in}Y}
+\toprule
+Check & What evidence it gives \\
+\midrule
+Confirm both directory contexts & Tests whether source and destination names mean what you intend before writing. \\
+Preview changes & Lets you catch direction or layout mistakes; does not confirm a write. \\
+Inspect destination & Shows whether a named object is present, not necessarily the intended bytes. \\
+Compare content & Tests bytes or matching digests; does not confirm sharing policy or the accepted submission name. \\
+\bottomrule
+\end{quicktable}
+
+\begin{dialoguebox}{The completed bar}
+\Brian{It said 100 percent. What else could I need?}
+\Stephen{At least check that it arrived in the right place.}
+\Brian{I can see a file with exactly the right name.}
+\Stephen{Was it there before? The label doesn't establish which version it contains.}
+\Brian{But the recipient doesn't have my original copy.}
+\Stephen{You can verify the received copy yourself, or compare trusted digests calculated on both sides.}
+\Brian{That tells me about the bytes, not whether the recipient can open the path.}
+\Stephen{Right. Check delivery and permission separately.}
+\DialogueConclusion{Verify the content and the destination.}
+\end{dialoguebox}
+
+Before cleanup, use \cmd|pwd| to verify you are in
+\cmd|"$transferlab"|. Confirm each named practice file with
+\cmd|rm -i ./source/agenda.txt| and then separately with
+\cmd|rm -i ./receive/agenda-received.txt|.
+Then \cmd|rmdir ./source ./receive|; this refuses to remove nonempty
+directories. Finally use \cmd|cd| and \cmd|rmdir "$transferlab"|.
+If you practiced with a second copy in the exercises, remove that
+explicitly before attempting the directories.
+
+\begin{exercise}{Predict the directory layout}\label{ex:39-layout}
+Keeping the same temporary directory, preview with and without the
+trailing slash on the source. Check that neither run creates files.
+If optional rsync is unavailable, read Figure~\ref{fig:39-slash} and
+write down both predicted paths instead. Keep the lab for the next exercise.
+\end{exercise}
+\begin{solution}
+\cmd|rsync -r -n -i ./source ./receive/| predicts
+\texttt{receive/source/agenda.txt}; with \cmd|./source/| it predicts
+\texttt{receive/agenda.txt}. The dry-run option prevents either
+write. Any \texttt{agenda-received.txt} you already copied is a
+different path and remains in place.
+\end{solution}
+
+\begin{exercise}{Prove that a similar name is not enough}\label{ex:39-content}
+Write one line of different text to a confirmed unused
+\texttt{./receive/agenda-revised.txt}. Compare it to the source with
+\texttt{cmp}. Inspect the status and remove just this fixture.
+\end{exercise}
+\begin{solution}
+\begin{terminal}
+printf '%s\n' '18:30 close the hall' > ./receive/agenda-revised.txt
+cmp ./source/agenda.txt ./receive/agenda-revised.txt
+printf '%s\n' "$?"
+rm -i ./receive/agenda-revised.txt
+\end{terminal}
+Expect a difference and status 1. If a file could not be read, resolve
+that error before interpreting the check. Confirm removal only of the
+new synthetic copy.
+\end{solution}
+
+\begin{exercise}{Rehearse a handoff}\label{ex:39-handoff}
+Compare the original and the copy named \texttt{agenda-received.txt}.
+Write a brief handoff identifying the checked filename, what the
+comparison established, and one thing still unknown about delivery.
+Don't send the note or the file. Clean up the original and received lab
+files and remove the directories using the steps above.
+\end{exercise}
+\begin{solution}
+\cmd|cmp ./source/agenda.txt ./receive/agenda-received.txt| should
+report no differences, with status zero. A suitable note is: ``The
+staged agenda-received.txt matches the source byte for byte. No remote
+recipient has been given access.'' Verify the working directory and
+remove only the known practice files before using \texttt{rmdir}.
+\end{solution}
+
+\begin{takeaways}
+\item Say the source and the destination aloud, including which machine owns each path.
+\item Check both directory contexts before putting or getting files.
+\item Preview when possible, preserve the original, and verify the result before handoff.
+\end{takeaways}
+
+\begin{furtherreading}
+\ReadingItem{scp(1)}{Endpoint syntax, port option, overwrite cautions and protocol behavior.}{https://man.openbsd.org/scp}
+\ReadingItem{sftp(1)}{Interactive commands and connection options.}{https://man.openbsd.org/sftp}
+\ReadingItem{Upstream rsync manual}{Source slashes, dry runs and itemized changes.}{https://download.samba.org/pub/rsync/rsync.1}
+\end{furtherreading}

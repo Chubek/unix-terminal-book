@@ -1,0 +1,9 @@
+\begin{tikzpicture}
+\node[utp node] (a) {Laptop\\terminal};
+\node[utp node,right=17mm of a] (b) {Remote\\login};
+\node[utp node,right=5mm of b] (c) {Remote tmux\\workspace};
+\node[utp node,below=4mm of c] (d) {Pane shell\\on remote host};
+\draw[utp arrow] (a)--node[above,font=\small]{SSH}(b);
+\draw[utp arrow] (b)--(c);
+\draw[utp arrow] (c)--(d);
+\end{tikzpicture}

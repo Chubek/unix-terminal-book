@@ -1,0 +1,9 @@
+\begin{tikzpicture}
+\node[utp node] (a) {Confirm host\\and account};
+\node[utp node,right=5mm of a] (b) {Look for\\named session};
+\node[utp node,right=5mm of b] (c) {Present:\\reattach};
+\node[utp node,below=4mm of c] (d) {Absent:\\inspect files};
+\draw[utp arrow] (a)--(b);
+\draw[utp arrow] (b)--(c);
+\draw[utp arrow] (b.south) |- (d);
+\end{tikzpicture}

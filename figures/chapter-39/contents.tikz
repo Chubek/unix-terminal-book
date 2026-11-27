@@ -1,0 +1,8 @@
+\begin{tikzpicture}
+\node[utp node,text width=24mm] (a) {\texttt{source}};
+\node[utp node,text width=57mm,right=7mm of a] (b) {\texttt{receive/source/agenda.txt}};
+\node[utp node,text width=24mm,below=3mm of a] (c) {\texttt{source/}};
+\node[utp node,text width=57mm,right=7mm of c] (d) {\texttt{receive/agenda.txt}};
+\draw[utp arrow] (a)--(b);
+\draw[utp arrow] (c)--(d);
+\end{tikzpicture}
